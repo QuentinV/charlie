@@ -1,0 +1,27 @@
+services:
+    mcp-bridge:
+        build: ./python-apis
+        container_name: mcp-bridge
+        ports:
+            - '8000:8000'
+        volumes:
+            - ./python-apis/app:/app
+            - ./nodejs-apis:/mcp-server
+        environment:
+            - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+            - AGENT_ID=${AGENT_ID}
+            - SSE_HOST=http://host.docker.internal:9300/sse
+        restart: unless-stopped
+    db:
+        container_name: charliedb
+        image: mongo
+        ports:
+            - '9302:27017'
+        restart: unless-stopped
+        volumes:
+            - ./db:/data/db
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=
+            - MONGO_INITDB_ROOT_PASSWORD=
+        networks:
+            - invDataNet

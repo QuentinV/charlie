@@ -1,0 +1,74 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { theme } from './theme';
+import { HomePage } from './pages/Home';
+import { NotFoundPage } from './pages/NotFound';
+import { Box, ThemeProvider } from '@mui/material';
+import { Menu } from './components/Menu';
+import { Footer } from './components/Footer';
+import { DevicesDiscoveryPage } from './pages/DevicesDiscovery';
+import { RoutinesPage } from './pages/Routines';
+import { RoomPage } from './pages/Room';
+
+export default function App() {
+    return (
+        <ThemeProvider theme={theme}>
+            <Router>
+                <Box
+                    sx={{
+                        flexGrow: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%',
+                    }}
+                >
+                    <Box sx={{ flexGrow: 0 }}>
+                        <Menu />
+                    </Box>
+                    <Box
+                        sx={{
+                            p: 3,
+                            paddingTop: 1,
+                            flexGrow: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            overflow: 'auto',
+                        }}
+                        className="overlay"
+                    >
+                        <Box sx={{ height: '100%' }}>
+                            <Routes>
+                                <Route path="/" element={<HomePage />} />
+                                <Route
+                                    path="/discovery"
+                                    element={<DevicesDiscoveryPage />}
+                                />
+                                <Route
+                                    path="/room/:id"
+                                    element={<RoomPage />}
+                                />
+                                <Route
+                                    path="/routines"
+                                    element={<RoutinesPage />}
+                                />
+                                <Route path="*" element={<NotFoundPage />} />
+                            </Routes>
+                        </Box>
+                    </Box>
+                    <Box
+                        sx={{
+                            flexGrow: 0,
+                            marginTop: 'auto',
+                            height: '50px',
+                            color: 'white',
+                            display: 'flex',
+                            width: '100%',
+                        }}
+                    >
+                        <Footer />
+                    </Box>
+                </Box>
+            </Router>
+        </ThemeProvider>
+    );
+}
