@@ -1,6 +1,6 @@
-import { NotFoundError } from '../../errors';
 import { Tools } from '../../types';
 import { z } from 'zod';
+import * as cheerio from 'cheerio';
 
 const DELUGE_URL = `http://${process.env.TORRENT_DELUGE_HOST}/json`;
 
@@ -15,7 +15,7 @@ async function delugeLogin() {
         }),
     });
 
-    const data = await res.json();
+    const data: any = await res.json();
     return data?.result === true ? res.headers.get('set-cookie') : undefined;
 }
 
@@ -56,7 +56,7 @@ async function delugeAddMagnet(magnetUrl: string) {
         }),
     });
 
-    const data = await res.json();
+    const data: any = await res.json();
     return data.result;
 }
 
@@ -64,7 +64,7 @@ async function searchEnMovie({ name, year }) {
     const nameParam = name.replace(' ', '+');
     const strYear = String(year);
 
-    let res = await (
+    let res: any = await (
         await fetch(
             `https://www.yts-official.to/ajax/search?query=${nameParam}`
         )
@@ -112,6 +112,57 @@ async function searchAndDownloadMovie({ name, year, lang }) {
     return (await delugeAddMagnet(magnet)) ?? false;
 }
 
+async function getTvShowMagnetsElements({ name }) {
+    const res = await (
+        await fetch(
+            `https://eztv.wf/search/?q1=${name.replace(
+                ' ',
+                '+'
+            )}&search=Search`,
+            { headers: { Cookie: 'layout=def_wlinks' } }
+        )
+    ).text();
+
+    const $ = cheerio.load(res);
+    return { elements: $('.magnet'), $ };
+}
+
+async function searchTvShow({ name, season, episode }) {
+    const { elements, $ } = await getTvShowMagnetsElements({ name });
+    const titles = [];
+    elements.each((i, e) => {
+        const title = $(e)
+            .attr('title')
+            .toLowerCase()
+            .replace(' magnet link', '');
+        if (
+            (title.includes('1080p') || title.includes('720p')) &&
+            (!season ||
+                title.includes('s' + (season < 10 ? '0' : '') + season)) &&
+            (!episode ||
+                title.includes('e' + (episode < 10 ? '0' : '') + episode))
+        ) {
+            titles.push(title);
+        }
+    });
+    return titles.reverse();
+}
+
+async function downloadTvShows({ name, keys }) {
+    const { elements, $ } = await getTvShowMagnetsElements({ name });
+    const magnets = [];
+    elements.each((i, e) => {
+        const title = $(e)
+            .attr('title')
+            .toLowerCase()
+            .replace(' magnet link', '');
+        if (keys.some((e) => title.includes(e)))
+            magnets.push($(e).attr('href'));
+    });
+
+    return Promise.allSettled(magnets.map((e) => delugeAddMagnet(e)));
+}
+
 // TODO for better search create additional tools 'search-movie-torrent-urls' to return list of movies name + url to give to 'download-torrent-magnet' (magnet)
 
 const tools: Tools = {
@@ -126,6 +177,32 @@ const tools: Tools = {
         exec: async ({ name, year, lang }) => {
             const res = await searchAndDownloadMovie({ name, year, lang });
             return res ? 'Movie is downloading' : 'Movie not found';
+        },
+    },
+    'search-tvshow-torrent': {
+        description: 'Search tv show torrent for download',
+        inputSchema: {
+            name: z.string(),
+            season: z.optional(z.number()),
+            episode: z.optional(z.number()),
+        },
+        exec: async ({ name, season, episode }) => {
+            const titles = await searchTvShow({ name, season, episode });
+            return `Avoid duplicate and chose best among the list: ${titles
+                .map((e) => '- ' + e)
+                .join('\n')}`;
+        },
+    },
+    'download-tvshow-torrent': {
+        description:
+            'Download tv show torrent by keys retrieved from search-tvshow-torrent ',
+        inputSchema: {
+            tvshowname: z.string(),
+            keys: z.array(z.string()),
+        },
+        exec: async ({ tvshowname, keys }) => {
+            await downloadTvShows({ name: tvshowname, keys });
+            return `Tv show is downloading`;
         },
     },
 };
