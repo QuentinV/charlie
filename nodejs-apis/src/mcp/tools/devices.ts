@@ -109,7 +109,7 @@ export default async () => {
                         functionname,
                         params
                     );
-                    return res ?? 'success';
+                    return res !== undefined ? JSON.stringify(res) : 'success';
                 } catch (e) {
                     if (e instanceof NotFoundError) {
                         return 'Function does not exist.';
