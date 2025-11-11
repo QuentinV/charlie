@@ -17,11 +17,11 @@ export const RoomsList = () => {
 
             const rooms = await api('rooms');
             rooms.forEach((room) => {
-                room.devices = room.devices.map((d) => devices[d]);
+                room.devices = room.devices?.map((d) => devices[d]) ?? [];
             });
 
             rooms.push({
-                devices: Object.entries(devices)
+                devices: Object.entries(devices ?? {})
                     .filter(
                         ([d]) =>
                             !rooms.some((r) =>

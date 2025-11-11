@@ -31,16 +31,20 @@ const routes: RestApis = {
             );
         },
     },
-    'rooms/:id/devices': {
-        get: async ({ params }) => {
-            const devices = (await cs.rooms.findOne({ _id: params.id }))
-                ?.devices;
-            if (!devices) throw new NotFoundError();
-            return devices;
-        },
-    },
     'rooms/:id': {
         get: async ({ params }) => cs.rooms.findOne({ _id: params.id }),
+        delete: async ({ params }) => cs.rooms.deleteOne({ _id: params.id }),
+        put: async ({ params, body }) => {
+            cs.rooms.updateOne(
+                { _id: params.id },
+                {
+                    $set: {
+                        ...body,
+                    },
+                }
+            );
+            return { res: true };
+        },
     },
     rooms: {
         get: async () => cs.rooms.find().toArray(),

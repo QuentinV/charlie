@@ -57,9 +57,23 @@ const routes: RestApis = {
     },
     'devices/:id': {
         get: async ({ params }) => cs.devices.findOne({ _id: params.id }),
+        delete: async ({ params }) => cs.devices.deleteOne({ _id: params.id }),
     },
     devices: {
-        get: async () => cs.devices.find().toArray(),
+        get: async ({ query }) => {
+            const { roomId } = query ?? {};
+            let filter = undefined;
+            if (roomId) {
+                filter = {
+                    _id: {
+                        $in:
+                            (await cs.rooms.findOne({ _id: roomId }))
+                                ?.devices ?? [],
+                    },
+                };
+            }
+            return cs.devices.find(filter).toArray();
+        },
         post: async ({ body }) => {
             const { name, externalId, provider, type }: Device = body;
             const uuid = uuidV4();
