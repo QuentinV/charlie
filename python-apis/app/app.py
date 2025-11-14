@@ -1,12 +1,16 @@
 
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Header
+from fastapi.responses import Response
 from mistralai import Mistral
 from mistralai.extra.run.context import RunContext
 from mcp import StdioServerParameters
 from mistralai.extra.mcp.stdio import MCPClientSTDIO
 from mistralai.extra.mcp.sse import MCPClientSSE, SSEServerParams
+from piper.voice import PiperVoice
 import logging
+import io
+import struct
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
@@ -53,21 +57,61 @@ async def ask(request: Request):
 
     return run_result
         
-# piper_ws_server.py
-#import asyncio, websockets, json
-#from piper import PiperVoice
+voice = PiperVoice.load("/app/voices/fr_FR-upmc-medium.onnx", config_path="/app/voices/fr_FR-upmc-medium.onnx.json")
 
-#voice = PiperVoice.load("en_US-amy-low.onnx", config_path="en_US-amy-low.onnx.json")
+def build_wav_header(sample_rate, sample_width, channels, data_size):
+    # WAV header for PCM format
+    byte_rate = sample_rate * channels * sample_width
+    block_align = channels * sample_width
+    header = struct.pack('<4sI4s4sIHHIIHH4sI',
+        b'RIFF',
+        36 + data_size,
+        b'WAVE',
+        b'fmt ',
+        16,
+        1,  # PCM format
+        channels,
+        sample_rate,
+        byte_rate,
+        block_align,
+        sample_width * 8,
+        b'data',
+        data_size
+    )
+    return header
 
-#async def handler(ws):
-#    async for message in ws:
-#        data = json.loads(message)
-#        text = data.get("text", "")
-#        audio = voice.synthesize(text)
-#        await ws.send(audio.tobytes())  # or base64 if needed
+@app.post("/tts")
+async def generate_tts(request: Request, accept: str = Header(default="audio/L16")):
+    body = await request.json()
+    text = body.get("text")
 
-#async def main():
-#    async with websockets.serve(handler, "0.0.0.0", 8765):
-#        await asyncio.Future()
+    if not text:
+        return {"error": "Missing 'text' in request body"}
 
-#asyncio.run(main())
+    chunks = []
+    sample_rate = sample_width = channels = None
+    total_size = 0
+
+    for chunk in voice.synthesize(text):
+        if sample_rate is None:
+            sample_rate = chunk.sample_rate
+            sample_width = chunk.sample_width
+            channels = chunk.sample_channels
+        chunks.append(chunk.audio_int16_bytes)
+        total_size += len(chunk.audio_int16_bytes)
+
+    audio_data = b"".join(chunks)
+
+    if "audio/wav" in accept:
+        wav_header = build_wav_header(sample_rate, sample_width, channels, total_size)
+        return Response(
+            content=wav_header + audio_data,
+            media_type="audio/wav",
+            headers={"Content-Disposition": "inline; filename=speech.wav"}
+        )
+    else:
+        return Response(
+            content=audio_data,
+            media_type="audio/L16; rate=22050; channels=1",
+            headers={"Content-Disposition": "inline; filename=speech.pcm"}
+        )

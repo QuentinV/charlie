@@ -18,6 +18,7 @@ RUN pip install authlib
 RUN pip install mcp
 RUN pip install griffe
 RUN pip install mistralai
+RUN pip install piper-tts
 
 EXPOSE 8000
 

@@ -1,7 +1,7 @@
 services:
-    mcp-bridge:
+    ai-agents:
         build: ./python-apis
-        container_name: mcp-bridge
+        container_name: ai-agents
         ports:
             - '8000:8000'
         volumes:
@@ -23,5 +23,3 @@ services:
         environment:
             - MONGO_INITDB_ROOT_USERNAME=
             - MONGO_INITDB_ROOT_PASSWORD=
-        networks:
-            - invDataNet
