@@ -7,8 +7,7 @@
     "start": "tsx src/index.ts",
     "dev": "nodemon --watch src --ext ts --exec tsx src/index.ts",
     "d": "tsx src/core/ipscan.ts",
-    "listen": "tsx src/audio/receive_echo.ts",
-    "tts": "tsx src/ai/tts.ts"
+    "listen_echo": "tsx src/audio/receive_echo.ts"
   },
   "repository": {
     "type": "git",

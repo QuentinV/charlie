@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import fs from 'fs';
 
 const host = process.env.AI_AGENTS_HOST;
 
@@ -18,10 +17,3 @@ export async function tts({ text, type = 'audio/L16' }: TTSRequest) {
     });
     return res.arrayBuffer();
 }
-
-(async () => {
-    fs.writeFileSync(
-        'test.wav',
-        Buffer.from(await tts({ text: 'Salut!', type: 'audio/wav' }))
-    );
-})();
