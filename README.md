@@ -21,7 +21,6 @@ AGENT_ID=
 Create a .env file in "nodejs-apis" folder
 
 ```
-MISTRAL_API_KEY=
 DB_HOST=localhost:27017
 MACVENDORS_APIKEY=
 SUBNET_IP=192.168.1
