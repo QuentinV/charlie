@@ -71,13 +71,4 @@ Similar to Alexa or google echo devices, the idea is to build small device with 
 
 The ESP32-S3 is perfect for this. Low energy consumption with WIFI capability. Also support Camera for facial recognition capabilities.
 
-Flow:
-
-```
-ESP-32
-=> Listen to user
-=> send to nodejs server
-=> call LLM
-=> execute action and get answer
-=> send back audio to echo device (ESP-32)
-```
+![flow](docs/echos.drawio.png)
