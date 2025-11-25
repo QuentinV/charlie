@@ -103,10 +103,12 @@ async function setDevicePower({
         DeviceID: deviceId,
         Power: powerOn ? 1 : 0,
         OperationMode: 1, // 1 = Heat, 3 = Cool, 8 = Auto
+        EffectiveFlags: 1,
     };
 
     if (temperature) {
         payload.SetTemperature = temperature;
+        payload.EffectiveFlags = 5;
     }
 
     const res = await fetch(
@@ -122,10 +124,10 @@ async function setDevicePower({
     );
 
     const result = await res.json();
-    console.log(
+    /*console.log(
         `Device ${deviceId} power set to ${powerOn ? 'On' : 'Off'}`,
         result
-    );
+    );*/
 
     return true;
 }
