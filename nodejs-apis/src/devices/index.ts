@@ -14,12 +14,14 @@ import {
 import ikea from './providers/ikea';
 import sony_bravia_tv from './providers/sony_bravia_tv';
 import nanoleaf from './providers/nanoleafs';
+import clim from './providers/clim_mitshubishi';
 
 // Register all possible providers here
 const providerApis: { [name: string]: ProvidersApis } = {
     ikea,
     sony_bravia_tv,
     nanoleaf,
+    clim,
 };
 
 export const availableProvidersCodeSources = Object.keys(providerApis);

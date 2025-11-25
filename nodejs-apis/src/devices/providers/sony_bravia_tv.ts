@@ -5,6 +5,7 @@ import { NotFoundError } from '../../errors';
 interface ExtendedProviderFunctionDef extends ProviderFunctionDef {
     domain: string;
     version: string;
+    description?: string;
 }
 
 const functions: ExtendedProviderFunctionDef[] = [
@@ -20,6 +21,7 @@ const functions: ExtendedProviderFunctionDef[] = [
         returns: [
             { title: 'string', uri: 'string', icon: 'string', data: 'string' },
         ],
+        description: 'to be used to retrieve uri to set active app',
         domain: 'appControl',
         version: '1.0',
     },
@@ -32,6 +34,7 @@ const functions: ExtendedProviderFunctionDef[] = [
     {
         name: 'setActiveApp',
         params: [{ uri: 'string', data: 'string' }],
+        description: 'always use getApplicationStatusList to get uri',
         domain: 'appControl',
         version: '1.0',
     },
@@ -121,7 +124,6 @@ const apis: ProvidersApis = {
                     f.version,
                     params
                 );
-                //console.log('result', res);
                 return res;
             } catch (e) {
                 console.log(e);

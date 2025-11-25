@@ -3,5 +3,6 @@
     "devices": "devices",
     "rooms": "rooms",
     "providers": "providers",
-    "routines": "routines"
+    "routines": "routines",
+    "states": "states"
 }

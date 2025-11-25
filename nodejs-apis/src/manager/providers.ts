@@ -14,8 +14,15 @@ const routes: RestApis = {
     providers: {
         get: async () => cs.providers.find().toArray(),
         post: async ({ body }) => {
-            const { _id, name, host, password, codesource, multidevices } =
-                body;
+            const {
+                _id,
+                name,
+                host,
+                user,
+                password,
+                codesource,
+                multidevices,
+            } = body;
             const uuid = _id || uuidV4();
             await cs.providers.updateOne(
                 { _id: uuid, name },
@@ -24,6 +31,7 @@ const routes: RestApis = {
                         _id: uuid,
                         name,
                         host,
+                        user,
                         password,
                         codesource,
                         multidevices,

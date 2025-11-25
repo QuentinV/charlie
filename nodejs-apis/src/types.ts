@@ -63,6 +63,7 @@ export interface Provider {
     name: string;
     codesource: string;
     host?: string;
+    user?: string;
     password?: string;
     multidevices?: boolean;
 }
@@ -70,6 +71,7 @@ export interface Provider {
 export interface DeviceState {
     power: 'on' | 'off' | 'pause';
     level?: number;
+    additional?: object;
 }
 
 export interface ProviderInitParams {
@@ -93,7 +95,7 @@ export interface ProviderApiMetaInfo {
 
 export interface ProviderApi {
     init?: (params: ProviderInitParams) => Promise<boolean>;
-    discover?: () => Promise<object[]>;
+    discover?: (provider: Provider) => Promise<object[]>;
     changeDeviceState: (
         meta: ProviderApiMetaInfo,
         params: DeviceState

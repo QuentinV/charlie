@@ -12,13 +12,14 @@ import { v4 as uuidV4 } from 'uuid';
 const routes: RestApis = {
     'devices/discover': {
         get: async () => {
+            const list = await cs.providers.find().toArray();
+            const apis = await getProvidersApis();
+
             const res = await Promise.allSettled(
-                Object.entries(await getProvidersApis()).map(
-                    async ([k, api]) => ({
-                        provider: k,
-                        data: await api.discover(),
-                    })
-                )
+                list.map(async (p) => ({
+                    provider: p.name,
+                    data: await apis[p.codesource]?.discover?.(p),
+                }))
             );
             return res.map((s: any) => s.value);
         },
