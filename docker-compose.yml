@@ -13,7 +13,7 @@ services:
             - SSE_HOST=http://host.docker.internal:9300/sse
         restart: unless-stopped
     db:
-        container_name: charliedb
+        container_name: db
         image: mongo
         ports:
             - '9302:27017'
