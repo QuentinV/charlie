@@ -71,4 +71,4 @@ Similar to Alexa or google echo devices, the idea is to build small device with 
 
 The ESP32-S3 is perfect for this. Low energy consumption with WIFI capability. Also support Camera for facial recognition capabilities.
 
-![flow](docs/echos.drawio.png)
+[Description](esp32-s3/README.md)
