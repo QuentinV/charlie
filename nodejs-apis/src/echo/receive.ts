@@ -18,12 +18,15 @@ const subscribers = {
 
         const device = await cs.devices.findOne(
             { provider: provider._id },
-            { projection: { _id: 1 } }
+            { projection: { _id: 1, name: 1 } }
         );
         if (!device) return;
 
         const state: any = {
+            device: device._id,
             provider: provider._id,
+            mac,
+            deviceName: device.name,
             timestamp: Date.now(),
             temperature: parseFloat(temp),
             humidity: parseFloat(hum),
@@ -55,4 +58,5 @@ mqttClient.on('connect', () => {
 
 mqttClient.on('message', async (topic, message) => {
     console.log(`Received on ${topic}: ${message.toString()}`);
+    subscribers[topic]?.(message.toString());
 });
