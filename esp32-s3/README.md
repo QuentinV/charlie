@@ -13,7 +13,6 @@
 
 # Bord definition
 
-Download https://github.com/handledexception/platform-espressif32/blob/esp32-s3-devkitc-1-n16r8v/boards/esp32-s3-devkitc-1-n16r8v.json
-into
+Move [board file](boards/esp32-s3-devkitc-1-n16r8v.json) to your user folder in
 
 > .platformio\platforms\espressif32\boards

@@ -145,7 +145,7 @@ const ei_impulse_t impulse_831961_1 = {
     .project_name = "charlie",
     .impulse_id = 1,
     .impulse_name = "Impulse #1",
-    .deploy_version = 5,
+    .deploy_version = 9,
 
     .nn_input_frame_size = 3960,
     .raw_sample_count = 16000,
