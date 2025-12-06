@@ -642,12 +642,12 @@ void setup() {
   setupCamera();
 
   // Tasks
-  //startCameraServer();
-  xTaskCreate( mqttTask, "StateReporting", 1800, NULL, 1, &mqttTaskHandle );
-  xTaskCreate( memoryPrintTask, "MemoryPrint", 1700, NULL, 1, &memoryPrintHandle );
-  xTaskCreate( handleTouchTask, "TouchSensor", 1800, NULL, 1, &touchTaskHandle );
-  xTaskCreate( handleMotionSensorTask, "MotionSensor", 2200, NULL, 1, &motionSensorHandle );
-  xTaskCreate( receiveAndPlayAudioTask, "ReceivePlayAudio", 4096, NULL, 1, &receivePlayAudioHandle );
+  startCameraServer();
+  //xTaskCreate( mqttTask, "StateReporting", 1800, NULL, 1, &mqttTaskHandle );
+  //xTaskCreate( memoryPrintTask, "MemoryPrint", 1700, NULL, 1, &memoryPrintHandle );
+  //xTaskCreate( handleTouchTask, "TouchSensor", 1800, NULL, 1, &touchTaskHandle );
+  //xTaskCreate( handleMotionSensorTask, "MotionSensor", 2200, NULL, 1, &motionSensorHandle );
+  //xTaskCreate( receiveAndPlayAudioTask, "ReceivePlayAudio", 4096, NULL, 1, &receivePlayAudioHandle );
   //xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
   /*if (microphone_inference_start(EI_CLASSIFIER_RAW_SAMPLE_COUNT) == false) {
       ei_printf("ERR: Could not allocate audio buffer (size %d), this could be due to the window length of your model\r\n", EI_CLASSIFIER_RAW_SAMPLE_COUNT);
