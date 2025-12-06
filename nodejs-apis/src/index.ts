@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { initAll } from './init';
 import express from 'express';
 import fs from 'fs';
@@ -10,6 +11,7 @@ import { RestApiHandler } from './types';
 import { HttpError } from './errors';
 import swaggerUi from 'swagger-ui-express';
 import { defaultApiPath, getSwaggerDoc } from './swagger';
+import { registerNotificationApi } from './core/notifications';
 
 const app = express();
 
@@ -49,6 +51,8 @@ const app = express();
             console.log(`[API] ${methodName.toUpperCase()}`, builtPath);
         });
     });
+
+    registerNotificationApi(app);
 
     // Error handler
     app.use((err: any, req: any, res: any, next: any) => {

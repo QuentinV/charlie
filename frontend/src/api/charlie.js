@@ -1,4 +1,4 @@
-export const HOST = 'http://localhost:9300/api';
+export const HOST = '/api';
 
 export const api = async (url, init = undefined) => {
     const res = await fetch(`${HOST}/${url}`, {
