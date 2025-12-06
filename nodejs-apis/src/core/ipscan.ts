@@ -1,5 +1,7 @@
 import { exec } from 'child_process';
+import createMDNSServer from 'mdns-server';
 import 'dotenv/config';
+import dnssd, { ServiceType } from 'dnssd';
 
 const isWindows = process.platform === 'win32';
 
@@ -115,3 +117,97 @@ export async function scanNetworkForDevices() {
 
     return devices;
 }
+
+/*
+const client = new Client();
+
+client.on('response', (headers, statusCode, rinfo) => {
+    console.log(`📡 SSDP: ${headers.ST} at ${rinfo.address}`);
+});
+client.search('ssdp:all');
+*/
+// Discover all advertised services
+/*
+const browser = new dnssd.Browser(
+    new dnssd.ServiceType('_services._dns-sd._udp')
+);
+
+browser.on('serviceUp', (service) => {
+    console.log(`🟢 Found mDNS service: ${service.name}`);
+    console.log(`  Type: ${service.type}`);
+    console.log(`  Host: ${service.host}`);
+    console.log(`  IP: ${service.addresses?.join(', ')}`);
+    console.log(`  Port: ${service.port}`);
+});
+
+browser.start();
+*/
+/*
+const browser = mdns.createBrowser(mdns.tcp('http'));
+browser.on('serviceUp', (service) => {
+    console.log('🟢 Found:', service.name);
+    console.log('  Host:', service.host);
+    console.log('  IP:', service.addresses);
+});
+browser.start();
+*/
+
+/*
+const bonjour = new Bonjour();
+
+const browser = bonjour.find({ type: 'hap' }); // HomeKit devices
+
+browser.on('up', (service) => {
+    console.log(`🟢 Found: ${service.name}`);
+    console.log(`  Host: ${service.host}`);
+    console.log(`  IPs: ${service.addresses}`);
+    console.log(`  Port: ${service.port}`);
+});
+*/
+
+async function discoverAll() {
+    return new Promise((resolve) => {
+        const promises = [];
+        const browser = new dnssd.Browser(dnssd.all());
+        browser.on('serviceUp', (service) => {
+            promises.push(
+                new Promise((r) => {
+                    const b = new dnssd.Browser(
+                        ServiceType[service.protocol](service.name)
+                    );
+                    //b.on('serviceUp', ({ fullname, name, type, host, port, addresses }) => {
+                    //console.log({ fullname, name, type, host, port, addresses });
+                    //});
+                    b.start();
+                    setTimeout(() => r(b.list()), 15000);
+                })
+            );
+        });
+
+        browser.start();
+
+        setTimeout(async () => {
+            const res = await Promise.allSettled(promises);
+            resolve(
+                res.flatMap((r: any) => {
+                    return r.value.map(
+                        ({ fullname, name, type, host, port, addresses }) => {
+                            return {
+                                fullname,
+                                name,
+                                type,
+                                host,
+                                port,
+                                addresses,
+                            };
+                        }
+                    );
+                })
+            );
+        }, 20000);
+    });
+}
+
+(async () => {
+    console.log(await discoverAll());
+})();
