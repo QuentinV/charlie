@@ -1,7 +1,7 @@
 import { cs } from '../core/db';
 import { RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
-import { getPlaylistById, searchAlbums } from './service';
+import { getPlaylistById, getSongById, searchAlbums } from './service';
 
 const routes: RestApis = {
     'musics/playlists': {
@@ -39,11 +39,17 @@ const routes: RestApis = {
             description: 'Change a playlist',
         },
     },
-    'musics/playlist/:pid/songs/:sid': {
+    'musics/playlist/:pid/songs': {
         post: {
-            handler: async ({ params }) => {
-                const playlist = await getPlaylistById(params.pid);
-                playlist.songs.push(params.sid);
+            handler: async ({ params, body }) => {
+                const playlist = await cs.musics_playlists.findOne({
+                    _id: params.pid,
+                });
+                const song = await getSongById(body.songId);
+                playlist.songs.push({
+                    id: uuidV4(),
+                    songPath: song.path,
+                });
                 await cs.musics_playlists.updateOne(
                     { _id: params.id },
                     { $set: { songs: playlist.songs } }
@@ -53,13 +59,36 @@ const routes: RestApis = {
         },
         delete: {
             handler: async ({ params }) => {
-                const playlist = await getPlaylistById(params.pid);
+                const playlist = await cs.musics_playlists.findOne({
+                    _id: params.pid,
+                });
+                const song = await getSongById(params.sid);
                 await cs.musics_playlists.updateOne(
                     { _id: params.id },
                     {
                         $set: {
                             songs: playlist.songs.filter(
                                 (s) => s !== params.sid
+                            ),
+                        },
+                    }
+                );
+            },
+            description: 'Delete a song from a playlist',
+        },
+    },
+    'musics/playlist/:pid/songs/:mid': {
+        delete: {
+            handler: async ({ params }) => {
+                const playlist = await cs.musics_playlists.findOne({
+                    _id: params.pid,
+                });
+                await cs.musics_playlists.updateOne(
+                    { _id: params.id },
+                    {
+                        $set: {
+                            songs: playlist.songs.filter(
+                                (s) => s.id !== params.mid
                             ),
                         },
                     }
@@ -84,9 +113,7 @@ const routes: RestApis = {
     },
     'musics/songs/:id': {
         get: {
-            handler: async ({ params }) => ({
-                res: true,
-            }),
+            handler: async ({ params }) => getSongById(params.id),
             description: 'Get song metadata',
         },
     },

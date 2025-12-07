@@ -30,27 +30,44 @@ function getFilesRecursive(dir: string, exts: string[]): string[] {
 function fetchAllMusicsFiles() {
     const musicDir = process.env.MUSICS_DIR + '\\';
     const extensions = ['.mp3', '.flac'];
-    const allMusicFiles = getFilesRecursive(musicDir, extensions).reduce(
-        (prev, v) => {
-            v = v.substring(0, v.lastIndexOf('.'));
-            const path = v.replace(musicDir, '');
-            const labels = path.split('\\').filter((s) => !!s.trim());
-            prev[path] = {
-                path,
-                labels,
-                name: labels.join('_'),
-            };
-            return prev;
-        },
-        {}
-    );
-    return allMusicFiles;
+    let i = 0;
+
+    const songsByPaths = {};
+    const songsById = {};
+
+    const files = getFilesRecursive(musicDir, extensions);
+    for (let i = 0; i < files.length; ++i) {
+        let v = files[i];
+        v = v.substring(0, v.lastIndexOf('.'));
+
+        const path = v.replace(musicDir, '');
+        const labels = path.split('\\').filter((s) => !!s.trim());
+
+        const song = {
+            path,
+            labels,
+            name: labels.join('_'),
+            id: i++,
+        };
+
+        songsByPaths[song.path] = song;
+        songsById[song.id] = song;
+    }
+
+    return { songsById, songsByPaths };
 }
 
-const MUSICS = process.env.MUSICS_DIR ? fetchAllMusicsFiles() : null;
+export const { songsById, songsByPaths } = process.env.MUSICS_DIR
+    ? fetchAllMusicsFiles()
+    : {};
+
+interface CompleteSong extends Song {
+    labels: string[];
+}
 
 interface Song {
-    file: string;
+    id: number;
+    path: string;
     name: string;
 }
 
@@ -59,11 +76,16 @@ interface Playlist {
     songs: Song[];
 }
 
+export async function getSongById(id: string): Promise<CompleteSong> {
+    return songsById[id];
+}
+
 export async function getPlaylistById(id: string): Promise<Playlist> {
     const playlist = await cs.musics_playlists.findOne({ _id: id });
     playlist.songs = playlist.songs.map((s: string) => ({
-        file: s,
-        name: MUSICS[s]?.name,
+        id: songsByPaths[s]?.id,
+        path: s,
+        name: songsByPaths[s]?.name,
     }));
     return playlist;
 }
@@ -71,7 +93,7 @@ export async function getPlaylistById(id: string): Promise<Playlist> {
 export async function searchAlbums({ q }: { q: string }) {
     q = q?.trim()?.toLowerCase();
     if (!q) return;
-    return Object.values(MUSICS).filter(
+    return Object.values(songsById).filter(
         (v: any) => v.name.toLowerCase().indexOf(q) !== -1
     );
 }
