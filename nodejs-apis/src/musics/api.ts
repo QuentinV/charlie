@@ -68,26 +68,32 @@ const routes: RestApis = {
             description: 'Delete a song from a playlist',
         },
     },
-    musics: {
+    'musics/songs': {
         get: {
             handler: async ({ query }) => searchAlbums(query),
-            description: 'Search musics from albums',
+            description: 'Search songs from albums',
         },
     },
-    'musics/:id/stream': {
+    'musics/songs/:id/stream': {
         get: {
             handler: async ({ params }) => ({
                 res: true,
             }),
-            description: 'Stream a music',
+            description: 'Stream a song',
         },
     },
-    'musics/:id': {
+    'musics/songs/:id': {
         get: {
             handler: async ({ params }) => ({
                 res: true,
             }),
-            description: 'Get music metadata',
+            description: 'Get song metadata',
+        },
+    },
+    'musics/songs/onlinesearch': {
+        get: {
+            handler: async ({ query }) => [],
+            description: 'Search a song online',
         },
     },
 };
