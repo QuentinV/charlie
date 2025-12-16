@@ -143,5 +143,6 @@ __pycache__
 .vscode
 /esp32
 
+db/
 logs.txt
 TODO.md
