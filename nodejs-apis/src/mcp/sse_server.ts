@@ -28,6 +28,11 @@ export async function buildMcpServer(app: any) {
                 },
                 async (params: any) => {
                     try {
+                        console.log(
+                            `[MCP Tools] calling ${k} with ${JSON.stringify(
+                                params
+                            )}`
+                        );
                         const res = await c.exec(params);
                         if (res) {
                             return {

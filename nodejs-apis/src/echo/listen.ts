@@ -14,9 +14,9 @@ async function execute({ ip }) {
         console.log('audio received');
         const text = await stt(audioBuffer);
         console.log('spoken text', text);
-        //const result = await askDirect(text);
-        //console.log('result', result);
-        const resultAudio = await tts({ text });
+        const result = await askDirect(text);
+        console.log('result', result);
+        const resultAudio = await tts({ text: result });
         await send({ ip, buffer: Buffer.from(resultAudio) });
     } catch (e) {
         console.log(e);

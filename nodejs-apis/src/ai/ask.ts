@@ -28,7 +28,10 @@ export async function ask(question: string): Promise<AskResponse> {
     return res.json();
 }
 
-export async function askDirect(question: string) {
+export async function askDirect(question: string): Promise<string> {
     const json = await ask(question);
-    return json.output_entries[json.output_entries.length - 1]?.content;
+    return (
+        json.output_entries[json.output_entries.length - 1]?.content ??
+        'Je ne sais pas'
+    );
 }

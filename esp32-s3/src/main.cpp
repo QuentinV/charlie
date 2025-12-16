@@ -56,6 +56,7 @@
 #define MOTION_SENSOR_RETRIGGER 60
 #define SENSOR_REPORT_INTERVAL 3600 // 1h
 #define SCREEN_DISPLAY_TIME 10
+#define WAKE_UP_WORD_ACCURACY 0.5f
 
 // preferences
 Preferences prefs;
@@ -284,6 +285,44 @@ void displayStatusOnScreen(tm *timeinfo) {
   display.setTextSize(1);
 }
 
+void captureMicSamplesTask(void* arg) {
+  continuous_record = true;
+  const int32_t i2s_bytes_to_read = (uint32_t)arg;
+  size_t bytes_read = i2s_bytes_to_read;
+
+  while (continuous_record && !mute) {
+    /* read data at once from i2s */
+    i2s_read(I2S_MIC_PORT, (void*)sampleBuffer, i2s_bytes_to_read, &bytes_read, 100);
+
+    if (bytes_read <= 0) {
+      ei_printf("Error in I2S read : %d", bytes_read);
+    }
+    else {
+        if (bytes_read < i2s_bytes_to_read) {
+          ei_printf("Partial I2S read");
+        }
+
+        // scale the data (otherwise the sound is too quiet)
+        for (int x = 0; x < i2s_bytes_to_read/2; x++) {
+            sampleBuffer[x] = (int16_t)(sampleBuffer[x]) * 8;
+        }
+
+        if (mute || !continuous_record) {
+          break;   
+        }
+
+        audio_inference_callback(i2s_bytes_to_read);
+    }
+  }
+  vTaskDelete(NULL);
+}
+
+void startMicCaptureSamples() {
+  pixels.setPixelColor(0, pixels.Color(0, 0, 0));
+  pixels.show();
+  xTaskCreate(captureMicSamplesTask, "CaptureMicSamples", 1024 * 32, (void*)sample_buffer_size, 10, NULL);
+}
+
 void sendMicAudioTask(void *arg) {
   Serial.println("sendMicAudioTask - start");
 
@@ -294,21 +333,13 @@ void sendMicAudioTask(void *arg) {
 
   for (;;) {
     time_t t = time(NULL);
-    if (mute) {
-      vTaskDelay(2000 / portTICK_PERIOD_MS);
-       
-      silenceStart = 0;
-      startTime = time(NULL);
-      continue;
-    }
     if (startTime - t > 20) {
       Serial.println("sendMicAudioTask - timeout reached");
       WiFiUDP udp;
       udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
       udp.print("END");
       udp.endPacket();
-      mute = true;
-      continue;
+      break;
     }
 
     Serial.println("sendMicAudioTask - listening");
@@ -340,9 +371,7 @@ void sendMicAudioTask(void *arg) {
         udp.print("END");
         udp.endPacket();
         
-        // break;
-        mute = true;
-        continue;
+        break;
       }
     } else {
       silenceStart = 0;
@@ -355,40 +384,8 @@ void sendMicAudioTask(void *arg) {
     udp.endPacket();
   }
 
-  //startMicCaptureSamples();
+  startMicCaptureSamples();
   
-  vTaskDelete(NULL);
-}
-
-void captureMicSamplesTask(void* arg) {
-  continuous_record = true;
-  const int32_t i2s_bytes_to_read = (uint32_t)arg;
-  size_t bytes_read = i2s_bytes_to_read;
-
-  while (continuous_record && !mute) {
-    /* read data at once from i2s */
-    i2s_read(I2S_MIC_PORT, (void*)sampleBuffer, i2s_bytes_to_read, &bytes_read, 100);
-
-    if (bytes_read <= 0) {
-      ei_printf("Error in I2S read : %d", bytes_read);
-    }
-    else {
-        if (bytes_read < i2s_bytes_to_read) {
-          ei_printf("Partial I2S read");
-        }
-
-        // scale the data (otherwise the sound is too quiet)
-        for (int x = 0; x < i2s_bytes_to_read/2; x++) {
-            sampleBuffer[x] = (int16_t)(sampleBuffer[x]) * 8;
-        }
-
-        if (mute || !continuous_record) {
-          break;   
-        }
-
-        audio_inference_callback(i2s_bytes_to_read);
-    }
-  }
   vTaskDelete(NULL);
 }
 
@@ -426,6 +423,9 @@ void handleTouchTask(void* arg) {
       touchStart = t;
     } else if (touch == 0 && touchStart != 0) {
       mute = !mute;
+      if (!mute) {
+        startMicCaptureSamples();
+      }
       
       pixels.setPixelColor(0, pixels.Color(mute ? 255 : 0, 0, 0));
       pixels.show();
@@ -484,15 +484,13 @@ void receiveAndPlayAudioTask(void *arg) {
   } 
 }
 
-void startMicCaptureSamples() {
-  xTaskCreate(captureMicSamplesTask, "CaptureMicSamples", 1024 * 32, (void*)sample_buffer_size, 10, NULL);
-}
-
 void startMicUserRecord() {
   xTaskCreate(sendMicAudioTask, "SendMicAudioTask", 1024 * 8, NULL, 10, NULL);
 }
 
 void onWakeWordDetected() {
+  pixels.setPixelColor(0, pixels.Color(255, 255, 255));
+  pixels.show();
   continuous_record = false;
   startMicUserRecord();
 }
@@ -522,7 +520,7 @@ void wakeUpWordTask(void *arg) {
     }
     
     float confidence = result.classification[0].value;
-    if (confidence > 0.8f) {
+    if (confidence > WAKE_UP_WORD_ACCURACY) {
         onWakeWordDetected();
     } else {
       // print the predictions
@@ -602,10 +600,7 @@ void setup() {
   xTaskCreate( handleTouchTask, "TouchSensor", 1800, NULL, 1, &touchTaskHandle );
   xTaskCreate( handleMotionSensorTask, "MotionSensor", 2200, NULL, 1, &motionSensorHandle );
   xTaskCreate( receiveAndPlayAudioTask, "ReceivePlayAudio", 1024 * 8, NULL, 1, &receivePlayAudioHandle );
-  //xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
-  
-  mute = true;
-  startMicUserRecord();
+  xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
 }
 
 void loop() { 
