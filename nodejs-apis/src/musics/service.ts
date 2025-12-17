@@ -138,13 +138,21 @@ export async function streamMusic(
     return res;
 }
 
+let currentPlayer = null;
+export function stopPlayMusic() {
+    if (currentPlayer) {
+        currentPlayer.kill('SIGKILL'); // or "SIGTERM"
+        currentPlayer = null;
+    }
+}
+
 export async function playMusic(id: string) {
+    stopPlayMusic();
+
     const song = await getSongById(id);
     const path = musicDir + song.path;
 
-    const player = spawn('ffplay', ['-nodisp', '-autoexit', path], {
+    currentPlayer = spawn('ffplay', ['-nodisp', '-autoexit', path], {
         stdio: 'inherit',
     });
-
-    player.on('exit', () => console.log('Playback finished'));
 }

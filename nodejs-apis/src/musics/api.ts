@@ -6,6 +6,7 @@ import {
     getSongById,
     playMusic,
     searchLibrary,
+    stopPlayMusic,
     streamMusic,
 } from './service';
 
@@ -114,11 +115,18 @@ const routes: RestApis = {
     },
     'musics/songs/:id/play': {
         get: {
-            fullHandler: async ({ params }, res) => {
+            handler: async ({ params }) => {
                 await playMusic(params.id);
-                res.sendStatus(204);
             },
-            description: 'Stream a song',
+            description: 'Start a song from the server',
+        },
+    },
+    'musics/songs/play': {
+        delete: {
+            handler: async () => {
+                stopPlayMusic();
+            },
+            description: 'Stop songs playing on server',
         },
     },
     'musics/songs/:id': {
