@@ -27,7 +27,7 @@ function getFilesRecursive(dir: string, exts: string[]): string[] {
     return fileList;
 }
 
-const musicDir = process.env.MUSICS_DIR + '\\';
+const musicDir = process.env.MUSICS_DIR + '/';
 
 function fetchAllMusicsFiles() {
     const extensions = ['.mp3', '.flac'];
@@ -43,7 +43,7 @@ function fetchAllMusicsFiles() {
         const path = v.replace(musicDir, '');
         const labels = path
             .substring(0, path.lastIndexOf('.'))
-            .split('\\')
+            .split('/')
             .filter((s) => !!s.trim());
 
         const song = {
