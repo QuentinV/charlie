@@ -81,7 +81,7 @@ export async function sendEmailNotification(notification: Notification) {
     ) {
         return;
     }
-    const html = notification.body.replace(/\n/g, '<br/>');
+    const html = notification.body.replace(/(\n|\\n)/g, '<br/>');
     await emailTransporter.sendMail({
         from: `"Charlie Assistant" <${process.env.EMAIL_NOTIFICATION_EMAIL}>`,
         to: process.env.EMAIL_NOTIFICATION_TARGET_EMAIL,
