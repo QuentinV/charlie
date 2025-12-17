@@ -26,7 +26,7 @@ async function execute({ ip }) {
 }
 
 // UDP Server for audio
-const PORT_UDP_AUDIO = 12345;
+const PORT_UDP_AUDIO = 9303;
 const audioServer = dgram.createSocket('udp4');
 audioServer.on('message', async (data, rinfo) => {
     const msg = data.toString('utf-8');

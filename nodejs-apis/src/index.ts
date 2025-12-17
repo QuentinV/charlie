@@ -7,7 +7,6 @@ import cors from 'cors';
 import managerApis from './manager';
 import { getProvidersRestApis } from './devices';
 import { buildMcpServer } from './mcp/sse_server';
-import { RestApiHandler } from './types';
 import { HttpError } from './errors';
 import swaggerUi from 'swagger-ui-express';
 import { defaultApiPath, getSwaggerDoc } from './swagger';

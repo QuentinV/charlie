@@ -1,9 +1,30 @@
 services:
+    api:
+        container_name: api
+        image: 'node:22'
+        user: 'node'
+        working_dir: /home/node/app
+        environment:
+            - NODE_ENV=production
+        volumes:
+            - ./nodejs-apis:/home/node/app
+        expose:
+            - '3005'
+        ports:
+            - '9300:9300' # http server
+            - '9303:9303' # audio udp
+            - '9304:9304' # mqtt server
+        command: 'yarn start'
+        depends_on:
+            - db
+        restart: unless-stopped
+        networks:
+            - internal
     ai-agents:
         build: ./python-apis
         container_name: ai-agents
         ports:
-            - '8000:8000'
+            - '9301:8000'
         volumes:
             - ./python-apis/app:/app
             - ./nodejs-apis:/mcp-server
@@ -12,6 +33,8 @@ services:
             - AGENT_ID=${AGENT_ID}
             - SSE_HOST=http://host.docker.internal:9300/sse
         restart: unless-stopped
+        networks:
+            - internal
     db:
         container_name: db
         image: mongo
@@ -23,3 +46,11 @@ services:
         environment:
             - MONGO_INITDB_ROOT_USERNAME=
             - MONGO_INITDB_ROOT_PASSWORD=
+        networks:
+            - internal
+
+networks:
+    internal:
+        driver: bridge
+    charlieExternal:
+        external: true
