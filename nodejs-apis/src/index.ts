@@ -11,7 +11,10 @@ import { RestApiHandler } from './types';
 import { HttpError } from './errors';
 import swaggerUi from 'swagger-ui-express';
 import { defaultApiPath, getSwaggerDoc } from './swagger';
-import { registerNotificationApi } from './core/notifications';
+import {
+    registerNotificationApi,
+    sendEmailNotification,
+} from './core/notifications';
 
 const app = express();
 

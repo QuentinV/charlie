@@ -1744,6 +1744,11 @@ node-tradfri-client@^3.2.0:
     node-coap-client "^2.1.0"
     reflect-metadata "^0.1.13"
 
+nodemailer@^7.0.11:
+  version "7.0.11"
+  resolved "https://registry.yarnpkg.com/nodemailer/-/nodemailer-7.0.11.tgz#5f7b06afaec20073cff36bea92d1c7395cc3e512"
+  integrity sha512-gnXhNRE0FNhD7wPSCGhdNh46Hs6nm+uTyg+Kq0cZukNQiYdnCsoQjodNP9BQVG9XrcK/v6/MgpAPBUFyzh9pvw==
+
 nodemon@^3.1.10:
   version "3.1.10"
   resolved "https://registry.yarnpkg.com/nodemon/-/nodemon-3.1.10.tgz#5015c5eb4fffcb24d98cf9454df14f4fecec9bc1"

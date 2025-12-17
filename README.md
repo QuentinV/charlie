@@ -37,6 +37,10 @@ MACVENDORS_APIKEY=(optional)
 SUBNET_IP=192.168.1
 TORRENT_DELUGE_HOST=(optional)
 TORRENT_DELUGE_PASSWORD=(optional)
+EMAIL_NOTIFICATION_USER=
+EMAIL_NOTIFICATION_EMAIL=
+EMAIL_NOTIFICATION_PASSWORD=
+EMAIL_NOTIFICATION_TARGET_EMAIL=
 ```
 
 -   [Get a mistral API key](https://console.mistral.ai/build/agents?workspace_dialog=apiKeys)
