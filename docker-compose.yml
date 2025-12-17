@@ -1,5 +1,5 @@
 services:
-    api:
+    charlie-api:
         container_name: api
         image: 'node:22'
         user: 'node'
@@ -21,7 +21,7 @@ services:
         restart: unless-stopped
         networks:
             - internal
-    ai-agents:
+    charlie-ai-agents:
         build: ./python-apis
         container_name: ai-agents
         ports:
@@ -36,7 +36,7 @@ services:
         restart: unless-stopped
         networks:
             - internal
-    db:
+    charlie-db:
         container_name: db
         image: mongo
         ports:
