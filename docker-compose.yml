@@ -8,6 +8,7 @@ services:
             - NODE_ENV=production
         volumes:
             - ./nodejs-apis:/home/node/app
+            - ~/media/musics:/musics
         expose:
             - '3005'
         ports:
