@@ -66,14 +66,26 @@ export async function getSwaggerDoc() {
                           }
                         : undefined,
                 tags: [tag],
-                parameters: pathParams.map((name) => ({
-                    name,
-                    in: 'path',
-                    required: true,
-                    schema: {
-                        type: 'string',
-                    },
-                })),
+                parameters: [
+                    ...pathParams.map((name) => ({
+                        name,
+                        in: 'path',
+                        required: true,
+                        schema: {
+                            type: 'string',
+                        },
+                    })),
+                    ...Object.entries(endpoint.querySchema ?? {}).map(
+                        ([k, { type, required }]: [string, any]) => ({
+                            name: k,
+                            in: 'query',
+                            required: required ?? true,
+                            schema: {
+                                type,
+                            },
+                        })
+                    ),
+                ],
             };
         });
     });

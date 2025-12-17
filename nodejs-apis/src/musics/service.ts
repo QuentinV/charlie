@@ -27,8 +27,9 @@ function getFilesRecursive(dir: string, exts: string[]): string[] {
     return fileList;
 }
 
+const musicDir = process.env.MUSICS_DIR + '\\';
+
 function fetchAllMusicsFiles() {
-    const musicDir = process.env.MUSICS_DIR + '\\';
     const extensions = ['.mp3', '.flac'];
     let i = 0;
 
@@ -38,10 +39,12 @@ function fetchAllMusicsFiles() {
     const files = getFilesRecursive(musicDir, extensions);
     for (let i = 0; i < files.length; ++i) {
         let v = files[i];
-        v = v.substring(0, v.lastIndexOf('.'));
 
         const path = v.replace(musicDir, '');
-        const labels = path.split('\\').filter((s) => !!s.trim());
+        const labels = path
+            .substring(0, path.lastIndexOf('.'))
+            .split('\\')
+            .filter((s) => !!s.trim());
 
         const song = {
             path,
@@ -82,7 +85,7 @@ export async function getSongById(id: string): Promise<CompleteSong> {
 
 export async function getPlaylistById(id: string): Promise<Playlist> {
     const playlist = await cs.musics_playlists.findOne({ _id: id });
-    playlist.songs = playlist.songs.map((s: string) => ({
+    playlist.songs = playlist?.songs?.map((s: string) => ({
         id: songsByPaths[s]?.id,
         path: s,
         name: songsByPaths[s]?.name,
@@ -90,10 +93,46 @@ export async function getPlaylistById(id: string): Promise<Playlist> {
     return playlist;
 }
 
-export async function searchAlbums({ q }: { q: string }) {
+export async function searchLibrary({ q }: { q: string }) {
     q = q?.trim()?.toLowerCase();
     if (!q) return;
     return Object.values(songsById).filter(
         (v: any) => v.name.toLowerCase().indexOf(q) !== -1
     );
+}
+
+interface StreamMusicRes {
+    stream: any;
+    size: number;
+    type: string;
+    range?: string;
+}
+
+export async function streamMusic(
+    id: string,
+    range: string
+): Promise<StreamMusicRes> {
+    const song = await getSongById(id);
+    const path = musicDir + song.path;
+    const stats = fs.statSync(path);
+
+    const res: any = {
+        type: song.path.endsWith('.flac') ? 'audio/flac' : 'audio/mpeg',
+    };
+
+    if (!range) {
+        res.size = stats.size;
+        res.stream = fs.createReadStream(path);
+        return res;
+    }
+
+    // Parse Range header: e.g. "bytes=12345-"
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : stats.size - 1;
+
+    res.stream = fs.createReadStream(path, { start, end });
+    res.size = end - start + 1;
+    res.range = `bytes ${start}-${end}/${stats.size}`;
+    return res;
 }

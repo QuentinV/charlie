@@ -7,19 +7,27 @@ export interface RestApi {
 }
 
 export interface RestEndpointDescriptor {
-    handler: RestApiHandler;
+    fullHandler?: RestApiFullHandler;
+    handler?: RestApiHandler;
     description?: string;
+    querySchema?: object;
 }
 
 export interface RestApiHandlerParams {
     query: any;
     body: any;
     params: any;
+    headers: { [key: string]: string };
 }
 
 export type RestApiHandler = (
     params?: RestApiHandlerParams
 ) => Promise<void | undefined | object>;
+
+export type RestApiFullHandler = (
+    params: RestApiHandlerParams,
+    res: any
+) => Promise<void>;
 
 export type RestApis = { [route: string]: RestApi };
 

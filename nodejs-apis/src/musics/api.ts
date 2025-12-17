@@ -1,7 +1,12 @@
 import { cs } from '../core/db';
 import { RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
-import { getPlaylistById, getSongById, searchAlbums } from './service';
+import {
+    getPlaylistById,
+    getSongById,
+    searchLibrary,
+    streamMusic,
+} from './service';
 
 const routes: RestApis = {
     'musics/playlists': {
@@ -46,49 +51,28 @@ const routes: RestApis = {
                     _id: params.pid,
                 });
                 const song = await getSongById(body.songId);
-                playlist.songs.push({
-                    id: uuidV4(),
-                    songPath: song.path,
-                });
+                if (!playlist.songs) playlist.songs = [];
+                playlist.songs.push(song.path);
+                console.log(playlist);
                 await cs.musics_playlists.updateOne(
-                    { _id: params.id },
+                    { _id: params.pid },
                     { $set: { songs: playlist.songs } }
                 );
             },
             description: 'Add a song to a playlist',
         },
         delete: {
-            handler: async ({ params }) => {
+            handler: async ({ params, body }) => {
                 const playlist = await cs.musics_playlists.findOne({
                     _id: params.pid,
                 });
-                const song = await getSongById(params.sid);
+                const song = await getSongById(body.songId);
                 await cs.musics_playlists.updateOne(
-                    { _id: params.id },
+                    { _id: params.pid },
                     {
                         $set: {
                             songs: playlist.songs.filter(
-                                (s) => s !== params.sid
-                            ),
-                        },
-                    }
-                );
-            },
-            description: 'Delete a song from a playlist',
-        },
-    },
-    'musics/playlist/:pid/songs/:mid': {
-        delete: {
-            handler: async ({ params }) => {
-                const playlist = await cs.musics_playlists.findOne({
-                    _id: params.pid,
-                });
-                await cs.musics_playlists.updateOne(
-                    { _id: params.id },
-                    {
-                        $set: {
-                            songs: playlist.songs.filter(
-                                (s) => s.id !== params.mid
+                                (s) => s !== song.path
                             ),
                         },
                     }
@@ -99,15 +83,31 @@ const routes: RestApis = {
     },
     'musics/songs': {
         get: {
-            handler: async ({ query }) => searchAlbums(query),
-            description: 'Search songs from albums',
+            handler: async ({ query }) => searchLibrary(query),
+            description: 'Search songs from library',
+            querySchema: { q: { type: 'string' } },
         },
     },
     'musics/songs/:id/stream': {
         get: {
-            handler: async ({ params }) => ({
-                res: true,
-            }),
+            fullHandler: async ({ params, headers }, res) => {
+                const data = await streamMusic(params.id, headers.range);
+                if (data.range) {
+                    res.writeHead(206, {
+                        'Content-Range': data.range,
+                        'Accept-Ranges': 'bytes',
+                        'Content-Length': data.size,
+                        'Content-Type': data.type,
+                    });
+                } else {
+                    res.writeHead(200, {
+                        'Content-Length': data.size,
+                        'Content-Type': data.type,
+                    });
+                }
+
+                data.stream.pipe(res);
+            },
             description: 'Stream a song',
         },
     },
