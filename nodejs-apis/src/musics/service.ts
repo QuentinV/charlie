@@ -2,6 +2,7 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { cs } from '../core/db';
+import { spawn } from 'child_process';
 
 function getFilesRecursive(dir: string, exts: string[]): string[] {
     const fileList: string[] = [];
@@ -135,4 +136,15 @@ export async function streamMusic(
     res.size = end - start + 1;
     res.range = `bytes ${start}-${end}/${stats.size}`;
     return res;
+}
+
+export async function playMusic(id: string) {
+    const song = await getSongById(id);
+    const path = musicDir + song.path;
+
+    const player = spawn('./lib/ffplay', ['-nodisp', '-autoexit', path], {
+        stdio: 'inherit',
+    });
+
+    player.on('exit', () => console.log('Playback finished'));
 }

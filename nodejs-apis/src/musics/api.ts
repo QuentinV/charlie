@@ -4,6 +4,7 @@ import { v4 as uuidV4 } from 'uuid';
 import {
     getPlaylistById,
     getSongById,
+    playMusic,
     searchLibrary,
     streamMusic,
 } from './service';
@@ -107,6 +108,15 @@ const routes: RestApis = {
                 }
 
                 data.stream.pipe(res);
+            },
+            description: 'Stream a song',
+        },
+    },
+    'musics/songs/:id/play': {
+        get: {
+            fullHandler: async ({ params }, res) => {
+                await playMusic(params.id);
+                res.sendStatus(204);
             },
             description: 'Stream a song',
         },
