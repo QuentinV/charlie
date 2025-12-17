@@ -142,7 +142,7 @@ export async function playMusic(id: string) {
     const song = await getSongById(id);
     const path = musicDir + song.path;
 
-    const player = spawn('./lib/ffplay', ['-nodisp', '-autoexit', path], {
+    const player = spawn('ffplay', ['-nodisp', '-autoexit', path], {
         stdio: 'inherit',
     });
 
