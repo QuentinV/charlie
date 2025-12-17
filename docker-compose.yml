@@ -4,6 +4,7 @@ services:
         container_name: charlie-api
         environment:
             - NODE_ENV=production
+            - PULSE_SERVER=unix:/tmp/pulse/native
         volumes:
             - ./nodejs-apis:/app
             - ~/media/musics:/musics
