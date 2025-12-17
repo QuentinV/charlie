@@ -1,16 +1,12 @@
 services:
     api:
+        build: ./nodejs-apis
         container_name: charlie-api
-        image: 'node:22'
-        user: 'node'
-        working_dir: /home/node/app
         environment:
             - NODE_ENV=production
         volumes:
-            - ./nodejs-apis:/home/node/app
+            - ./nodejs-apis:/app
             - ~/media/musics:/musics
-        expose:
-            - '3005'
         ports:
             - '9300:9300' # http server
             - '9303:9303' # audio udp
