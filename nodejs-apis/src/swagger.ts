@@ -18,6 +18,9 @@ export async function getSwaggerDoc() {
             {
                 url: `http://localhost:9300`,
             },
+            {
+                url: `http://193.168.1.84:9300`,
+            },
         ],
         paths: {},
     };
