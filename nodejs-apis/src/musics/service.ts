@@ -159,7 +159,7 @@ class AudioPlayer {
         volume?: number;
         offset?: number;
     }) {
-        this.vol = volume ?? 100;
+        this.vol = volume ?? 50;
         this.stop();
 
         if (!path) {
