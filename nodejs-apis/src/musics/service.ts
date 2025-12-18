@@ -181,6 +181,8 @@ class AudioPlayer {
         if (state === undefined) {
             state = !this.timer;
         }
+
+        console.log('toggleTimer', state);
         if (state) {
             this.timer = setInterval(() => {
                 this.time = this.time + 1;
@@ -193,6 +195,7 @@ class AudioPlayer {
 
     stop() {
         if (this.currentPlayer) {
+            console.log('stop');
             this.currentPlayer.kill('SIGTERM');
             this.currentPlayer = null;
             this.time = 0;
@@ -202,6 +205,7 @@ class AudioPlayer {
 
     pauseResume() {
         if (this.currentPlayer) {
+            console.log('pauseResume');
             this.currentPlayer.stdin.write('p');
             this.toggleTimer();
         }
@@ -209,6 +213,7 @@ class AudioPlayer {
 
     volumeUp() {
         if (this.currentPlayer) {
+            console.log('volumeUp');
             this.currentPlayer.stdin.write('+');
             this.volume = Math.min(this.volume + 5, 100);
         }
@@ -216,6 +221,7 @@ class AudioPlayer {
 
     volumeDown() {
         if (this.currentPlayer) {
+            console.log('volumeDown');
             this.currentPlayer.stdin.write('-');
             this.volume = Math.max(this.volume - 5, 0);
         }
@@ -223,6 +229,7 @@ class AudioPlayer {
 
     seekForward10s() {
         if (this.currentPlayer) {
+            console.log('seekForward10s');
             this.currentPlayer.stdin.write('\x1b[C'); // Right arrow
             this.time = this.time + 10;
         }
@@ -230,6 +237,7 @@ class AudioPlayer {
 
     seekBack10s() {
         if (this.currentPlayer) {
+            console.log('seekBack10s');
             this.currentPlayer.stdin.write('\x1b[D'); // Left arrow
             this.time = this.time - 10;
         }
