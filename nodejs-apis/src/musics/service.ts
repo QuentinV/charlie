@@ -160,9 +160,6 @@ class AudioPlayer {
         }
 
         const path = musicDir + song.path;
-        /*this.currentPlayer = spawn('ffplay', ['-nodisp', '-autoexit', path], {
-            stdio: 'inherit',
-        });*/
 
         const args = ['-nodisp', '-autoexit', '-volume', String(volume)];
         if (offset > 0) {
@@ -170,9 +167,8 @@ class AudioPlayer {
         }
         args.push(path);
 
-        console.log(args);
         this.currentPlayer = spawn('ffplay', args, {
-            stdio: ['pipe', 'inherit', 'inherit'],
+            stdio: ['inherit'],
             detached: true,
         });
 
