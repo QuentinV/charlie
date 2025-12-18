@@ -172,7 +172,7 @@ class AudioPlayer {
 
         console.log(args);
         this.currentPlayer = spawn('ffplay', args, {
-            stdio: ['ignore', 'inherit', 'inherit'],
+            stdio: ['pipe', 'inherit', 'inherit'],
             detached: true,
         });
 
