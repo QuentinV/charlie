@@ -172,7 +172,8 @@ class AudioPlayer {
 
         console.log(args);
         this.currentPlayer = spawn('ffplay', args, {
-            stdio: ['pipe', 'inherit', 'inherit'],
+            stdio: ['ignore', 'inherit', 'inherit'],
+            detached: true,
         });
 
         this.toggleTimer();
