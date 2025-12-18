@@ -103,10 +103,14 @@ const songsFuse = new Fuse(Object.values(songsById), {
     threshold: 0.3, // lower = stricter
 });
 
-export async function searchLibrary({ q }: { q: string }) {
+export async function searchLibrary({
+    q,
+}: {
+    q: string;
+}): Promise<CompleteSong[]> {
     q = q?.trim();
     if (!q) return;
-    return songsFuse.search(q).map((result) => result.item);
+    return songsFuse.search(q).map((result) => result.item as CompleteSong);
 }
 
 interface StreamMusicRes {
@@ -150,7 +154,7 @@ class AudioPlayer {
     time: number;
     timer: any;
     vol: number;
-    path: string;
+    song: Song;
 
     constructor() {
         this.currentPlayer = null;
@@ -159,23 +163,23 @@ class AudioPlayer {
     }
 
     play({
-        path,
+        song,
         volume,
         offset,
     }: {
-        path?: string;
+        song?: Song;
         volume?: number;
         offset?: number;
     }) {
         this.vol = volume ?? this.vol;
         this.stop();
 
-        if (!path) {
+        if (!song) {
             return;
         }
 
-        const fullPath = pathLib.join(musicDir, path);
-        this.path = path;
+        const fullPath = pathLib.join(musicDir, song.path);
+        this.song = song;
 
         const args = ['-nodisp', '-autoexit', '-volume', String(this.vol)];
         if ((offset ?? 0) > 0) {
@@ -221,7 +225,7 @@ class AudioPlayer {
     resume() {
         if (this.currentPlayer) return;
         this.play({
-            path: this.path,
+            song: this.song,
             volume: this.vol,
             offset: this.time,
         });
@@ -230,7 +234,7 @@ class AudioPlayer {
     volume(volume: number) {
         if (!this.currentPlayer) return;
         this.play({
-            path: this.path,
+            song: this.song,
             volume: volume > 100 ? 100 : volume < 0 ? 0 : volume,
             offset: this.time,
         });
@@ -247,15 +251,16 @@ class AudioPlayer {
     seek(offset: number) {
         if (!this.currentPlayer) return;
         this.play({
-            path: this.path,
+            song: this.song,
             volume: this.vol,
             offset,
         });
     }
 
-    skip() {
-        const songId = String(Math.floor(Math.random() * totalSongs));
-        executeCommand({ command: 'play', songId });
+    async skip() {
+        // Get next song that is the closest to the first song by name
+        const song = (await searchLibrary({ q: this.song.name }))?.[1];
+        this.play({ song });
     }
 
     status() {
@@ -286,7 +291,7 @@ export async function executeCommand({
             throw new NotFoundError();
         }
         audioPlayer.play({
-            path: song?.path,
+            song,
             volume,
             offset,
         });

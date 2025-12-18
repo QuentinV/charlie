@@ -25,7 +25,7 @@ export const tools: Tools = {
         exec: async ({ command, songId }) => {
             if (!audioPlayer[command]) return 'Unkwown command';
             try {
-                executeCommand({ command, songId });
+                await executeCommand({ command, songId });
                 return 'Done';
             } catch (e) {
                 return 'Error';
