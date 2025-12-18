@@ -119,6 +119,7 @@ const routes: RestApis = {
         },
         post: {
             handler: async ({ params, body }) => {
+                console.log(body);
                 if (body.control === 'play') {
                     await audioPlayer.play(body.songId, body.volume);
                 } else if (body.control === 'pause') {
