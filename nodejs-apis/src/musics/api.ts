@@ -129,6 +129,8 @@ const routes: RestApis = {
                     });
                 } else if (body.control === 'seek') {
                     audioPlayer.seek(body.offset);
+                } else if (body.control === 'volume') {
+                    audioPlayer.volume(body.volume);
                 } else if (
                     body.control === 'stop' ||
                     body.control === 'pause' ||

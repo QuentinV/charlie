@@ -142,7 +142,7 @@ class AudioPlayer {
     currentPlayer: any;
     time: number;
     timer: any;
-    volume: number;
+    vol: number;
     path: string;
 
     constructor() {
@@ -159,7 +159,7 @@ class AudioPlayer {
         volume?: number;
         offset?: number;
     }) {
-        this.volume = volume ?? 100;
+        this.vol = volume ?? 100;
         this.stop();
 
         if (!path) {
@@ -169,7 +169,7 @@ class AudioPlayer {
         const fullPath = musicDir + path;
         this.path = path;
 
-        const args = ['-nodisp', '-autoexit', '-volume', String(this.volume)];
+        const args = ['-nodisp', '-autoexit', '-volume', String(this.vol)];
         if ((offset ?? 0) > 0) {
             args.push('-ss', String(offset));
             this.time = offset;
@@ -214,7 +214,16 @@ class AudioPlayer {
         if (this.currentPlayer) return;
         this.play({
             path: this.path,
-            volume: this.volume,
+            volume: this.vol,
+            offset: this.time,
+        });
+    }
+
+    volume(volume: number) {
+        if (!this.currentPlayer) return;
+        this.play({
+            path: this.path,
+            volume: volume > 100 ? 100 : volume < 0 ? 0 : volume,
             offset: this.time,
         });
     }
@@ -223,7 +232,7 @@ class AudioPlayer {
         if (!this.currentPlayer) return;
         this.play({
             path: this.path,
-            volume: this.volume,
+            volume: this.vol,
             offset,
         });
     }
@@ -231,7 +240,7 @@ class AudioPlayer {
     status() {
         return {
             isPlaying: this.timer !== null,
-            volume: this.volume,
+            volume: this.vol,
             time: this.time,
         };
     }
