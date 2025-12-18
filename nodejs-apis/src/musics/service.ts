@@ -141,7 +141,7 @@ export async function streamMusic(
 let currentPlayer = null;
 export function stopPlayMusic() {
     if (currentPlayer) {
-        currentPlayer.kill('SIGKILL'); // or "SIGTERM"
+        currentPlayer.kill('SIGTERM');
         currentPlayer = null;
     }
 }
