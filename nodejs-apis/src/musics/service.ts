@@ -138,21 +138,110 @@ export async function streamMusic(
     return res;
 }
 
-let currentPlayer = null;
-export function stopPlayMusic() {
-    if (currentPlayer) {
-        currentPlayer.kill('SIGTERM');
-        currentPlayer = null;
+class AudioPlayer {
+    currentPlayer: any;
+    time: number;
+    timer: any;
+    volume: number;
+
+    constructor() {
+        this.currentPlayer = null;
+    }
+
+    async play(id: string, volume = 100, offset = 0) {
+        this.volume = volume;
+        this.timer = null;
+
+        this.stop();
+
+        const song = await getSongById(id);
+        if (!song?.path) {
+            return;
+        }
+        const path = musicDir + song.path;
+
+        this.currentPlayer = spawn('ffplay', ['-nodisp', '-autoexit', path], {
+            stdio: 'inherit',
+        });
+
+        const args = ['-nodisp', '-autoexit', '-volume', String(volume)];
+        if (offset > 0) {
+            args.push('-ss', String(offset));
+        }
+        args.push(path);
+
+        this.currentPlayer = spawn('ffplay', args, {
+            stdio: ['pipe', 'inherit', 'inherit'],
+        });
+
+        this.toggleTimer();
+    }
+
+    toggleTimer(state?: boolean) {
+        if (state === undefined) {
+            state = !this.timer;
+        }
+        if (state) {
+            this.timer = setInterval(() => {
+                this.time = this.time + 1;
+            }, 1000);
+        } else {
+            this.timer && clearInterval(this.timer);
+            this.timer = null;
+        }
+    }
+
+    stop() {
+        if (this.currentPlayer) {
+            this.currentPlayer.kill('SIGTERM');
+            this.currentPlayer = null;
+            this.time = 0;
+            this.toggleTimer(false);
+        }
+    }
+
+    pauseResume() {
+        if (this.currentPlayer) {
+            this.currentPlayer.stdin.write('p');
+            this.toggleTimer();
+        }
+    }
+
+    volumeUp() {
+        if (this.currentPlayer) {
+            this.currentPlayer.stdin.write('+');
+            this.volume = Math.min(this.volume + 5, 100);
+        }
+    }
+
+    volumeDown() {
+        if (this.currentPlayer) {
+            this.currentPlayer.stdin.write('-');
+            this.volume = Math.max(this.volume - 5, 0);
+        }
+    }
+
+    seekForward10s() {
+        if (this.currentPlayer) {
+            this.currentPlayer.stdin.write('\x1b[C'); // Right arrow
+            this.time = this.time + 10;
+        }
+    }
+
+    seekBack10s() {
+        if (this.currentPlayer) {
+            this.currentPlayer.stdin.write('\x1b[D'); // Left arrow
+            this.time = this.time - 10;
+        }
+    }
+
+    status() {
+        return {
+            isPlaying: this.timer !== null,
+            volume: this.volume,
+            time: this.time,
+        };
     }
 }
 
-export async function playMusic(id: string) {
-    stopPlayMusic();
-
-    const song = await getSongById(id);
-    const path = musicDir + song.path;
-
-    currentPlayer = spawn('ffplay', ['-nodisp', '-autoexit', path], {
-        stdio: 'inherit',
-    });
-}
+export const audioPlayer = new AudioPlayer();

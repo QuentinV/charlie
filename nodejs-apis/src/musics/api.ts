@@ -2,11 +2,10 @@ import { cs } from '../core/db';
 import { RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
 import {
+    audioPlayer,
     getPlaylistById,
     getSongById,
-    playMusic,
     searchLibrary,
-    stopPlayMusic,
     streamMusic,
 } from './service';
 
@@ -113,20 +112,20 @@ const routes: RestApis = {
             description: 'Stream a song',
         },
     },
-    'musics/songs/:id/play': {
+    'musics/player': {
         get: {
-            handler: async ({ params }) => {
-                await playMusic(params.id);
-            },
-            description: 'Start a song from the server',
+            handler: async () => audioPlayer.status(),
+            description: 'Get state of player',
         },
-    },
-    'musics/songs/play': {
-        delete: {
-            handler: async () => {
-                stopPlayMusic();
+        post: {
+            handler: async ({ params, body }) => {
+                if (body.control === 'play') {
+                    await audioPlayer.play(body.songId, body.volume);
+                } else {
+                    audioPlayer[body.control]?.();
+                }
             },
-            description: 'Stop songs playing on server',
+            description: 'Start/Stop/Pause a song on the serve',
         },
     },
     'musics/songs/:id': {
