@@ -1,9 +1,31 @@
 services:
+    api:
+        build: ./nodejs-apis
+        container_name: charlie-api
+        environment:
+            - NODE_ENV=production
+            - PULSE_SERVER=unix:/tmp/pulse/native
+        volumes:
+            - ./nodejs-apis:/app
+            - ~/media/musics:/musics
+            - ${XDG_RUNTIME_DIR}/pulse/native:/tmp/pulse/native
+        ports:
+            - '9300:9300' # http server
+            - '9303:9303' # audio udp
+            - '9304:9304' # mqtt server
+        command: 'yarn start'
+        depends_on:
+            - db
+        restart: unless-stopped
+        networks:
+            - internal
+        devices:
+            - '/dev/snd:/dev/snd'
     ai-agents:
         build: ./python-apis
-        container_name: ai-agents
+        container_name: charlie-ai-agents
         ports:
-            - '8000:8000'
+            - '9301:8000'
         volumes:
             - ./python-apis/app:/app
             - ./nodejs-apis:/mcp-server
@@ -12,8 +34,10 @@ services:
             - AGENT_ID=${AGENT_ID}
             - SSE_HOST=http://host.docker.internal:9300/sse
         restart: unless-stopped
+        networks:
+            - internal
     db:
-        container_name: db
+        container_name: charlie-db
         image: mongo
         ports:
             - '9302:27017'
@@ -23,3 +47,11 @@ services:
         environment:
             - MONGO_INITDB_ROOT_USERNAME=
             - MONGO_INITDB_ROOT_PASSWORD=
+        networks:
+            - internal
+
+networks:
+    internal:
+        driver: bridge
+    charlieExternal:
+        external: true

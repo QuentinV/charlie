@@ -4,5 +4,6 @@
     "rooms": "rooms",
     "providers": "providers",
     "routines": "routines",
-    "states": "states"
+    "states": "states",
+    "musics_playlists": "musics_playlists"
 }

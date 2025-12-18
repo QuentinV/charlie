@@ -7,6 +7,10 @@ import ffmpegPath from 'ffmpeg-static';
 import wavHeader from '@wpdas/wave-header';
 import vosk from 'vosk';
 
+/**
+ * DRAFT CODE
+ **/
+
 let audioBuffer = [];
 let silenceCounter = 0;
 const silenceLimit = 1;

@@ -1,7 +1,18 @@
 import webpush from 'web-push';
+import { createTransport } from 'nodemailer';
 
 const hasConfig =
     process.env.WEBPUSH_VAPID_PUBLICKEY && process.env.WEBPUSH_VAPID_PRIVATEKEY;
+
+const emailTransporter = createTransport({
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.EMAIL_NOTIFICATION_USER,
+        pass: process.env.EMAIL_NOTIFICATION_PASSWORD,
+    },
+});
 
 const subscriptions: PushSubscription[] = [];
 
@@ -59,4 +70,22 @@ export async function sendPushNotifcation(notification: Notification) {
     } catch (err) {
         console.error(err);
     }
+}
+
+export async function sendEmailNotification(notification: Notification) {
+    if (
+        !process.env.EMAIL_NOTIFICATION_EMAIL ||
+        !process.env.EMAIL_NOTIFICATION_USER ||
+        !process.env.EMAIL_NOTIFICATION_TARGET_EMAIL ||
+        !process.env.EMAIL_NOTIFICATION_PASSWORD
+    ) {
+        return;
+    }
+    const html = notification.body.replace(/(\n|\\n)/g, '<br/>');
+    await emailTransporter.sendMail({
+        from: `"Charlie Assistant" <${process.env.EMAIL_NOTIFICATION_EMAIL}>`,
+        to: process.env.EMAIL_NOTIFICATION_TARGET_EMAIL,
+        subject: notification.title,
+        html,
+    });
 }

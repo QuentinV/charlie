@@ -18,8 +18,6 @@
 #include "driver/i2s.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_camera.h"
-#include "esp_http_server.h"
 
 #define EIDSP_QUANTIZE_FILTERBANK   0
 #include <charlie_inferencing.h>
@@ -30,49 +28,35 @@
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET    -1
-#define OLED_SDA      GPIO_NUM_21
-#define OLED_SCL      GPIO_NUM_20
+#define OLED_SDA      GPIO_NUM_45
+#define OLED_SCL      GPIO_NUM_40
 
-#define DHTPIN GPIO_NUM_14
+#define DHTPIN GPIO_NUM_17
 #define DHTTYPE DHT22
 
-#define MOTION_PIN GPIO_NUM_1
-#define TOUCH_PIN GPIO_NUM_42
+#define MOTION_PIN GPIO_NUM_41
+#define TOUCH_PIN GPIO_NUM_47
 
 #define I2S_MIC_PORT I2S_NUM_0
-#define I2S_MIC_WS  GPIO_NUM_41
-#define I2S_MIC_SD  GPIO_NUM_40
+#define I2S_MIC_WS  GPIO_NUM_1
+#define I2S_MIC_SD  GPIO_NUM_42
 #define I2S_MIC_SCK GPIO_NUM_2
 
 #define I2S_SPK_PORT I2S_NUM_1
-#define I2S_SPK_LRC GPIO_NUM_47
-#define I2S_SPK_BCLK GPIO_NUM_46
-#define I2S_SPK_DIN GPIO_NUM_45
-
-// Camera
-#define XCLK_GPIO_NUM    15
-#define SIOD_GPIO_NUM    4
-#define SIOC_GPIO_NUM    5
-#define Y9_GPIO_NUM      16
-#define Y8_GPIO_NUM      17
-#define Y7_GPIO_NUM      18
-#define Y6_GPIO_NUM      12
-#define Y5_GPIO_NUM      10
-#define Y4_GPIO_NUM      8
-#define Y3_GPIO_NUM      9
-#define Y2_GPIO_NUM      11
-#define VSYNC_GPIO_NUM   6
-#define HREF_GPIO_NUM    7
-#define PCLK_GPIO_NUM    13
+#define I2S_SPK_LRC GPIO_NUM_20
+#define I2S_SPK_BCLK GPIO_NUM_19
+#define I2S_SPK_DIN GPIO_NUM_14
 
 #define SAMPLE_RATE 8000
 #define BUFFER_SIZE 512
 
-#define MIC_THRESHOLD 2000000
+#define MIC_THRESHOLD_SOUND 200
+#define MIC_DURATION_SILENCE 2
 #define WAKE_EXTENSION_MS 1800 // 30min
 #define MOTION_SENSOR_RETRIGGER 60
 #define SENSOR_REPORT_INTERVAL 3600 // 1h
 #define SCREEN_DISPLAY_TIME 10
+#define WAKE_UP_WORD_ACCURACY 0.5f
 
 // preferences
 Preferences prefs;
@@ -89,6 +73,7 @@ PubSubClient client(espClient);
 // States
 unsigned long motionStart = 0;
 unsigned long touchStart = 0;
+unsigned long silenceStart = 0;
 bool mute = false;
 
 /** Audio buffers, pointers and selectors */
@@ -103,7 +88,7 @@ inference_t inference;
 const uint32_t sample_buffer_size = 2048;
 signed short sampleBuffer[sample_buffer_size];
 bool debug_nn = false; // Set this to true to see e.g. features generated from the raw signal
-bool record_status = true;
+bool continuous_record = true;
 
 // Task handles
 TaskHandle_t mqttTaskHandle;
@@ -160,10 +145,10 @@ void sendCurrentState(bool motiondetected) {
   }
 }
 
-int i2s_init(uint32_t sampling_rate) {
+int setupMicI2S(uint32_t sampling_rate) {
   // Start listening for audio: MONO @ 8/16KHz
   i2s_config_t i2s_config = {
-      .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_TX),
+      .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = sampling_rate,
       .bits_per_sample = (i2s_bits_per_sample_t)16,
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
@@ -183,17 +168,17 @@ int i2s_init(uint32_t sampling_rate) {
   };
   esp_err_t ret = 0;
 
-  ret = i2s_driver_install((i2s_port_t)1, &i2s_config, 0, NULL);
+  ret = i2s_driver_install(I2S_MIC_PORT, &i2s_config, 0, NULL);
   if (ret != ESP_OK) {
     ei_printf("Error in i2s_driver_install");
   }
 
-  ret = i2s_set_pin((i2s_port_t)1, &pin_config);
+  ret = i2s_set_pin(I2S_MIC_PORT, &pin_config);
   if (ret != ESP_OK) {
     ei_printf("Error in i2s_set_pin");
   }
 
-  ret = i2s_zero_dma_buffer((i2s_port_t)1);
+  ret = i2s_zero_dma_buffer(I2S_MIC_PORT);
   if (ret != ESP_OK) {
     ei_printf("Error in initializing dma buffer with 0");
   }
@@ -212,40 +197,9 @@ void audio_inference_callback(uint32_t n_bytes) {
     }
 }
 
-void capture_samples(void* arg) {
-  const int32_t i2s_bytes_to_read = (uint32_t)arg;
-  size_t bytes_read = i2s_bytes_to_read;
+bool allocateInferenceBuffer(uint32_t n_samples) {
+  ei_sleep(100);
 
-  while (record_status) {
-    /* read data at once from i2s */
-    i2s_read((i2s_port_t)1, (void*)sampleBuffer, i2s_bytes_to_read, &bytes_read, 100);
-
-    if (bytes_read <= 0) {
-      ei_printf("Error in I2S read : %d", bytes_read);
-    }
-    else {
-        if (bytes_read < i2s_bytes_to_read) {
-          ei_printf("Partial I2S read");
-        }
-
-        // scale the data (otherwise the sound is too quiet)
-        for (int x = 0; x < i2s_bytes_to_read/2; x++) {
-            sampleBuffer[x] = (int16_t)(sampleBuffer[x]) * 8;
-        }
-
-        // TODO "record_status" is the same as "mute" and then task needs to be restarted if delete when unmute
-        if (record_status) {
-            audio_inference_callback(i2s_bytes_to_read);
-        }
-        else {
-            break;
-        }
-    }
-  }
-  vTaskDelete(NULL);
-}
-
-bool microphone_inference_start(uint32_t n_samples) {
   inference.buffer = (int16_t *)malloc(n_samples * sizeof(int16_t));
 
   if(inference.buffer == NULL) {
@@ -255,16 +209,6 @@ bool microphone_inference_start(uint32_t n_samples) {
   inference.buf_count  = 0;
   inference.n_samples  = n_samples;
   inference.buf_ready  = 0;
-
-  if (i2s_init(EI_CLASSIFIER_FREQUENCY)) {
-      ei_printf("Failed to start I2S!");
-  }
-
-  ei_sleep(100);
-
-  record_status = true;
-
-  xTaskCreate(capture_samples, "CaptureSamples", 1024 * 32, (void*)sample_buffer_size, 10, NULL);
 
   return true;
 }
@@ -341,91 +285,108 @@ void displayStatusOnScreen(tm *timeinfo) {
   display.setTextSize(1);
 }
 
-void setupCamera() {
-  camera_config_t config;
-  config.ledc_channel = LEDC_CHANNEL_0;
-  config.ledc_timer   = LEDC_TIMER_0;
-  config.pin_d0       = Y2_GPIO_NUM;
-  config.pin_d1       = Y3_GPIO_NUM;
-  config.pin_d2       = Y4_GPIO_NUM;
-  config.pin_d3       = Y5_GPIO_NUM;
-  config.pin_d4       = Y6_GPIO_NUM;
-  config.pin_d5       = Y7_GPIO_NUM;
-  config.pin_d6       = Y8_GPIO_NUM;
-  config.pin_d7       = Y9_GPIO_NUM;
-  config.pin_xclk     = XCLK_GPIO_NUM;
-  config.pin_pclk     = PCLK_GPIO_NUM;
-  config.pin_vsync    = VSYNC_GPIO_NUM;
-  config.pin_href     = HREF_GPIO_NUM;
-  config.pin_sccb_sda = SIOD_GPIO_NUM;
-  config.pin_sccb_scl = SIOC_GPIO_NUM;
-  config.pin_pwdn     = -1;
-  config.pin_reset    = -1;
-  config.xclk_freq_hz = 20000000;
-  config.pixel_format = PIXFORMAT_JPEG;
+void captureMicSamplesTask(void* arg) {
+  continuous_record = true;
+  const int32_t i2s_bytes_to_read = (uint32_t)arg;
+  size_t bytes_read = i2s_bytes_to_read;
 
-  config.frame_size   = FRAMESIZE_VGA;   // try FRAMESIZE_HD for higher res
-  config.jpeg_quality = 12;              // lower = better quality
-  config.fb_count     = 2;
+  while (continuous_record && !mute) {
+    /* read data at once from i2s */
+    i2s_read(I2S_MIC_PORT, (void*)sampleBuffer, i2s_bytes_to_read, &bytes_read, 100);
 
-  if (esp_camera_init(&config) != ESP_OK) {
-    Serial.println("Camera init failed");
-    return;
+    if (bytes_read <= 0) {
+      ei_printf("Error in I2S read : %d", bytes_read);
+    }
+    else {
+        if (bytes_read < i2s_bytes_to_read) {
+          ei_printf("Partial I2S read");
+        }
+
+        // scale the data (otherwise the sound is too quiet)
+        for (int x = 0; x < i2s_bytes_to_read/2; x++) {
+            sampleBuffer[x] = (int16_t)(sampleBuffer[x]) * 8;
+        }
+
+        if (mute || !continuous_record) {
+          break;   
+        }
+
+        audio_inference_callback(i2s_bytes_to_read);
+    }
   }
+  vTaskDelete(NULL);
 }
 
-esp_err_t stream_handler(httpd_req_t *req) {
-  camera_fb_t *fb = NULL;
-  esp_err_t res = ESP_OK;
+void startMicCaptureSamples() {
+  pixels.setPixelColor(0, pixels.Color(0, 0, 0));
+  pixels.show();
+  xTaskCreate(captureMicSamplesTask, "CaptureMicSamples", 1024 * 32, (void*)sample_buffer_size, 10, NULL);
+}
 
-  // Set response type to multipart MJPEG
-  res = httpd_resp_set_type(req, "multipart/x-mixed-replace;boundary=frame");
-  if (res != ESP_OK) return res;
+void sendMicAudioTask(void *arg) {
+  Serial.println("sendMicAudioTask - start");
 
-  while (true) {
-    fb = esp_camera_fb_get();
-    if (!fb) {
-      Serial.println("Camera capture failed");
-      res = ESP_FAIL;
+  int16_t samples[BUFFER_SIZE];
+  size_t bytes_read = 0;
+  silenceStart = 0;
+  time_t startTime = time(NULL);
+
+  for (;;) {
+    time_t t = time(NULL);
+    if (startTime - t > 20) {
+      Serial.println("sendMicAudioTask - timeout reached");
+      WiFiUDP udp;
+      udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
+      udp.print("END");
+      udp.endPacket();
+      break;
+    }
+
+    Serial.println("sendMicAudioTask - listening");
+    i2s_read(I2S_MIC_PORT, samples, sizeof(samples), &bytes_read, portMAX_DELAY);
+    
+    size_t samples_read = bytes_read / sizeof(int16_t);
+
+    // scale the data (otherwise the sound is too quiet)
+    for (int x = 0; x < samples_read; x++) {
+        samples[x] = samples[x] * 8;
+    }
+
+    // Calculate RMS To detect silence
+    int64_t sumsq = 0;
+    for (size_t i = 0; i < samples_read; i++) {
+        int32_t s = samples[i];
+        sumsq += (int64_t)s * s;
+    }
+    int rms = sqrt((double)sumsq / samples_read);
+
+    if (rms < MIC_THRESHOLD_SOUND) {   
+      if ( silenceStart == 0 ) {
+        Serial.println("sendMicAudioTask - its quiete");
+        silenceStart = t;
+      } else if ( t - silenceStart > MIC_DURATION_SILENCE ) {
+        Serial.println("sendMicAudioTask - it has been 2 seen quite send END");
+        WiFiUDP udp;
+        udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
+        udp.print("END");
+        udp.endPacket();
+        
+        break;
+      }
     } else {
-      // Write multipart frame
-      char part_buf[64];
-      size_t hlen = snprintf(part_buf, 64,
-        "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
-        fb->len);
-
-      res = httpd_resp_send_chunk(req, part_buf, hlen);
-      if (res == ESP_OK) {
-        res = httpd_resp_send_chunk(req, (const char *)fb->buf, fb->len);
-      }
-      if (res == ESP_OK) {
-        res = httpd_resp_send_chunk(req, "\r\n", 2);
-      }
-
-      esp_camera_fb_return(fb);
+      silenceStart = 0;
     }
 
-    if (res != ESP_OK) {
-      break; // exit loop if client disconnects
-    }
+    Serial.printf("Read %d bytes (%d samples), RMS=%d\n", bytes_read, samples_read, rms);
+    WiFiUDP udp;
+    udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
+    udp.write((uint8_t*)samples, bytes_read);
+    udp.endPacket();
   }
-  return res;
-}
 
-void startCameraServer() {
-  httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-  config.server_port = 80;
-
-  httpd_handle_t server = NULL;
-  if (httpd_start(&server, &config) == ESP_OK) {
-    httpd_uri_t stream_uri = {
-      .uri       = "/stream",
-      .method    = HTTP_GET,
-      .handler   = stream_handler,
-      .user_ctx  = NULL
-    };
-    httpd_register_uri_handler(server, &stream_uri);
-  }
+  startMicCaptureSamples();
+  
+  vTaskDelete(NULL);
 }
 
 void memoryPrintTask(void *pvParameters) {
@@ -436,7 +397,7 @@ void memoryPrintTask(void *pvParameters) {
     Serial.printf("Free internal RAM: %d bytes\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     Serial.printf("Free PSRAM: %d bytes\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     Serial.printf("memoryPrintTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -462,6 +423,9 @@ void handleTouchTask(void* arg) {
       touchStart = t;
     } else if (touch == 0 && touchStart != 0) {
       mute = !mute;
+      if (!mute) {
+        startMicCaptureSamples();
+      }
       
       pixels.setPixelColor(0, pixels.Color(mute ? 255 : 0, 0, 0));
       pixels.show();
@@ -487,19 +451,29 @@ void handleMotionSensorTask(void *arg) {
     } else if (t - motionStart > SCREEN_DISPLAY_TIME) {
       display.ssd1306_command(SSD1306_DISPLAYOFF);
     }
-    Serial.printf("handleMotionSensorTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
+    //Serial.printf("handleMotionSensorTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
 
 void receiveAndPlayAudioTask(void *arg) {
+  server.begin();
+
   for (;;) {
     WiFiClient client = server.available();
-    if (!client) return;
+    if (!client) {
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      continue;
+    }
+
+    Serial.println("receiveAndPlayAudioTask - start receiving");
 
     uint8_t buffer[BUFFER_SIZE];
     while (client.connected()) {
       int len = client.read(buffer, sizeof(buffer));
+      
+      Serial.printf("receiveAndPlayAudioTask - len %d\n", len);
+    
       if (len > 0) {
         size_t bytes_written;
         i2s_write(I2S_SPK_PORT, buffer, len, &bytes_written, portMAX_DELAY);
@@ -510,8 +484,24 @@ void receiveAndPlayAudioTask(void *arg) {
   } 
 }
 
+void startMicUserRecord() {
+  xTaskCreate(sendMicAudioTask, "SendMicAudioTask", 1024 * 8, NULL, 10, NULL);
+}
+
+void onWakeWordDetected() {
+  pixels.setPixelColor(0, pixels.Color(255, 255, 255));
+  pixels.show();
+  continuous_record = false;
+  startMicUserRecord();
+}
+
 void wakeUpWordTask(void *arg) {
+  startMicCaptureSamples();
   for (;;) {
+    if (mute || !continuous_record) {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        continue;
+    }
     bool m = microphone_inference_record();
     if (!m) {
         ei_printf("ERR: Failed to record audio...\n");
@@ -528,69 +518,26 @@ void wakeUpWordTask(void *arg) {
         ei_printf("ERR: Failed to run classifier (%d)\n", r);
         return;
     }
-
-    // print the predictions
-    ei_printf("Predictions ");
-    ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
-        result.timing.dsp, result.timing.classification, result.timing.anomaly);
-    ei_printf(": \n");
-    for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-        ei_printf("    %s: ", result.classification[ix].label);
-        ei_printf_float(result.classification[ix].value);
-        ei_printf("\n");
-    }
-
-    #if EI_CLASSIFIER_HAS_ANOMALY == 1
-        ei_printf("    anomaly score: ");
-        ei_printf_float(result.anomaly);
-        ei_printf("\n");
-    #endif
-  }
- 
-  /*
-  TODO
-  Check wake up word detected
-  Stop catpure
-  record and send audio to server
-  Detect silence
-  Resume capture at the end of speach to listen for new command
-  */
-
-  /*
+    
     float confidence = result.classification[0].value;
-    if (confidence > 0.8f) {
+    if (confidence > WAKE_UP_WORD_ACCURACY) {
         onWakeWordDetected();
+    } else {
+      // print the predictions
+      ei_printf("Predictions ");
+      ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
+          result.timing.dsp, result.timing.classification, result.timing.anomaly);
+      ei_printf(": \n");
+      for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+          ei_printf("    %s: ", result.classification[ix].label);
+          ei_printf_float(result.classification[ix].value);
+          ei_printf("\n");
+      }
     }
-  */
 
-  /*
-  if (strcmp(label, "wakeword") == 0 && value > 0.8f) {
-        onWakeWordDetected();   // <-- Call your function here
-    }
-  */
+    Serial.printf("WakeUpWordTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
+  }
 }
-
-/*
-bool sendMicAudioTask(void *arg) {
-  int32_t samples[BUFFER_SIZE];
-  size_t bytes_read = 0;
-  i2s_read(I2S_MIC_PORT, samples, sizeof(int32_t) * BUFFER_SIZE, &bytes_read, portMAX_DELAY);
-  
-  int64_t sum = 0;
-  for (int i = 0; i < BUFFER_SIZE; i++) {
-    sum += abs(samples[i]);
-  }
-
-  int rms = sum / BUFFER_SIZE;
-  if (rms > MIC_THRESHOLD) {
-    WiFiUDP udp;
-    udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
-    udp.write((uint8_t*)samples, bytes_read);
-    udp.endPacket();
-    return true;
-  }
-  return false;
-}*/
 
 void setup() {
   Serial.begin(115200);
@@ -625,7 +572,15 @@ void setup() {
     return;
   }
 
+  if (allocateInferenceBuffer(EI_CLASSIFIER_RAW_SAMPLE_COUNT) == false) {
+      ei_printf("ERR: Could not allocate audio buffer (size %d), this could be due to the window length of your model\r\n", EI_CLASSIFIER_RAW_SAMPLE_COUNT);
+      return;
+  }  
+
   setupSpeakerI2S();
+  if (setupMicI2S(EI_CLASSIFIER_FREQUENCY)) {
+      ei_printf("Failed to start I2S!");
+  }
   
   displayText("Fetch time");
   configTime(3600, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
@@ -639,21 +594,13 @@ void setup() {
   // Setup MQTT
   client.setServer(serverip.c_str(), 1883);
 
-  setupCamera();
-
   // Tasks
-  //startCameraServer();
-  xTaskCreate( mqttTask, "StateReporting", 1800, NULL, 1, &mqttTaskHandle );
-  xTaskCreate( memoryPrintTask, "MemoryPrint", 1700, NULL, 1, &memoryPrintHandle );
+  xTaskCreate( mqttTask, "StateReporting", 2000, NULL, 1, &mqttTaskHandle );
+  xTaskCreate( memoryPrintTask, "MemoryPrint", 2000, NULL, 1, &memoryPrintHandle );
   xTaskCreate( handleTouchTask, "TouchSensor", 1800, NULL, 1, &touchTaskHandle );
   xTaskCreate( handleMotionSensorTask, "MotionSensor", 2200, NULL, 1, &motionSensorHandle );
-  xTaskCreate( receiveAndPlayAudioTask, "ReceivePlayAudio", 4096, NULL, 1, &receivePlayAudioHandle );
-  //xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
-  /*if (microphone_inference_start(EI_CLASSIFIER_RAW_SAMPLE_COUNT) == false) {
-      ei_printf("ERR: Could not allocate audio buffer (size %d), this could be due to the window length of your model\r\n", EI_CLASSIFIER_RAW_SAMPLE_COUNT);
-      return;
-  }*/
-
+  xTaskCreate( receiveAndPlayAudioTask, "ReceivePlayAudio", 1024 * 8, NULL, 1, &receivePlayAudioHandle );
+  xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
 }
 
 void loop() { 

@@ -45,11 +45,12 @@ const subscribers = {
 const aedes = new Aedes();
 const server = net.createServer(aedes.handle);
 
-server.listen(1883, function () {
-    console.log('MQTT broker started on port 1883');
+const mqttPort = 9304;
+server.listen(mqttPort, function () {
+    console.log('MQTT broker started on port ' + mqttPort);
 });
 
-const mqttClient = mqtt.connect(`mqtt://localhost:1883`);
+const mqttClient = mqtt.connect(`mqtt://localhost:` + mqttPort);
 mqttClient.on('connect', () => {
     console.log('MQTT client connected to broker');
     Object.keys(subscribers).forEach((s) => {

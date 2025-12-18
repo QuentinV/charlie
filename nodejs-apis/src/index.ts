@@ -7,7 +7,6 @@ import cors from 'cors';
 import managerApis from './manager';
 import { getProvidersRestApis } from './devices';
 import { buildMcpServer } from './mcp/sse_server';
-import { RestApiHandler } from './types';
 import { HttpError } from './errors';
 import swaggerUi from 'swagger-ui-express';
 import { defaultApiPath, getSwaggerDoc } from './swagger';
@@ -35,11 +34,16 @@ const app = express();
     Object.entries(apis).forEach(([path, fullapi]) => {
         const builtPath = `${defaultApiPath}${path}`;
         Object.entries(fullapi).forEach(([methodName, endpoint]) => {
-            const method: RestApiHandler = endpoint?.handler ?? endpoint;
             (app as any)[methodName](builtPath, async (req: any, res: any) => {
                 try {
-                    const result = await method(req);
-                    result ? res.send(result) : res.sendStatus(204);
+                    if (endpoint?.fullHandler) {
+                        await endpoint.fullHandler(req, res);
+                    } else if (endpoint?.handler || endpoint) {
+                        const result = await (endpoint?.handler ?? endpoint)(
+                            req
+                        );
+                        result ? res.send(result) : res.sendStatus(204);
+                    }
                 } catch (e) {
                     if (e instanceof HttpError) {
                         res.send(e.httpStatus, e.message);

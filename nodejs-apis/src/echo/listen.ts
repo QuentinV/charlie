@@ -9,34 +9,32 @@ initAll();
 
 // TODO do audio buffer by MAC address, reset after a timeout ?
 let audioBuffer = [];
-let timeout = null;
-function resetTimeout({ ip }) {
-    clearTimeout(timeout);
-    timeout = setTimeout(async () => {
-        try {
-            console.log('audio received');
-            const text = await stt(audioBuffer);
-            console.log('spoken text', text);
-            //const result = await askDirect(text);
-            //console.log('result', result);
-            const resultAudio = await tts({ text });
-            await send({ ip, buffer: Buffer.from(resultAudio) });
-        } catch (e) {
-            console.log(e);
-        } finally {
-            audioBuffer = [];
-        }
-    }, 1000);
+async function execute({ ip }) {
+    try {
+        console.log('audio received');
+        const text = await stt(audioBuffer);
+        console.log('spoken text', text);
+        const result = await askDirect(text);
+        console.log('result', result);
+        const resultAudio = await tts({ text: result });
+        await send({ ip, buffer: Buffer.from(resultAudio) });
+    } catch (e) {
+        console.log(e);
+    } finally {
+        audioBuffer = [];
+    }
 }
 
 // UDP Server for audio
-const PORT_UDP_AUDIO = 12345;
+const PORT_UDP_AUDIO = 9303;
 const audioServer = dgram.createSocket('udp4');
 audioServer.on('message', async (data, rinfo) => {
-    console.log(
-        `receving audio from ${rinfo.address}:${rinfo.port} of size ${rinfo.size}`
-    );
-    resetTimeout({ ip: rinfo.address });
+    const msg = data.toString('utf-8');
+    if (msg === 'END') {
+        console.log('received END');
+        execute({ ip: rinfo.address });
+        return;
+    }
     audioBuffer.push(data);
 });
 
