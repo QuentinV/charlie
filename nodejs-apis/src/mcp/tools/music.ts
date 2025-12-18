@@ -42,11 +42,11 @@ export const tools: Tools = {
             const filteredSongs = songs
                 .slice(0, 5)
                 .map((it: any) => `- ${it.id}: ${it.name}`);
-            return (
-                (filteredSongs.length > 1
-                    ? `Assistant should pick the most interesting song: `
-                    : '') + filteredSongs.join('\n')
-            );
+            return filteredSongs.length === 0
+                ? 'Found no sounds'
+                : (filteredSongs.length > 1
+                      ? `Assistant should pick the most interesting song: `
+                      : '') + filteredSongs.join('\n');
         },
     },
 };
