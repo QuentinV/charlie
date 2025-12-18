@@ -143,29 +143,38 @@ class AudioPlayer {
     time: number;
     timer: any;
     volume: number;
+    path: string;
 
     constructor() {
         this.currentPlayer = null;
+        this.timer = null;
     }
 
-    async play(id: string, volume = 100, offset = 0) {
-        this.volume = volume;
-        this.timer = null;
-
+    play({
+        path,
+        volume,
+        offset,
+    }: {
+        path?: string;
+        volume?: number;
+        offset?: number;
+    }) {
+        this.volume = volume ?? 100;
         this.stop();
 
-        const song = await getSongById(id);
-        if (!song?.path) {
+        if (!path) {
             return;
         }
 
-        const path = musicDir + song.path;
+        const fullPath = musicDir + path;
+        this.path = fullPath;
 
-        const args = ['-nodisp', '-autoexit', '-volume', String(volume)];
-        if (offset > 0) {
+        const args = ['-nodisp', '-autoexit', '-volume', String(this.volume)];
+        if ((offset ?? 0) > 0) {
             args.push('-ss', String(offset));
+            this.time = offset;
         }
-        args.push(path);
+        args.push(fullPath);
 
         this.currentPlayer = spawn('ffplay', args, {
             stdio: ['inherit'],
@@ -192,53 +201,34 @@ class AudioPlayer {
     }
 
     stop() {
-        if (this.currentPlayer) {
-            console.log('stop');
-            process.kill(this.currentPlayer.pid, 'SIGTERM');
-            this.currentPlayer = null;
-            this.time = 0;
-            this.toggleTimer(false);
-        }
+        if (!this.currentPlayer) return;
+        process.kill(this.currentPlayer.pid, 'SIGTERM');
+        this.currentPlayer = null;
+        this.toggleTimer(false);
     }
 
-    pauseResume() {
-        if (this.currentPlayer) {
-            console.log('pauseResume');
-            this.currentPlayer.stdin.write('p');
-            this.toggleTimer();
-        }
+    pause() {
+        if (!this.currentPlayer) return;
+        this.stop();
     }
 
-    volumeUp() {
-        if (this.currentPlayer) {
-            console.log('volumeUp');
-            this.currentPlayer.stdin.write('+');
-            this.volume = Math.min(this.volume + 5, 100);
-        }
+    resume() {
+        if (this.currentPlayer) return;
+        this.play({
+            path: this.path,
+            volume: this.volume,
+            offset: this.time,
+        });
     }
 
-    volumeDown() {
-        if (this.currentPlayer) {
-            console.log('volumeDown');
-            this.currentPlayer.stdin.write('-');
-            this.volume = Math.max(this.volume - 5, 0);
-        }
-    }
-
-    seekForward10s() {
-        if (this.currentPlayer) {
-            console.log('seekForward10s');
-            this.currentPlayer.stdin.write('\x1b[C'); // Right arrow
-            this.time = this.time + 10;
-        }
-    }
-
-    seekBack10s() {
-        if (this.currentPlayer) {
-            console.log('seekBack10s');
-            this.currentPlayer.stdin.write('\x1b[D'); // Left arrow
-            this.time = this.time - 10;
-        }
+    seek(offset: number) {
+        if (!this.currentPlayer) return;
+        console.log('seekForward10s');
+        this.play({
+            path: this.path,
+            volume: this.volume,
+            offset,
+        });
     }
 
     status() {

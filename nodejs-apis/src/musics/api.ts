@@ -121,8 +121,19 @@ const routes: RestApis = {
             handler: async ({ body }) => {
                 console.log(body);
                 if (body.control === 'play') {
-                    await audioPlayer.play(body.songId, body.volume);
-                } else {
+                    const song = await getSongById(body.songId);
+                    audioPlayer.play({
+                        path: song?.path,
+                        volume: body.volume,
+                        offset: body.offset,
+                    });
+                } else if (body.control === 'seek') {
+                    audioPlayer.seek(body.offset);
+                } else if (
+                    body.control === 'stop' ||
+                    body.control === 'pause' ||
+                    body.control === 'resume'
+                ) {
                     audioPlayer[body.control]?.();
                 }
             },
