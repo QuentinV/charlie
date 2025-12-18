@@ -1,16 +1,14 @@
-import { cs } from '../core/db';
 import { RestApis } from '../types';
-import { v4 as uuidV4 } from 'uuid';
 import {
     audioPlayer,
-    getPlaylistById,
+    executeCommand,
     getSongById,
     searchLibrary,
     streamMusic,
 } from './service';
 
 const routes: RestApis = {
-    'musics/playlists': {
+    /*'musics/playlists': {
         get: {
             handler: async () =>
                 cs.musics_playlists
@@ -81,7 +79,7 @@ const routes: RestApis = {
             },
             description: 'Delete a song from a playlist',
         },
-    },
+    },*/
     'musics/songs': {
         get: {
             handler: async ({ query }) => searchLibrary(query),
@@ -118,27 +116,7 @@ const routes: RestApis = {
             description: 'Get state of player',
         },
         post: {
-            handler: async ({ body }) => {
-                console.log(body);
-                if (body.control === 'play') {
-                    const song = await getSongById(body.songId);
-                    audioPlayer.play({
-                        path: song?.path,
-                        volume: body.volume,
-                        offset: body.offset,
-                    });
-                } else if (body.control === 'seek') {
-                    audioPlayer.seek(body.offset);
-                } else if (body.control === 'volume') {
-                    audioPlayer.volume(body.volume);
-                } else if (
-                    body.control === 'stop' ||
-                    body.control === 'pause' ||
-                    body.control === 'resume'
-                ) {
-                    audioPlayer[body.control]?.();
-                }
-            },
+            handler: async ({ body }) => executeCommand(body),
             description: 'Start/Stop/Pause a song on the serve',
         },
     },

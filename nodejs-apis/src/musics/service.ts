@@ -1,8 +1,10 @@
 import 'dotenv/config';
 import fs from 'fs';
-import path from 'path';
+import pathLib from 'path';
 import { cs } from '../core/db';
 import { spawn } from 'child_process';
+import { NotFoundError } from '../errors';
+import Fuse from 'fuse.js';
 
 function getFilesRecursive(dir: string, exts: string[]): string[] {
     const fileList: string[] = [];
@@ -11,13 +13,13 @@ function getFilesRecursive(dir: string, exts: string[]): string[] {
         const files = fs.readdirSync(currentDir);
 
         for (const file of files) {
-            const fullPath = path.join(currentDir, file);
+            const fullPath = pathLib.join(currentDir, file);
             const stat = fs.statSync(fullPath);
 
             if (stat.isDirectory()) {
                 walk(fullPath);
             } else {
-                if (exts.includes(path.extname(file).toLowerCase())) {
+                if (exts.includes(pathLib.extname(file).toLowerCase())) {
                     fileList.push(fullPath);
                 }
             }
@@ -28,7 +30,7 @@ function getFilesRecursive(dir: string, exts: string[]): string[] {
     return fileList;
 }
 
-const musicDir = process.env.MUSICS_DIR + '/';
+const musicDir = process.env.MUSICS_DIR;
 
 function fetchAllMusicsFiles() {
     const extensions = ['.mp3', '.flac'];
@@ -41,17 +43,18 @@ function fetchAllMusicsFiles() {
     for (let i = 0; i < files.length; ++i) {
         let v = files[i];
 
-        const path = v.replace(musicDir, '');
+        const delimiter = v.indexOf('/') !== -1 ? '/' : '\\';
+        const path = v.replace(musicDir + delimiter, '');
         const labels = path
             .substring(0, path.lastIndexOf('.'))
-            .split('/')
+            .split(delimiter)
             .filter((s) => !!s.trim());
 
         const song = {
             path,
             labels,
-            name: labels.join('_'),
-            id: i++,
+            name: labels.join(' '),
+            id: i,
         };
 
         songsByPaths[song.path] = song;
@@ -64,6 +67,7 @@ function fetchAllMusicsFiles() {
 export const { songsById, songsByPaths } = process.env.MUSICS_DIR
     ? fetchAllMusicsFiles()
     : {};
+const totalSongs = Object.keys(songsById ?? {}).length;
 
 interface CompleteSong extends Song {
     labels: string[];
@@ -94,12 +98,15 @@ export async function getPlaylistById(id: string): Promise<Playlist> {
     return playlist;
 }
 
+const songsFuse = new Fuse(Object.values(songsById), {
+    keys: ['name'],
+    threshold: 0.3, // lower = stricter
+});
+
 export async function searchLibrary({ q }: { q: string }) {
-    q = q?.trim()?.toLowerCase();
+    q = q?.trim();
     if (!q) return;
-    return Object.values(songsById).filter(
-        (v: any) => v.name.toLowerCase().indexOf(q) !== -1
-    );
+    return songsFuse.search(q).map((result) => result.item);
 }
 
 interface StreamMusicRes {
@@ -114,7 +121,7 @@ export async function streamMusic(
     range: string
 ): Promise<StreamMusicRes> {
     const song = await getSongById(id);
-    const path = musicDir + song.path;
+    const path = pathLib.join(musicDir, song.path);
     const stats = fs.statSync(path);
 
     const res: any = {
@@ -148,6 +155,7 @@ class AudioPlayer {
     constructor() {
         this.currentPlayer = null;
         this.timer = null;
+        this.vol = 50;
     }
 
     play({
@@ -159,14 +167,14 @@ class AudioPlayer {
         volume?: number;
         offset?: number;
     }) {
-        this.vol = volume ?? 50;
+        this.vol = volume ?? this.vol;
         this.stop();
 
         if (!path) {
             return;
         }
 
-        const fullPath = musicDir + path;
+        const fullPath = pathLib.join(musicDir, path);
         this.path = path;
 
         const args = ['-nodisp', '-autoexit', '-volume', String(this.vol)];
@@ -228,6 +236,14 @@ class AudioPlayer {
         });
     }
 
+    increaseVolume() {
+        this.volume(this.vol + 10);
+    }
+
+    decreaseVolume() {
+        this.volume(this.vol - 10);
+    }
+
     seek(offset: number) {
         if (!this.currentPlayer) return;
         this.play({
@@ -235,6 +251,11 @@ class AudioPlayer {
             volume: this.vol,
             offset,
         });
+    }
+
+    skip() {
+        const songId = String(Math.floor(Math.random() * totalSongs));
+        executeCommand({ command: 'play', songId });
     }
 
     status() {
@@ -247,3 +268,33 @@ class AudioPlayer {
 }
 
 export const audioPlayer = new AudioPlayer();
+
+export async function executeCommand({
+    command,
+    volume,
+    offset,
+    songId,
+}: {
+    command: string;
+    volume?: number;
+    offset?: number;
+    songId?: string;
+}) {
+    if (command === 'play') {
+        const song = await getSongById(songId);
+        if (!song) {
+            throw new NotFoundError();
+        }
+        audioPlayer.play({
+            path: song?.path,
+            volume,
+            offset,
+        });
+    } else if (command === 'seek') {
+        audioPlayer.seek(offset);
+    } else if (command === 'volume') {
+        audioPlayer.volume(volume);
+    } else {
+        audioPlayer[command]?.();
+    }
+}

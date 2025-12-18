@@ -21,7 +21,7 @@ export interface RestApiHandlerParams {
 }
 
 export type RestApiHandler = (
-    params?: RestApiHandlerParams
+    params: RestApiHandlerParams
 ) => Promise<void | undefined | object>;
 
 export type RestApiFullHandler = (
