@@ -2,7 +2,7 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { cs } from '../core/db';
-import { spawn } from 'child_process';
+import net from 'net';
 
 function getFilesRecursive(dir: string, exts: string[]): string[] {
     const fileList: string[] = [];
@@ -139,16 +139,31 @@ export async function streamMusic(
 }
 
 class AudioPlayer {
-    currentPlayer: any;
+    client: any;
     time: number;
     timer: any;
     volume: number;
 
     constructor() {
-        this.currentPlayer = null;
+        this.client = null;
     }
 
-    async play(id: string, volume = 100, offset = 0) {
+    connect() {
+        this.client = net.createConnection(
+            { host: process.env.MUSICS_PLAYER_HOST, port: 7777 },
+            () => {
+                console.log('Connected to mpv IPC');
+            }
+        );
+    }
+
+    sendCommand(command, args = []) {
+        if (!this.client) return;
+        const msg = JSON.stringify({ command: [command, ...args] }) + '\n';
+        this.client.write(msg);
+    }
+
+    async play(id: string, volume = 100) {
         this.volume = volume;
         this.timer = null;
 
@@ -160,21 +175,8 @@ class AudioPlayer {
         }
         const path = musicDir + song.path;
 
-        this.currentPlayer = spawn('ffplay', ['-nodisp', '-autoexit', path], {
-            stdio: 'inherit',
-        });
-
-        const args = ['-nodisp', '-autoexit', '-volume', String(volume)];
-        if (offset > 0) {
-            args.push('-ss', String(offset));
-        }
-        args.push(path);
-
-        this.currentPlayer = spawn('ffplay', args, {
-            stdio: ['ignore', 'inherit', 'inherit'],
-            detached: true,
-        });
-
+        this.connect();
+        this.loadFile(path);
         this.toggleTimer();
     }
 
@@ -194,54 +196,36 @@ class AudioPlayer {
         }
     }
 
+    loadFile(path) {
+        this.sendCommand('loadfile', [path, 'replace']);
+    }
+
+    pause() {
+        this.sendCommand('set_property', ['pause', true]);
+        this.toggleTimer(false);
+    }
+
+    resume() {
+        this.sendCommand('set_property', ['pause', false]);
+        this.toggleTimer(true);
+    }
+
     stop() {
-        if (this.currentPlayer) {
-            console.log('stop');
-            process.kill(this.currentPlayer.pid, 'SIGTERM');
-            this.currentPlayer = null;
-            this.time = 0;
-            this.toggleTimer(false);
-        }
+        this.sendCommand('stop');
+        this.client.end();
+        this.client = null;
+        this.time = 0;
+        this.toggleTimer(false);
     }
 
-    pauseResume() {
-        if (this.currentPlayer) {
-            console.log('pauseResume');
-            this.currentPlayer.stdin.write('p');
-            this.toggleTimer();
-        }
+    seek(seconds: number) {
+        this.sendCommand('seek', [seconds, 'absolute']);
+        this.time = seconds;
     }
 
-    volumeUp() {
-        if (this.currentPlayer) {
-            console.log('volumeUp');
-            this.currentPlayer.stdin.write('+');
-            this.volume = Math.min(this.volume + 5, 100);
-        }
-    }
-
-    volumeDown() {
-        if (this.currentPlayer) {
-            console.log('volumeDown');
-            this.currentPlayer.stdin.write('-');
-            this.volume = Math.max(this.volume - 5, 0);
-        }
-    }
-
-    seekForward10s() {
-        if (this.currentPlayer) {
-            console.log('seekForward10s');
-            this.currentPlayer.stdin.write('\x1b[C'); // Right arrow
-            this.time = this.time + 10;
-        }
-    }
-
-    seekBack10s() {
-        if (this.currentPlayer) {
-            console.log('seekBack10s');
-            this.currentPlayer.stdin.write('\x1b[D'); // Left arrow
-            this.time = this.time - 10;
-        }
+    setVolume(level: number) {
+        this.sendCommand('set_property', ['volume', level]);
+        this.volume = level;
     }
 
     status() {

@@ -121,8 +121,16 @@ const routes: RestApis = {
             handler: async ({ params, body }) => {
                 if (body.control === 'play') {
                     await audioPlayer.play(body.songId, body.volume);
-                } else {
+                } else if (body.control === 'pause') {
                     audioPlayer[body.control]?.();
+                } else if (body.control === 'resume') {
+                    audioPlayer[body.control]?.();
+                } else if (body.control === 'stop') {
+                    audioPlayer[body.control]?.();
+                } else if (body.control === 'seek') {
+                    audioPlayer[body.control]?.(body.offset ?? 0);
+                } else if (body.control === 'volume') {
+                    audioPlayer[body.control]?.(body.volume ?? 100);
                 }
             },
             description: 'Start/Stop/Pause a song on the serve',
