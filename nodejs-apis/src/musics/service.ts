@@ -167,7 +167,7 @@ class AudioPlayer {
         }
 
         const fullPath = musicDir + path;
-        this.path = fullPath;
+        this.path = path;
 
         const args = ['-nodisp', '-autoexit', '-volume', String(this.volume)];
         if ((offset ?? 0) > 0) {
@@ -188,8 +188,6 @@ class AudioPlayer {
         if (state === undefined) {
             state = !this.timer;
         }
-
-        console.log('toggleTimer', state);
         if (state) {
             this.timer = setInterval(() => {
                 this.time = this.time + 1;
@@ -223,7 +221,6 @@ class AudioPlayer {
 
     seek(offset: number) {
         if (!this.currentPlayer) return;
-        console.log('seekForward10s');
         this.play({
             path: this.path,
             volume: this.volume,
