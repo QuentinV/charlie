@@ -67,7 +67,6 @@ function fetchAllMusicsFiles() {
 export const { songsById, songsByPaths } = process.env.MUSICS_DIR
     ? fetchAllMusicsFiles()
     : {};
-const totalSongs = Object.keys(songsById ?? {}).length;
 
 interface CompleteSong extends Song {
     labels: string[];
@@ -189,8 +188,12 @@ class AudioPlayer {
         args.push(fullPath);
 
         this.currentPlayer = spawn('ffplay', args, {
-            stdio: ['inherit'],
-            detached: true,
+            stdio: 'ignore',
+        });
+
+        this.currentPlayer.on('exit', () => {
+            if (!this.timer) return;
+            setTimeout(() => this.skip(), 2000);
         });
 
         this.toggleTimer();
@@ -212,9 +215,13 @@ class AudioPlayer {
 
     stop() {
         if (!this.currentPlayer) return;
-        process.kill(this.currentPlayer.pid, 'SIGTERM');
-        this.currentPlayer = null;
         this.toggleTimer(false);
+        try {
+            process.kill(this.currentPlayer.pid, 'SIGTERM');
+        } catch (e) {
+            //
+        }
+        this.currentPlayer = null;
     }
 
     pause() {
