@@ -36,13 +36,16 @@ export const tools: Tools = {
         description: 'Search music by term and return id.',
         inputSchema: { term: z.string() },
         exec: async ({ term }) => {
-            const songs = (await searchLibrary({ q: term }))
+            const songs = await searchLibrary({ q: term });
+            console.log('songs found: ' + JSON.stringify(songs));
+
+            const filteredSongs = songs
                 .slice(0, 5)
                 .map((it: any) => `- ${it.id}: ${it.name}`);
             return (
-                (songs.length > 1
+                (filteredSongs.length > 1
                     ? `Assistant should pick the most interesting song: `
-                    : '') + songs.join('\n')
+                    : '') + filteredSongs.join('\n')
             );
         },
     },
