@@ -118,20 +118,12 @@ const routes: RestApis = {
             description: 'Get state of player',
         },
         post: {
-            handler: async ({ params, body }) => {
+            handler: async ({ body }) => {
                 console.log(body);
                 if (body.control === 'play') {
                     await audioPlayer.play(body.songId, body.volume);
-                } else if (body.control === 'pause') {
-                    audioPlayer.pause();
-                } else if (body.control === 'resume') {
-                    audioPlayer.resume();
-                } else if (body.control === 'stop') {
-                    audioPlayer.stop();
-                } else if (body.control === 'seek') {
-                    audioPlayer.seek(body.offset ?? 0);
-                } else if (body.control === 'volume') {
-                    audioPlayer.setVolume(body.volume ?? 100);
+                } else {
+                    audioPlayer[body.control]?.();
                 }
             },
             description: 'Start/Stop/Pause a song on the serve',
