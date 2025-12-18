@@ -171,7 +171,8 @@ class AudioPlayer {
         args.push(path);
 
         this.currentPlayer = spawn('ffplay', args, {
-            stdio: ['pipe', 'inherit', 'inherit'],
+            stdio: ['ignore', 'inherit', 'inherit'],
+            detached: true,
         });
 
         this.toggleTimer();
@@ -196,7 +197,7 @@ class AudioPlayer {
     stop() {
         if (this.currentPlayer) {
             console.log('stop');
-            this.currentPlayer.kill('SIGTERM');
+            process.kill(this.currentPlayer.pid, 'SIGTERM');
             this.currentPlayer = null;
             this.time = 0;
             this.toggleTimer(false);
