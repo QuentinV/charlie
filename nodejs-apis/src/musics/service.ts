@@ -280,6 +280,7 @@ class AudioPlayer {
             isPlaying: this.timer !== null,
             volume: this.vol,
             time: this.time,
+            song: this.song,
         };
     }
 }
