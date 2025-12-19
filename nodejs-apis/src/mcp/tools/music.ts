@@ -37,8 +37,6 @@ export const tools: Tools = {
         inputSchema: { term: z.string() },
         exec: async ({ term }) => {
             const songs = await searchLibrary({ q: term });
-            console.log('songs found: ' + JSON.stringify(songs));
-
             const filteredSongs = songs
                 .slice(0, 5)
                 .map((it: any) => `- ${it.id}: ${it.name}`);

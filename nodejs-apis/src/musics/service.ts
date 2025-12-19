@@ -153,7 +153,7 @@ class AudioPlayer {
     time: number;
     timer: any;
     vol: number;
-    song: Song;
+    song: CompleteSong;
 
     constructor() {
         this.currentPlayer = null;
@@ -166,7 +166,7 @@ class AudioPlayer {
         volume,
         offset,
     }: {
-        song?: Song;
+        song?: CompleteSong;
         volume?: number;
         offset?: number;
     }) {
@@ -179,6 +179,7 @@ class AudioPlayer {
 
         const fullPath = pathLib.join(musicDir, song.path);
         this.song = song;
+        this.time = 0;
 
         const args = ['-nodisp', '-autoexit', '-volume', String(this.vol)];
         if ((offset ?? 0) > 0) {
@@ -252,6 +253,7 @@ class AudioPlayer {
     }
 
     decreaseVolume() {
+        console.log('volume', this.vol);
         this.volume(this.vol - 10);
     }
 
@@ -265,8 +267,11 @@ class AudioPlayer {
     }
 
     async skip() {
-        // Get next song that is the closest to the first song by name
-        const song = (await searchLibrary({ q: this.song.name }))?.[1];
+        // Fetch random song from same artist
+        const songs = await searchLibrary({
+            q: this.song.labels?.[0] ?? this.song.name,
+        });
+        const song = songs[Math.floor(Math.random() * songs.length)];
         this.play({ song });
     }
 
