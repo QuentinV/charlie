@@ -19,6 +19,7 @@
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.18.0",
     "@tsconfig/bases": "^1.0.3",
+    "@tuya/tuya-connector-nodejs": "^2.1.2",
     "@types/cors": "^2.8.19",
     "@types/dnssd": "^0.4.5",
     "@types/express": "^5.0.3",

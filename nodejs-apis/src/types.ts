@@ -82,11 +82,6 @@ export interface DeviceState {
     additional?: object;
 }
 
-export interface ProviderInitParams {
-    host?: string;
-    password?: string;
-}
-
 export interface ProviderFunction {
     name: string;
     params?: object;
@@ -102,7 +97,7 @@ export interface ProviderApiMetaInfo {
 }
 
 export interface ProviderApi {
-    init?: (params: ProviderInitParams) => Promise<boolean>;
+    init?: (provider: Provider) => Promise<boolean>;
     discover?: (provider: Provider) => Promise<object[]>;
     changeDeviceState: (
         meta: ProviderApiMetaInfo,

@@ -16,6 +16,7 @@ import sony_bravia_tv from './providers/sony_bravia_tv';
 import nanoleaf from './providers/nanoleafs';
 import clim from './providers/clim_mitshubishi';
 import customGarden from './providers/custom_garden';
+import tuya from './providers/tuya';
 
 // Register all possible providers here
 const providerApis: { [name: string]: ProvidersApis } = {
@@ -24,6 +25,7 @@ const providerApis: { [name: string]: ProvidersApis } = {
     nanoleaf,
     clim,
     customGarden,
+    tuya,
 };
 
 export const availableProvidersCodeSources = Object.keys(providerApis);
