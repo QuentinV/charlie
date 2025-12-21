@@ -29,10 +29,13 @@ services:
         volumes:
             - ./python-apis/app:/app
             - ./nodejs-apis:/mcp-server
+            - ./vosk:/vosk
         environment:
             - MISTRAL_API_KEY=${MISTRAL_API_KEY}
             - AGENT_ID=${AGENT_ID}
             - SSE_HOST=http://host.docker.internal:9300/sse
+            - VOSK_MODEL=/vosk/fr-0.22
+            - VOSK_SAMPLE_RATE=16000
         restart: unless-stopped
         networks:
             - internal

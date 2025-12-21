@@ -1,6 +1,6 @@
 
 import os
-from fastapi import FastAPI, Request, Header
+from fastapi import FastAPI, Request, Header, WebSocket
 from fastapi.responses import Response
 from mistralai import Mistral
 from mistralai.extra.run.context import RunContext
@@ -8,9 +8,11 @@ from mcp import StdioServerParameters
 from mistralai.extra.mcp.stdio import MCPClientSTDIO
 from mistralai.extra.mcp.sse import MCPClientSSE, SSEServerParams
 from piper.voice import PiperVoice
+from vosk import Model, KaldiRecognizer
 import logging
 import io
 import struct
+import json
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
@@ -19,6 +21,9 @@ sse_host = os.getenv("SSE_HOST")
 client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
 agent_id = os.getenv("AGENT_ID")
 cached_tools = None
+
+voskModel = Model(os.getenv("VOSK_MODEL"))
+voskSampleRate = os.getenv("VOSK_SAMPLE_RATE")
 
 if sse_host != "":
     logger.info("Starting in SSE mode with SSE_HOST=%s", sse_host)
@@ -115,3 +120,39 @@ async def generate_tts(request: Request, accept: str = Header(default="audio/L16
             media_type="audio/L16; rate=22050; channels=1",
             headers={"Content-Disposition": "inline; filename=speech.pcm"}
         )
+
+@app.websocket("/stt/stream")
+async def websocket_stt(ws: WebSocket):
+    await ws.accept()
+
+    rec = KaldiRecognizer(voskModel, int(voskSampleRate))
+
+    last_result = ""
+    while True:
+        msg = await ws.receive()
+
+        if msg["type"] == "websocket.disconnect":
+            break
+
+        if "text" in msg and msg["text"] == "__END__":
+            break
+
+        if "bytes" not in msg:
+            continue
+
+        chunk = msg["bytes"]
+
+        if rec.AcceptWaveform(chunk):
+            data = json.loads(rec.Result())
+            if data.get("text"):
+                last_result = data["text"]
+        else:
+            await ws.send_json({"type": "partial", "data": json.loads(rec.PartialResult())})
+
+    # Final result
+    final_data = json.loads(rec.FinalResult())
+    if not final_data.get("text"):
+        final_data["text"] = last_result
+
+    await ws.send_json({"type": "result", "data": final_data})
+    await ws.close()

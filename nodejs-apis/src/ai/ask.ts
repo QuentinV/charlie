@@ -21,7 +21,7 @@ interface AskResponse {
 }
 
 export async function ask(question: string): Promise<AskResponse> {
-    const res = await fetch(`${host}/ask`, {
+    const res = await fetch(`http://${host}/ask`, {
         method: 'POST',
         body: JSON.stringify({ question }),
     });

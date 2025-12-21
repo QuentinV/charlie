@@ -19,6 +19,7 @@ RUN pip install mcp
 RUN pip install griffe
 RUN pip install mistralai
 RUN pip install piper-tts
+RUN pip install vosk
 
 EXPOSE 8000
 

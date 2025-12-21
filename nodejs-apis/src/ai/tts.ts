@@ -11,7 +11,7 @@ export async function tts({
     text,
     type = 'audio/L16',
 }: TTSRequest): Promise<ArrayBuffer> {
-    const res = await fetch(`${host}/tts`, {
+    const res = await fetch(`http://${host}/tts`, {
         method: 'POST',
         body: JSON.stringify({ text }),
         headers: {

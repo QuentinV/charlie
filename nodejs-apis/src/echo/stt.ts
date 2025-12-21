@@ -1,50 +1,73 @@
 import { spawn } from 'child_process';
+import WebSocket from 'ws';
 import ffmpegPath from 'ffmpeg-static';
-import vosk from 'vosk';
 
-vosk.setLogLevel(0);
-const model = new vosk.Model('../vosk/fr-0.22');
-const rec = new vosk.Recognizer({
-    model,
-    sampleRate: 8000,
-});
+console.log(`ws://${process.env.AI_AGENTS_HOST}/stt/stream`);
 
 export function stt(buffer): Promise<string> {
-    return new Promise((res, rej) => {
-        const ffmpeg = spawn(ffmpegPath, [
-            '-f',
-            's32le',
-            '-ar',
-            '8000',
-            '-ac',
-            '1',
-            '-i',
-            'pipe:0',
-            '-filter:a',
-            'volume=40.0,dynaudnorm=f=150:g=15',
-            '-f',
-            'wav',
-            'pipe:1',
-        ]);
+    return new Promise(async (res, rej) => {
+        const ws = new WebSocket(
+            `ws://${process.env.AI_AGENTS_HOST}/stt/stream`
+        );
 
-        // '-filter:a', 'highpass=f=200,volume=4.0,dynaudnorm=f=150:g=15,afftdn=nf=-25'
-        // '-filter:a', 'compand=attacks=0:decays=0:points=-80/-900|-50/-20|0/-10:gain=20' // This simulates automatic gain control (AGC), making quiet sounds louder and loud sounds softer:
+        ws.on('open', () => {
+            const ffmpeg = spawn(ffmpegPath, [
+                '-f',
+                's16le', // s32le
+                '-ar',
+                '16000', // 8000
+                '-ac',
+                '1',
+                '-i',
+                'pipe:0',
+                '-filter:a',
+                'volume=40.0,dynaudnorm=f=150:g=15',
+                '-f',
+                'wav',
+                'pipe:1',
+            ]);
 
-        ffmpeg.stdin.write(Buffer.concat(buffer));
-        ffmpeg.stdin.end();
+            ffmpeg.stdin.write(Buffer.concat(buffer));
+            ffmpeg.stdin.end();
 
-        ffmpeg.stdout.on('data', (stdout) => {
-            rec.acceptWaveform(stdout);
+            ffmpeg.stdout.on('data', (chunk) => {
+                console.log('send chunk');
+                ws.send(chunk);
+            });
+
+            ffmpeg.on('error', (e) => {
+                console.log('error', e);
+                rej();
+            });
+
+            ffmpeg.on('close', async () => {
+                console.log('done');
+                ws.send('__END__');
+            });
+
+            ws.on('message', (msg) => {
+                const event = JSON.parse(msg.toString());
+
+                if (event.type === 'partial') {
+                    console.log('Partial:', event.data.partial);
+                }
+
+                if (event.type === 'result') {
+                    console.log('FINAL:', JSON.stringify(event.data));
+
+                    //ffmpeg.kill('SIGKILL');
+                    ws.close();
+                    res(event.data.text);
+                }
+            });
         });
 
-        ffmpeg.on('error', (e) => {
-            console.log('error', e);
+        ws.on('error', (e) => {
+            console.log('ws', e);
             rej();
-        });
-
-        ffmpeg.on('close', async () => {
-            const result = rec.finalResult();
-            res(result?.text);
         });
     });
 }
+
+// '-filter:a', 'highpass=f=200,volume=4.0,dynaudnorm=f=150:g=15,afftdn=nf=-25'
+// '-filter:a', 'compand=attacks=0:decays=0:points=-80/-900|-50/-20|0/-10:gain=20' // This simulates automatic gain control (AGC), making quiet sounds louder and loud sounds softer:
