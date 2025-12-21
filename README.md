@@ -2,19 +2,47 @@
 
 my own home assistant
 
-# Ai Agent
+# Backend - python-apis
+
+## Intro
+
+Python project to run models & MCP client proxy. Will provide RestApi endpoints as interface called by NodeJS project.
+
+## Ai Agent
 
 For now it needs to be created on mistral ai website https://console.mistral.ai/build/agents
 
 My current system prompt:
 `You are an home assistant with access to different devices through function calling. Your name is Charlie.`
 
+## Environment
+
 Agent id and mistral api key needs to be configured as env variable with `.env` in root for docker compose
 
 ```
 MISTRAL_API_KEY=
 AGENT_ID=
+SSE_HOST=host.docker.internal
+VOSK_MODEL=/vosk/fr-0.22
+VOSK_SAMPLE_RATE=16000
 ```
+
+`SSE_HOST=host.docker.internal` is used for development when having nodejs running on host. This should be set to `api` for deployment with full docker-compose.
+
+## Run
+
+`python-apis` folder with python fastapi is configured to run with docker therefore you can use 'docker-compose' available at root.
+
+Refer to section "Ai Agent" for configuration.
+
+Run in root folder:
+
+> docker compose up ai-agents --build
+
+This will start server on port 9301 with endpoints:
+
+-   **/ask** : LLM call **{ question: "" }** with MCP configuration to nodejs server. `MistralAi`is the default LLM used.
+-   **/tts**: TTS payload **{ text: "" }** will return blob based on Accept header. TTS uses `piper` library
 
 # Backend - nodejs-apis
 
@@ -31,7 +59,7 @@ NodeJs backend to run
 Create a .env file in "nodejs-apis" folder
 
 ```
-AI_AGENTS_HOST=http://localhost:8000
+AI_AGENTS_HOST=localhost:8000
 DB_HOST=localhost:27017
 MACVENDORS_APIKEY=(optional)
 SUBNET_IP=192.168.1
@@ -41,31 +69,12 @@ EMAIL_NOTIFICATION_USER=
 EMAIL_NOTIFICATION_EMAIL=
 EMAIL_NOTIFICATION_PASSWORD=
 EMAIL_NOTIFICATION_TARGET_EMAIL=
+MUSICS_DIR=
+MUSICS_PLAYER_HOST=audio
 ```
 
 -   [Get a mistral API key](https://console.mistral.ai/build/agents?workspace_dialog=apiKeys)
 -   [Get Mac vendors api key](https://api.macvendors.com) (optional)
-
-# Backend - python-apis
-
-## Intro
-
-Python project to run models & MCP client proxy. Will provide RestApi endpoints as interface called by NodeJS project.
-
-## Environment variables
-
-`python-apis` folder with python fastapi is configured to run with docker therefore you can use 'docker-compose' available at root.
-
-Refer to section "Ai Agent" for configuration.
-
-Run in root folder:
-
-> docker compose up ai-agents --build
-
-This will start server on port 8000 with endpoints:
-
--   **/ask** : LLM call **{ question: "" }** with MCP configuration to nodejs server. `MistralAi`is the default LLM used.
--   **/tts**: TTS payload **{ text: "" }** will return blob based on Accept header. TTS uses `piper` library
 
 # Frontend
 
