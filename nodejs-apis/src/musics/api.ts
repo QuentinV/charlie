@@ -1,14 +1,17 @@
 import { RestApis } from '../types';
+import { cs } from '../core/db';
 import {
     audioPlayer,
     executeCommand,
     getSongById,
+    manageSongsPlaylist,
     searchLibrary,
     streamMusic,
 } from './service';
+import { v4 as uuidV4 } from 'uuid';
 
 const routes: RestApis = {
-    /*'musics/playlists': {
+    'musics/playlists': {
         get: {
             handler: async () =>
                 cs.musics_playlists
@@ -30,7 +33,10 @@ const routes: RestApis = {
     },
     'musics/playlists/:id': {
         get: {
-            handler: async ({ params }) => getPlaylistById(params.id),
+            handler: async ({ params }) =>
+                cs.musics_playlists.findOne({
+                    _id: params.pid,
+                }),
             description: 'Get a playlist',
         },
         put: {
@@ -46,40 +52,17 @@ const routes: RestApis = {
     'musics/playlist/:pid/songs': {
         post: {
             handler: async ({ params, body }) => {
-                const playlist = await cs.musics_playlists.findOne({
-                    _id: params.pid,
-                });
-                const song = await getSongById(body.songId);
-                if (!playlist.songs) playlist.songs = [];
-                playlist.songs.push(song.path);
-                console.log(playlist);
-                await cs.musics_playlists.updateOne(
-                    { _id: params.pid },
-                    { $set: { songs: playlist.songs } }
-                );
+                manageSongsPlaylist(params.pid, body.songId, true);
             },
             description: 'Add a song to a playlist',
         },
         delete: {
             handler: async ({ params, body }) => {
-                const playlist = await cs.musics_playlists.findOne({
-                    _id: params.pid,
-                });
-                const song = await getSongById(body.songId);
-                await cs.musics_playlists.updateOne(
-                    { _id: params.pid },
-                    {
-                        $set: {
-                            songs: playlist.songs.filter(
-                                (s) => s !== song.path
-                            ),
-                        },
-                    }
-                );
+                manageSongsPlaylist(params.pid, body.songId, false);
             },
             description: 'Delete a song from a playlist',
         },
-    },*/
+    },
     'musics/songs': {
         get: {
             handler: async ({ query }) => searchLibrary(query),

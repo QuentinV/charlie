@@ -316,3 +316,27 @@ export async function executeCommand({
         audioPlayer[command]?.();
     }
 }
+
+export async function manageSongPlaylist(
+    playlistId: string,
+    songId: string,
+    addSong: boolean
+) {
+    const playlist = await cs.musics_playlists.findOne({
+        _id: playlistId,
+    });
+    if (!playlist) throw new NotFoundError('playlist not found');
+
+    const song = await getSongById(songId);
+    if (!song) throw new NotFoundError('song not found');
+
+    const songsPaths = [...playlist.songs?.filter((p) => song.path !== p)];
+    if (addSong) {
+        songsPaths.push(song.path);
+    }
+
+    await cs.musics_playlists.updateOne(
+        { _id: playlistId },
+        { $set: { songs: songsPaths } }
+    );
+}
