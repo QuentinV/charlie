@@ -2,8 +2,6 @@ import { spawn } from 'child_process';
 import WebSocket from 'ws';
 import ffmpegPath from 'ffmpeg-static';
 
-console.log(`ws://${process.env.AI_AGENTS_HOST}/stt/stream`);
-
 export function stt(buffer): Promise<string> {
     return new Promise(async (res, rej) => {
         const ws = new WebSocket(
@@ -31,7 +29,6 @@ export function stt(buffer): Promise<string> {
             ffmpeg.stdin.end();
 
             ffmpeg.stdout.on('data', (chunk) => {
-                console.log('send chunk');
                 ws.send(chunk);
             });
 
@@ -41,21 +38,17 @@ export function stt(buffer): Promise<string> {
             });
 
             ffmpeg.on('close', async () => {
-                console.log('done');
                 ws.send('__END__');
             });
 
             ws.on('message', (msg) => {
                 const event = JSON.parse(msg.toString());
 
-                if (event.type === 'partial') {
+                /*if (event.type === 'partial') {
                     console.log('Partial:', event.data.partial);
-                }
+                }*/
 
                 if (event.type === 'result') {
-                    console.log('FINAL:', JSON.stringify(event.data));
-
-                    //ffmpeg.kill('SIGKILL');
                     ws.close();
                     res(event.data.text);
                 }

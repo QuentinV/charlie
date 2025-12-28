@@ -22,7 +22,8 @@
 #define EIDSP_QUANTIZE_FILTERBANK   0
 #include <charlie_inferencing.h>
 
-#define AUDIO_UDP_PORT 12345
+#define MQTT_PORT      9304
+#define AUDIO_UDP_PORT 9303
 #define AUDIO_TCP_PORT 12345
 
 #define SCREEN_WIDTH 128
@@ -75,6 +76,7 @@ unsigned long motionStart = 0;
 unsigned long touchStart = 0;
 unsigned long silenceStart = 0;
 bool mute = false;
+bool speaker = false;
 
 /** Audio buffers, pointers and selectors */
 typedef struct {
@@ -377,7 +379,7 @@ void sendMicAudioTask(void *arg) {
       silenceStart = 0;
     }
 
-    Serial.printf("Read %d bytes (%d samples), RMS=%d\n", bytes_read, samples_read, rms);
+    //Serial.printf("Read %d bytes (%d samples), RMS=%d\n", bytes_read, samples_read, rms);
     WiFiUDP udp;
     udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
     udp.write((uint8_t*)samples, bytes_read);
@@ -409,7 +411,7 @@ void mqttTask(void *pvParameters) {
     }
     client.loop();
     sendCurrentState(false);
-    Serial.printf("mqttTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
+    //Serial.printf("mqttTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
     vTaskDelay(1800000 / portTICK_PERIOD_MS);
   }
 }
@@ -431,7 +433,7 @@ void handleTouchTask(void* arg) {
       pixels.show();
 
       touchStart = 0;
-      Serial.printf("handleTouchTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
+      //Serial.printf("handleTouchTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
     }
 
     vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -465,15 +467,12 @@ void receiveAndPlayAudioTask(void *arg) {
       vTaskDelay(1000 / portTICK_PERIOD_MS);
       continue;
     }
-
-    Serial.println("receiveAndPlayAudioTask - start receiving");
-
-    uint8_t buffer[BUFFER_SIZE];
-    while (client.connected()) {
-      int len = client.read(buffer, sizeof(buffer));
-      
-      Serial.printf("receiveAndPlayAudioTask - len %d\n", len);
     
+    speaker = true;
+    uint8_t buffer[BUFFER_SIZE];
+    while (client.connected() && speaker) {
+      int len = client.read(buffer, sizeof(buffer));
+          
       if (len > 0) {
         size_t bytes_written;
         i2s_write(I2S_SPK_PORT, buffer, len, &bytes_written, portMAX_DELAY);
@@ -519,12 +518,14 @@ void wakeUpWordTask(void *arg) {
         return;
     }
     
-    float confidence = result.classification[0].value;
-    if (confidence > WAKE_UP_WORD_ACCURACY) {
+    if ( result.classification[0].value > WAKE_UP_WORD_ACCURACY) {
         onWakeWordDetected();
+    } else if (result.classification[1].value > 0.5f || result.classification[3].value > 0.5f) {
+        speaker = false;
+        ei_printf("Merci OR stop\n");
     } else {
       // print the predictions
-      ei_printf("Predictions ");
+      /*ei_printf("Predictions ");
       ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
           result.timing.dsp, result.timing.classification, result.timing.anomaly);
       ei_printf(": \n");
@@ -532,10 +533,10 @@ void wakeUpWordTask(void *arg) {
           ei_printf("    %s: ", result.classification[ix].label);
           ei_printf_float(result.classification[ix].value);
           ei_printf("\n");
-      }
+      }*/
     }
 
-    Serial.printf("WakeUpWordTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
+    //Serial.printf("WakeUpWordTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
   }
 }
 
@@ -592,7 +593,7 @@ void setup() {
   Serial.printf("Current IP: %s\n", WiFi.localIP().toString().c_str());
 
   // Setup MQTT
-  client.setServer(serverip.c_str(), 1883);
+  client.setServer(serverip.c_str(), MQTT_PORT);
 
   // Tasks
   xTaskCreate( mqttTask, "StateReporting", 2000, NULL, 1, &mqttTaskHandle );
