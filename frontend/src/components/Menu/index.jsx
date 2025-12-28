@@ -16,13 +16,18 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router-dom';
 
+const navItems = [
+    { label: 'Home', route: '/' },
+    { label: 'Routines', route: '/routines' },
+    { label: 'Discover', route: '/discover' },
+    { label: 'AI', route: '/ai' },
+];
+
 export const Menu = () => {
     const theme = useTheme();
     const [drawerOpen, setDrawerOpen] = React.useState(false);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
-
-    const navItems = ['Home', 'Routines', 'Discover'];
 
     return (
         <>
@@ -56,13 +61,14 @@ export const Menu = () => {
                         Charlie
                     </Typography>
                     {!isMobile &&
-                        navItems.map((item) => (
+                        navItems.map((item, i) => (
                             <Button
-                                key={item}
+                                key={i}
                                 color="inherit"
                                 sx={{ marginLeft: '1rem' }}
+                                onClick={() => navigate(item.route)}
                             >
-                                {item}
+                                {item.label}
                             </Button>
                         ))}
                 </Toolbar>
@@ -74,13 +80,15 @@ export const Menu = () => {
             >
                 <Box sx={{ width: 250 }} role="presentation">
                     <List>
-                        {navItems.map((text) => (
+                        {navItems.map((item, i) => (
                             <ListItem
-                                button
-                                key={text}
-                                onClick={() => setDrawerOpen(false)}
+                                key={i}
+                                onClick={() => {
+                                    setDrawerOpen(false);
+                                    navigate(item.route);
+                                }}
                             >
-                                <ListItemText primary={text} />
+                                <ListItemText primary={item.label} />
                             </ListItem>
                         ))}
                     </List>

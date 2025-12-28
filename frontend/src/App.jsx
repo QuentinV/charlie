@@ -9,6 +9,7 @@ import { Footer } from './components/Footer';
 import { DevicesDiscoveryPage } from './pages/DevicesDiscovery';
 import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
+import { AiPage } from './pages/AiPage';
 
 export default function App() {
     return (
@@ -51,6 +52,7 @@ export default function App() {
                                     path="/routines"
                                     element={<RoutinesPage />}
                                 />
+                                <Route path="/ai" element={<AiPage />} />
                                 <Route path="*" element={<NotFoundPage />} />
                             </Routes>
                         </Box>
