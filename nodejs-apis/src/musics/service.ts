@@ -317,7 +317,7 @@ export async function executeCommand({
     }
 }
 
-export async function manageSongPlaylist(
+export async function manageSongsPlaylist(
     playlistId: string,
     songId: string,
     addSong: boolean
