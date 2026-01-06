@@ -40,6 +40,7 @@
     "mdns-server": "^1.0.11",
     "mongodb": "^6.19.0",
     "mqtt": "^5.14.1",
+    "music-metadata": "^11.10.3",
     "net": "^1.0.2",
     "node-ssdp": "^4.0.1",
     "node-tradfri-client": "^3.2.0",

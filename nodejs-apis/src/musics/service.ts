@@ -5,6 +5,7 @@ import { cs } from '../core/db';
 import { spawn } from 'child_process';
 import { NotFoundError } from '../errors';
 import Fuse from 'fuse.js';
+import * as mm from 'music-metadata';
 
 function getFilesRecursive(dir: string, exts: string[]): string[] {
     const fileList: string[] = [];
@@ -32,12 +33,17 @@ function getFilesRecursive(dir: string, exts: string[]): string[] {
 
 const musicDir = process.env.MUSICS_DIR;
 
-function fetchAllMusicsFiles() {
+let songsById = null;
+let songsByPaths = null;
+
+process.env.MUSICS_DIR && fetchAllMusicsFiles();
+
+async function fetchAllMusicsFiles() {
     const extensions = ['.mp3', '.flac'];
     let i = 0;
 
-    const songsByPaths = {};
-    const songsById = {};
+    songsByPaths = {};
+    songsById = {};
 
     const files = getFilesRecursive(musicDir, extensions);
     for (let i = 0; i < files.length; ++i) {
@@ -50,23 +56,23 @@ function fetchAllMusicsFiles() {
             .split(delimiter)
             .filter((s) => !!s.trim());
 
+        const meta = await mm.parseFile(v);
         const song = {
             path,
             labels,
             name: labels.join(' '),
             id: i,
+            duration: Number(meta?.format?.duration?.toFixed(2)),
         };
 
         songsByPaths[song.path] = song;
         songsById[song.id] = song;
     }
 
+    console.log('[SONGS] initialized');
+
     return { songsById, songsByPaths };
 }
-
-export const { songsById, songsByPaths } = process.env.MUSICS_DIR
-    ? fetchAllMusicsFiles()
-    : {};
 
 interface CompleteSong extends Song {
     labels: string[];
@@ -91,10 +97,21 @@ export async function getPlaylistById(id: string): Promise<Playlist> {
     const playlist = await cs.musics_playlists.findOne({ _id: id });
     playlist.songs = playlist?.songs?.map((s: string) => ({
         id: songsByPaths[s]?.id,
-        path: s,
         name: songsByPaths[s]?.name,
     }));
     return playlist;
+}
+
+export async function getPlaylists(): Promise<Playlist[]> {
+    const playlists = await cs.musics_playlists.find().toArray();
+    playlists.forEach((playlist) => {
+        playlist.songs = playlist?.songs?.map((s: string) => ({
+            id: songsByPaths[s]?.id,
+            name: songsByPaths[s]?.name,
+            duration: songsByPaths[s]?.duration,
+        }));
+    });
+    return playlists;
 }
 
 const songsFuse = new Fuse(Object.values(songsById), {

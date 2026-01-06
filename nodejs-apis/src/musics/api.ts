@@ -3,6 +3,8 @@ import { cs } from '../core/db';
 import {
     audioPlayer,
     executeCommand,
+    getPlaylistById,
+    getPlaylists,
     getSongById,
     manageSongsPlaylist,
     searchLibrary,
@@ -13,10 +15,7 @@ import { v4 as uuidV4 } from 'uuid';
 const routes: RestApis = {
     'musics/playlists': {
         get: {
-            handler: async () =>
-                cs.musics_playlists
-                    .find({}, { projection: { _id: 1, name: 1 } })
-                    .toArray(),
+            handler: async () => getPlaylists(),
             description: 'List all playlists',
         },
         post: {
@@ -33,10 +32,7 @@ const routes: RestApis = {
     },
     'musics/playlists/:id': {
         get: {
-            handler: async ({ params }) =>
-                cs.musics_playlists.findOne({
-                    _id: params.pid,
-                }),
+            handler: async ({ params }) => getPlaylistById(params.pid),
             description: 'Get a playlist',
         },
         put: {

@@ -10,6 +10,7 @@ import { DevicesDiscoveryPage } from './pages/DevicesDiscovery';
 import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
 import { AiPage } from './pages/AiPage';
+import Musics from './components/Musics';
 
 export default function App() {
     return (
@@ -69,6 +70,7 @@ export default function App() {
                     >
                         <Footer />
                     </Box>
+                    <Musics />
                 </Box>
             </Router>
         </ThemeProvider>
