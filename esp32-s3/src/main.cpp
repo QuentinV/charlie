@@ -42,13 +42,13 @@
 #define I2S_MIC_WS  GPIO_NUM_1
 #define I2S_MIC_SD  GPIO_NUM_42
 #define I2S_MIC_SCK GPIO_NUM_2
+#define MIC_GAIN 3
 
 #define I2S_SPK_PORT I2S_NUM_1
 #define I2S_SPK_LRC GPIO_NUM_20
 #define I2S_SPK_BCLK GPIO_NUM_19
 #define I2S_SPK_DIN GPIO_NUM_14
 
-#define SAMPLE_RATE 8000
 #define BUFFER_SIZE 512
 
 #define MIC_THRESHOLD_SOUND 200
@@ -57,7 +57,7 @@
 #define MOTION_SENSOR_RETRIGGER 60
 #define SENSOR_REPORT_INTERVAL 3600 // 1h
 #define SCREEN_DISPLAY_TIME 10
-#define WAKE_UP_WORD_ACCURACY 0.5f
+#define WAKE_UP_WORD_ACCURACY 0.8f
 
 // preferences
 Preferences prefs;
@@ -152,7 +152,7 @@ int setupMicI2S(uint32_t sampling_rate) {
   i2s_config_t i2s_config = {
       .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = sampling_rate,
-      .bits_per_sample = (i2s_bits_per_sample_t)16,
+      .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       .intr_alloc_flags = 0,
@@ -160,7 +160,7 @@ int setupMicI2S(uint32_t sampling_rate) {
       .dma_buf_len = 512,
       .use_apll = false,
       .tx_desc_auto_clear = false,
-      .fixed_mclk = -1,
+      .fixed_mclk = -1
   };
   i2s_pin_config_t pin_config = {
       .bck_io_num = I2S_MIC_SCK,
@@ -288,35 +288,65 @@ void displayStatusOnScreen(tm *timeinfo) {
 }
 
 void captureMicSamplesTask(void* arg) {
-  continuous_record = true;
-  const int32_t i2s_bytes_to_read = (uint32_t)arg;
-  size_t bytes_read = i2s_bytes_to_read;
+    continuous_record = true;
 
-  while (continuous_record && !mute) {
-    /* read data at once from i2s */
-    i2s_read(I2S_MIC_PORT, (void*)sampleBuffer, i2s_bytes_to_read, &bytes_read, 100);
+    const int32_t bytes_to_read = (uint32_t)arg;     // e.g. 2048
+    const int32_t samples_to_read = bytes_to_read / sizeof(int32_t); // 512 samples
 
-    if (bytes_read <= 0) {
-      ei_printf("Error in I2S read : %d", bytes_read);
-    }
-    else {
-        if (bytes_read < i2s_bytes_to_read) {
-          ei_printf("Partial I2S read");
+    static int32_t rawBuffer[2048];   // safe upper bound
+    size_t bytes_read = 0;
+
+    // High‑pass filter state
+    static int32_t hp_prev = 0;
+
+    while (continuous_record && !mute) {
+        esp_err_t err = i2s_read(
+            I2S_MIC_PORT,
+            rawBuffer,
+            bytes_to_read,
+            &bytes_read,
+            portMAX_DELAY
+        );
+
+        if (err != ESP_OK || bytes_read == 0) {
+            ei_printf("I2S read error: %d\n", err);
+            continue;
         }
 
-        // scale the data (otherwise the sound is too quiet)
-        for (int x = 0; x < i2s_bytes_to_read/2; x++) {
-            sampleBuffer[x] = (int16_t)(sampleBuffer[x]) * 8;
+        // Skip partial DMA reads
+        if (bytes_read != bytes_to_read) {
+            continue;
+        }
+
+        // --- CONVERT + FILTER + GAIN ---
+        for (int i = 0; i < samples_to_read; i++) {
+
+            // Convert 24‑bit left‑aligned → 16‑bit
+            int32_t s = rawBuffer[i] >> 8;
+
+            // High‑pass filter (removes DC bias)
+            int32_t hp = s - hp_prev + (hp_prev >> 8);
+            hp_prev = s;
+            s = hp;
+
+            // Apply gain safely
+            int64_t temp = (int64_t)s * MIC_GAIN;
+
+            // Clip to int16
+            if (temp > 32767) temp = 32767;
+            if (temp < -32768) temp = -32768;
+
+            sampleBuffer[i] = (int16_t)temp;
         }
 
         if (mute || !continuous_record) {
-          break;   
+            break;
         }
 
-        audio_inference_callback(i2s_bytes_to_read);
+        audio_inference_callback(samples_to_read * sizeof(int16_t));
     }
-  }
-  vTaskDelete(NULL);
+
+    vTaskDelete(NULL);
 }
 
 void startMicCaptureSamples() {
@@ -520,12 +550,12 @@ void wakeUpWordTask(void *arg) {
     
     if ( result.classification[0].value > WAKE_UP_WORD_ACCURACY) {
         onWakeWordDetected();
-    } else if (result.classification[1].value > 0.5f || result.classification[3].value > 0.5f) {
+    /*} else if (result.classification[1].value > 0.8f || result.classification[3].value > 0.8f) {
         speaker = false;
-        ei_printf("Merci OR stop\n");
+        ei_printf("Merci OR stop\n");*/
     } else {
       // print the predictions
-      /*ei_printf("Predictions ");
+      ei_printf("Predictions ");
       ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
           result.timing.dsp, result.timing.classification, result.timing.anomaly);
       ei_printf(": \n");
@@ -533,7 +563,7 @@ void wakeUpWordTask(void *arg) {
           ei_printf("    %s: ", result.classification[ix].label);
           ei_printf_float(result.classification[ix].value);
           ei_printf("\n");
-      }*/
+      }
     }
 
     //Serial.printf("WakeUpWordTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
@@ -597,7 +627,7 @@ void setup() {
 
   // Tasks
   xTaskCreate( mqttTask, "StateReporting", 2000, NULL, 1, &mqttTaskHandle );
-  xTaskCreate( memoryPrintTask, "MemoryPrint", 2000, NULL, 1, &memoryPrintHandle );
+  //xTaskCreate( memoryPrintTask, "MemoryPrint", 2000, NULL, 1, &memoryPrintHandle );
   xTaskCreate( handleTouchTask, "TouchSensor", 1800, NULL, 1, &touchTaskHandle );
   xTaskCreate( handleMotionSensorTask, "MotionSensor", 2200, NULL, 1, &motionSensorHandle );
   xTaskCreate( receiveAndPlayAudioTask, "ReceivePlayAudio", 1024 * 8, NULL, 1, &receivePlayAudioHandle );

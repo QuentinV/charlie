@@ -46,7 +46,7 @@
 #include "edge-impulse-sdk/classifier/inferencing_engines/engines.h"
 #include "edge-impulse-sdk/classifier/postprocessing/ei_postprocessing_common.h"
 
-const char* ei_classifier_inferencing_categories_831961_1[] = { "charlie", "noise", "unknown" };
+const char* ei_classifier_inferencing_categories_831961_1[] = { "charlie", "merci", "noise", "stop", "unknown" };
 
 EI_CLASSIFIER_DSP_AXES_INDEX_TYPE ei_dsp_config_831961_3_axes[] = { 0 };
 const uint32_t ei_dsp_config_831961_3_axes_size = 1;
@@ -145,7 +145,7 @@ const ei_impulse_t impulse_831961_1 = {
     .project_name = "charlie",
     .impulse_id = 1,
     .impulse_name = "Impulse #1",
-    .deploy_version = 9,
+    .deploy_version = 12,
 
     .nn_input_frame_size = 3960,
     .raw_sample_count = 16000,
@@ -176,7 +176,7 @@ const ei_impulse_t impulse_831961_1 = {
     .slices_per_model_window = 4,
 
     .has_anomaly = EI_ANOMALY_TYPE_UNKNOWN,
-    .label_count = 3,
+    .label_count = 5,
     .categories = ei_classifier_inferencing_categories_831961_1,
     .results_type = EI_CLASSIFIER_TYPE_CLASSIFICATION,
     .freeform_outputs_size = freeform_outputs_831961_1_size,
