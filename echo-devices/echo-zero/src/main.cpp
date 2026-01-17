@@ -5,38 +5,24 @@
 #include <WiFiUdp.h>
 #include <WiFi.h>
 #include <Preferences.h>
-#include <Wire.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-#define sensor_t adafruit_sensor_t
-#include <Adafruit_Sensor.h>
-#undef sensor_t
 #include <Adafruit_NeoPixel.h>
-#include <DHT.h>
-#include <PubSubClient.h>
-#include "time.h"
 #include "driver/i2s.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <DoubleResetDetector_Generic.h>
+
+#define DRD_TIMEOUT 10
+#define DRD_ADDRESS 0
 
 #define EIDSP_QUANTIZE_FILTERBANK   0
 #include <charlie_inferencing.h>
 
-#define MQTT_PORT      9304
+#define WIFI_NAME "Charlie-Echo-Zero"
+#define WIFI_PASS "CharlieEchoZero123"
+
 #define AUDIO_UDP_PORT 9303
 #define AUDIO_TCP_PORT 12345
-
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_RESET    -1
-#define OLED_SDA      GPIO_NUM_45
-#define OLED_SCL      GPIO_NUM_40
-
-#define DHTPIN GPIO_NUM_17
-#define DHTTYPE DHT22
-
-#define MOTION_PIN GPIO_NUM_41
-#define TOUCH_PIN GPIO_NUM_47
 
 #define I2S_MIC_PORT I2S_NUM_0
 #define I2S_MIC_WS  GPIO_NUM_1
@@ -53,27 +39,21 @@
 
 #define MIC_THRESHOLD_SOUND 200
 #define MIC_DURATION_SILENCE 2
-#define WAKE_EXTENSION_MS 1800 // 30min
-#define MOTION_SENSOR_RETRIGGER 60
-#define SENSOR_REPORT_INTERVAL 3600 // 1h
-#define SCREEN_DISPLAY_TIME 10
+
 #define WAKE_UP_WORD_ACCURACY 0.8f
 
 // preferences
 Preferences prefs;
+WiFiManager wm;
 String serverip;
 
 // Objects
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+DoubleResetDetector_Generic drd(DRD_TIMEOUT, DRD_ADDRESS);
 Adafruit_NeoPixel pixels(1, GPIO_NUM_48, NEO_GRB + NEO_KHZ800);
-DHT dht(DHTPIN, DHTTYPE);
 WiFiServer server(AUDIO_TCP_PORT);
 WiFiClient espClient;
-PubSubClient client(espClient);
 
 // States
-unsigned long motionStart = 0;
-unsigned long touchStart = 0;
 unsigned long silenceStart = 0;
 bool mute = false;
 bool speaker = false;
@@ -93,58 +73,48 @@ bool debug_nn = false; // Set this to true to see e.g. features generated from t
 bool continuous_record = true;
 
 // Task handles
-TaskHandle_t mqttTaskHandle;
-TaskHandle_t memoryPrintHandle;
-TaskHandle_t touchTaskHandle;
-TaskHandle_t motionSensorHandle;
 TaskHandle_t receivePlayAudioHandle;
 TaskHandle_t wakeUpWordHandle;
 
-void displayText(String text) {
-  display.clearDisplay();
-  display.setCursor(0, 10);
-  display.println(text);
-  display.display();
-}
+void setupWiFi() {
+  prefs.begin("config", false);
+  serverip = prefs.getString("serverIp", "");
+  Serial.println("Loaded serverIp: " + serverip);
 
-bool isSleepHour() {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) return false;
-  return timeinfo.tm_hour >= 0 && timeinfo.tm_hour < 8;
-}
+  WiFi.mode(WIFI_AP_STA);
 
-void mqttReconnect() {
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    if (client.connect("EchoClient")) {
-      Serial.println("connected");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 min");
-      vTaskDelay(300000 / portTICK_PERIOD_MS);
-    }
+  wm.setConfigPortalBlocking(true);
+  wm.setDebugOutput(true);
+
+  WiFiManagerParameter customServiceIp("serverIp", "Charlie server IP", serverip.c_str(), 16);
+  wm.addParameter(&customServiceIp);
+
+  bool res = wm.autoConnect(WIFI_NAME, WIFI_PASS);
+
+  if (!res) {
+    delay(3000);
+    ESP.restart();
   }
-}
 
-String fetchFormattedStateData() {
-  float temp = dht.readTemperature();
-  float hum  = dht.readHumidity(); 
-
-  return 
-    String(WiFi.macAddress()) + ";" +
-    String(temp, 1) + ";" +
-    String(hum, 1);
-}
-
-void sendCurrentState(bool motiondetected) {
-  if (client.connected()) {
-    String data = fetchFormattedStateData();
-    if ( motiondetected ) {
-      data = data + ";true";
-    }
-    client.publish("echo/status", data.c_str());
+  String serverIp = customServiceIp.getValue();
+  if (serverIp.length() == 0) {
+    wm.startConfigPortal(WIFI_NAME, WIFI_PASS);
   }
+
+  prefs.putString("serverIp", serverIp);
+  serverip = serverIp;
+
+  prefs.end();
+}
+
+void reset() {
+  Serial.println("Reset......");
+  wm.resetSettings();
+  prefs.begin("config", false);
+  prefs.clear();
+  prefs.end();
+  delay(500);
+  ESP.restart();
 }
 
 int setupMicI2S(uint32_t sampling_rate) {
@@ -252,39 +222,6 @@ void setupSpeakerI2S() {
 
   i2s_driver_install(I2S_SPK_PORT, &spk_config, 0, NULL);
   i2s_set_pin(I2S_SPK_PORT, &spk_pins);
-}
-
-void displayStatusOnScreen(tm *timeinfo) {
-  display.ssd1306_command(SSD1306_DISPLAYON);
-
-  float temp = dht.readTemperature();
-  float hum  = dht.readHumidity(); 
-
-  display.clearDisplay();
-
-  // top left
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.printf("%.1fC", temp);
-
-  // top right
-  display.setCursor(SCREEN_WIDTH - 30, 0);
-  display.printf("%.1f%%", hum);
-
-  display.display();
-
-  // Middle centered
-  display.setTextSize(3);
-  char timestr[16];
-  strftime(timestr, sizeof(timestr), "%H:%M", timeinfo);
-  int16_t x, y;
-  uint16_t w, h;
-  display.getTextBounds(timestr, 0, 0, &x, &y, &w, &h);
-  display.setCursor((SCREEN_WIDTH - w) / 2, (SCREEN_HEIGHT - h) / 2);
-  display.print(timestr);
-  display.display();
-
-  display.setTextSize(1);
 }
 
 void captureMicSamplesTask(void* arg) {
@@ -433,61 +370,6 @@ void memoryPrintTask(void *pvParameters) {
   }
 }
 
-void mqttTask(void *pvParameters) {
-  vTaskDelay(5000 / portTICK_PERIOD_MS);
-  for (;;) {
-    if (!client.connected()) {
-      mqttReconnect();
-    }
-    client.loop();
-    sendCurrentState(false);
-    //Serial.printf("mqttTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
-    vTaskDelay(1800000 / portTICK_PERIOD_MS);
-  }
-}
-
-void handleTouchTask(void* arg) {
-  for (;;) {
-    int touch = digitalRead(TOUCH_PIN);
-
-    if (touch && touchStart == 0) {
-      time_t t = time(NULL);
-      touchStart = t;
-    } else if (touch == 0 && touchStart != 0) {
-      mute = !mute;
-      if (!mute) {
-        startMicCaptureSamples();
-      }
-      
-      pixels.setPixelColor(0, pixels.Color(mute ? 255 : 0, 0, 0));
-      pixels.show();
-
-      touchStart = 0;
-      //Serial.printf("handleTouchTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
-    }
-
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
-}
-
-void handleMotionSensorTask(void *arg) {
-  for (;;) {
-    time_t t = time(NULL);
-    if (digitalRead(MOTION_PIN) && t - motionStart > MOTION_SENSOR_RETRIGGER) {
-      motionStart = t;
-
-      struct tm *timeinfo = localtime(&t);
-      displayStatusOnScreen(timeinfo);
-
-      sendCurrentState(true);
-    } else if (t - motionStart > SCREEN_DISPLAY_TIME) {
-      display.ssd1306_command(SSD1306_DISPLAYOFF);
-    }
-    //Serial.printf("handleMotionSensorTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
-}
-
 void receiveAndPlayAudioTask(void *arg) {
   server.begin();
 
@@ -573,35 +455,25 @@ void wakeUpWordTask(void *arg) {
 void setup() {
   Serial.begin(115200);
 
-  printf("Hello");
-
-  setenv("TZ", "CETCEST,M3.5.0,M10.5.0/3", 1);
-  tzset();
-
-  Wire.begin(OLED_SDA, OLED_SCL);
-  if (display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    display.ssd1306_command(SSD1306_DISPLAYON);
-    display.setTextColor(SSD1306_WHITE);
-    display.setTextSize(1);
+  if (drd.detectDoubleReset()) {
+    reset();
+    return;
   }
+
+  Serial.println("Hello");
 
   pixels.begin();
   pixels.setBrightness(50);
 
-  dht.begin();
-  pinMode(MOTION_PIN, INPUT);
-  pinMode(TOUCH_PIN, INPUT);
+  setupWiFi();
+
+  Serial.println("WIFI configured");
+  Serial.printf("Current IP: %s\n", WiFi.localIP().toString().c_str());
 
   // Reload config from persistent mem (EEPROM)
   prefs.begin("config", false);
   serverip = "192.168.1.24";//prefs.getString("serverip", "192.168.1.24");
   prefs.end();
-
-  WiFi.begin();
-
-  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    return;
-  }
 
   if (allocateInferenceBuffer(EI_CLASSIFIER_RAW_SAMPLE_COUNT) == false) {
       ei_printf("ERR: Could not allocate audio buffer (size %d), this could be due to the window length of your model\r\n", EI_CLASSIFIER_RAW_SAMPLE_COUNT);
@@ -613,26 +485,10 @@ void setup() {
       ei_printf("Failed to start I2S!");
   }
   
-  displayText("Fetch time");
-  configTime(3600, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
-  struct tm timeinfo;
-  getLocalTime(&timeinfo);
-  
-  displayText(serverip);
-
-  Serial.printf("Current IP: %s\n", WiFi.localIP().toString().c_str());
-
-  // Setup MQTT
-  client.setServer(serverip.c_str(), MQTT_PORT);
-
-  // Tasks
-  xTaskCreate( mqttTask, "StateReporting", 2000, NULL, 1, &mqttTaskHandle );
-  //xTaskCreate( memoryPrintTask, "MemoryPrint", 2000, NULL, 1, &memoryPrintHandle );
-  xTaskCreate( handleTouchTask, "TouchSensor", 1800, NULL, 1, &touchTaskHandle );
-  xTaskCreate( handleMotionSensorTask, "MotionSensor", 2200, NULL, 1, &motionSensorHandle );
   xTaskCreate( receiveAndPlayAudioTask, "ReceivePlayAudio", 1024 * 8, NULL, 1, &receivePlayAudioHandle );
   xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
 }
 
 void loop() { 
+  drd.loop();
 }
