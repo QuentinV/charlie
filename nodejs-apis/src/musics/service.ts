@@ -114,7 +114,7 @@ export async function getPlaylists(): Promise<Playlist[]> {
     return playlists;
 }
 
-const songsFuse = new Fuse(Object.values(songsById), {
+const songsFuse = new Fuse(Object.values(songsById ?? {}), {
     keys: ['name'],
     threshold: 0.3, // lower = stricter
 });

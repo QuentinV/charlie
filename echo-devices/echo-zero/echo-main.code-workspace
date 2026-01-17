@@ -1,0 +1,14 @@
+{
+    "folders": [
+        {
+            "name": "echo-main",
+            "path": "./"
+        }
+    ],
+    "settings": {
+        "files.associations": {
+            "new": "cpp",
+            "stdexcept": "cpp"
+        }
+    }
+}
