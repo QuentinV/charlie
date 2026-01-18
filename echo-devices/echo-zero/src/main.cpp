@@ -10,10 +10,8 @@
 #include "driver/i2s.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include <DoubleResetDetector_Generic.h>
 
-#define DRD_TIMEOUT 10
-#define DRD_ADDRESS 0
+#define DRD_TIMEOUT 3
 
 #define EIDSP_QUANTIZE_FILTERBANK   0
 #include <charlie_inferencing.h>
@@ -25,22 +23,32 @@
 #define AUDIO_TCP_PORT 12345
 
 #define I2S_MIC_PORT I2S_NUM_0
-#define I2S_MIC_WS  GPIO_NUM_1
-#define I2S_MIC_SD  GPIO_NUM_42
-#define I2S_MIC_SCK GPIO_NUM_2
+#define I2S_MIC_WS  GPIO_NUM_16
+#define I2S_MIC_SD  GPIO_NUM_18
+#define I2S_MIC_SCK GPIO_NUM_17
 #define MIC_GAIN 3
 
 #define I2S_SPK_PORT I2S_NUM_1
-#define I2S_SPK_LRC GPIO_NUM_20
-#define I2S_SPK_BCLK GPIO_NUM_19
-#define I2S_SPK_DIN GPIO_NUM_14
+#define I2S_SPK_LRC GPIO_NUM_7
+#define I2S_SPK_BCLK GPIO_NUM_6
+#define I2S_SPK_DIN GPIO_NUM_5
 
 #define BUFFER_SIZE 512
 
-#define MIC_THRESHOLD_SOUND 200
+#define MIC_THRESHOLD_SOUND 10000
 #define MIC_DURATION_SILENCE 2
 
-#define WAKE_UP_WORD_ACCURACY 0.8f
+#define WAKE_UP_WORD_ACCURACY 0.7f
+
+ // Fixed‑point HPF coefficients (scaled by 256)
+#define HP_A0  256
+#define HP_A1 -512
+#define HP_A2  256
+#define HP_B1 -495
+#define HP_B2  240
+
+#define GATE_THRESHOLD 400 
+#define GATE_SOFT 50
 
 // preferences
 Preferences prefs;
@@ -48,7 +56,6 @@ WiFiManager wm;
 String serverip;
 
 // Objects
-DoubleResetDetector_Generic drd(DRD_TIMEOUT, DRD_ADDRESS);
 Adafruit_NeoPixel pixels(1, GPIO_NUM_48, NEO_GRB + NEO_KHZ800);
 WiFiServer server(AUDIO_TCP_PORT);
 WiFiClient espClient;
@@ -76,10 +83,30 @@ bool continuous_record = true;
 TaskHandle_t receivePlayAudioHandle;
 TaskHandle_t wakeUpWordHandle;
 
+bool test = true;
+
+bool detectDoubleReset() {
+  prefs.begin("drd", false);
+
+  unsigned long now = time(NULL);
+  unsigned long last = prefs.getUInt("last", 0);
+
+  Serial.println(now);
+  Serial.println(last);
+
+
+  prefs.putUInt("last", now);
+  prefs.end();
+
+  if (last == 0) return false;
+
+  return (now - last) < DRD_TIMEOUT;
+}
+
 void setupWiFi() {
   prefs.begin("config", false);
   serverip = prefs.getString("serverIp", "");
-  Serial.println("Loaded serverIp: " + serverip);
+  //Serial.println("Loaded serverIp: " + serverip);
 
   WiFi.mode(WIFI_AP_STA);
 
@@ -113,7 +140,7 @@ void reset() {
   prefs.begin("config", false);
   prefs.clear();
   prefs.end();
-  delay(500);
+  delay(4000);
   ESP.restart();
 }
 
@@ -121,7 +148,7 @@ int setupMicI2S(uint32_t sampling_rate) {
   // Start listening for audio: MONO @ 8/16KHz
   i2s_config_t i2s_config = {
       .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
-      .sample_rate = sampling_rate,
+      .sample_rate = 16000,
       .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
@@ -154,6 +181,8 @@ int setupMicI2S(uint32_t sampling_rate) {
   if (ret != ESP_OK) {
     ei_printf("Error in initializing dma buffer with 0");
   }
+
+  ei_printf("Microphone configured");
 
   return int(ret);
 }
@@ -227,16 +256,22 @@ void setupSpeakerI2S() {
 void captureMicSamplesTask(void* arg) {
     continuous_record = true;
 
-    const int32_t bytes_to_read = (uint32_t)arg;     // e.g. 2048
-    const int32_t samples_to_read = bytes_to_read / sizeof(int32_t); // 512 samples
+    const int32_t bytes_to_read = (uint32_t)arg;
+    const int32_t samples_to_read = bytes_to_read / sizeof(int32_t);
 
-    static int32_t rawBuffer[2048];   // safe upper bound
+    int32_t rawBuffer[2048];
     size_t bytes_read = 0;
 
-    // High‑pass filter state
-    static int32_t hp_prev = 0;
+    // Filter state
+    int32_t hp_x1 = 0, hp_x2 = 0;
+    int32_t hp_y1 = 0, hp_y2 = 0;
+    int32_t prev_pre = 0;
+
+    //const int32_t GATE_THRESHOLD = 300;
+    //const int32_t GATE_SOFT = 40;
 
     while (continuous_record && !mute) {
+
         esp_err_t err = i2s_read(
             I2S_MIC_PORT,
             rawBuffer,
@@ -245,40 +280,42 @@ void captureMicSamplesTask(void* arg) {
             portMAX_DELAY
         );
 
-        if (err != ESP_OK || bytes_read == 0) {
-            ei_printf("I2S read error: %d\n", err);
+        if (err != ESP_OK || bytes_read != bytes_to_read) {
             continue;
         }
 
-        // Skip partial DMA reads
-        if (bytes_read != bytes_to_read) {
-            continue;
-        }
-
-        // --- CONVERT + FILTER + GAIN ---
         for (int i = 0; i < samples_to_read; i++) {
+            // 24‑bit → 16‑bit
+            int32_t x = rawBuffer[i] >> 8;
 
-            // Convert 24‑bit left‑aligned → 16‑bit
-            int32_t s = rawBuffer[i] >> 8;
+            // Pre‑emphasis
+            int32_t pre = x - (prev_pre * 95 / 100);
+            prev_pre = x;
 
-            // High‑pass filter (removes DC bias)
-            int32_t hp = s - hp_prev + (hp_prev >> 8);
-            hp_prev = s;
-            s = hp;
+            // 2‑pole high‑pass filter
+            int32_t y = (HP_A0 * pre + HP_A1 * hp_x1 + HP_A2 * hp_x2
+                        - HP_B1 * hp_y1 - HP_B2 * hp_y2) >> 8;
 
-            // Apply gain safely
-            int64_t temp = (int64_t)s * MIC_GAIN;
+            hp_x2 = hp_x1;
+            hp_x1 = pre;
+            hp_y2 = hp_y1;
+            hp_y1 = y;
 
-            // Clip to int16
+            // Soft noise gate
+            int32_t abs_y = (y < 0 ? -y : y);
+            if (abs_y < GATE_THRESHOLD) {
+                y = (y * GATE_SOFT) / GATE_THRESHOLD;
+            }
+
+            // Gain + clip
+            int64_t temp = (int64_t)y * MIC_GAIN;
             if (temp > 32767) temp = 32767;
             if (temp < -32768) temp = -32768;
 
             sampleBuffer[i] = (int16_t)temp;
         }
 
-        if (mute || !continuous_record) {
-            break;
-        }
+        if (!continuous_record || mute) break;
 
         audio_inference_callback(samples_to_read * sizeof(int16_t));
     }
@@ -293,17 +330,24 @@ void startMicCaptureSamples() {
 }
 
 void sendMicAudioTask(void *arg) {
-  Serial.println("sendMicAudioTask - start");
+  //Serial.println("sendMicAudioTask - start");
 
-  int16_t samples[BUFFER_SIZE];
+  int32_t samples32[BUFFER_SIZE];
+  int16_t samples16[BUFFER_SIZE];
+
+  int32_t hp_x1 = 0, hp_x2 = 0; 
+  int32_t hp_y1 = 0, hp_y2 = 0;
+  int32_t prev_sample = 0;
+
   size_t bytes_read = 0;
   silenceStart = 0;
   time_t startTime = time(NULL);
 
   for (;;) {
     time_t t = time(NULL);
-    if (startTime - t > 20) {
-      Serial.println("sendMicAudioTask - timeout reached");
+
+    if (t - startTime > 20) {
+      //Serial.println("sendMicAudioTask - timeout reached");
       WiFiUDP udp;
       udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
       udp.print("END");
@@ -311,30 +355,53 @@ void sendMicAudioTask(void *arg) {
       break;
     }
 
-    Serial.println("sendMicAudioTask - listening");
-    i2s_read(I2S_MIC_PORT, samples, sizeof(samples), &bytes_read, portMAX_DELAY);
+    i2s_read(I2S_MIC_PORT, samples32, sizeof(samples32), &bytes_read, portMAX_DELAY);
     
-    size_t samples_read = bytes_read / sizeof(int16_t);
+    size_t samples_read = bytes_read / sizeof(int32_t);
 
-    // scale the data (otherwise the sound is too quiet)
-    for (int x = 0; x < samples_read; x++) {
-        samples[x] = samples[x] * 8;
+    for (int i = 0; i < samples_read; i++) {
+        // ===== 24‑bit → 16‑bit =====
+        int32_t x = samples32[i] >> 8;
+
+        // ===== Pre‑emphasis =====
+        int32_t pre = x - (prev_sample * 95 / 100);
+        prev_sample = x;
+
+        // ===== 2‑pole high‑pass filter (fixed‑point) =====
+        int32_t y = (HP_A0 * pre + HP_A1 * hp_x1 + HP_A2 * hp_x2
+                    - HP_B1 * hp_y1 - HP_B2 * hp_y2) >> 8;
+
+        hp_x2 = hp_x1;
+        hp_x1 = pre;
+        hp_y2 = hp_y1;
+        hp_y1 = y;
+
+        // ===== Soft noise gate =====
+        int32_t abs_y = (y < 0 ? -y : y);
+
+        if (abs_y < GATE_THRESHOLD) {
+            y = (y * GATE_SOFT) / GATE_THRESHOLD;
+        }
+
+        samples16[i] = (int16_t)y;
     }
 
-    // Calculate RMS To detect silence
+    // RMS calculation
     int64_t sumsq = 0;
     for (size_t i = 0; i < samples_read; i++) {
-        int32_t s = samples[i];
+        int32_t s = samples16[i];
         sumsq += (int64_t)s * s;
     }
     int rms = sqrt((double)sumsq / samples_read);
 
+    //Serial.println(rms);
+
     if (rms < MIC_THRESHOLD_SOUND) {   
-      if ( silenceStart == 0 ) {
-        Serial.println("sendMicAudioTask - its quiete");
+      if (silenceStart == 0 ) {
+        //Serial.println("sendMicAudioTask - its quiete");
         silenceStart = t;
-      } else if ( t - silenceStart > MIC_DURATION_SILENCE ) {
-        Serial.println("sendMicAudioTask - it has been 2 seen quite send END");
+      } else if (t - silenceStart > MIC_DURATION_SILENCE ) {
+        //Serial.println("sendMicAudioTask - it has been 2 seen quite send END");
         WiFiUDP udp;
         udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
         udp.print("END");
@@ -346,10 +413,12 @@ void sendMicAudioTask(void *arg) {
       silenceStart = 0;
     }
 
+    //Serial.println("sendMicAudioTask - end");
+    //Serial.println(serverip.c_str());
     //Serial.printf("Read %d bytes (%d samples), RMS=%d\n", bytes_read, samples_read, rms);
     WiFiUDP udp;
     udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
-    udp.write((uint8_t*)samples, bytes_read);
+    udp.write((uint8_t*)samples16, samples_read * sizeof(int16_t));
     udp.endPacket();
   }
 
@@ -435,7 +504,7 @@ void wakeUpWordTask(void *arg) {
     /*} else if (result.classification[1].value > 0.8f || result.classification[3].value > 0.8f) {
         speaker = false;
         ei_printf("Merci OR stop\n");*/
-    } else {
+    } /*else {
       // print the predictions
       ei_printf("Predictions ");
       ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
@@ -446,21 +515,19 @@ void wakeUpWordTask(void *arg) {
           ei_printf_float(result.classification[ix].value);
           ei_printf("\n");
       }
-    }
+    }*/
 
     //Serial.printf("WakeUpWordTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
   }
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(115200); 
 
-  if (drd.detectDoubleReset()) {
+  if (detectDoubleReset()) {
     reset();
     return;
   }
-
-  Serial.println("Hello");
 
   pixels.begin();
   pixels.setBrightness(50);
@@ -469,11 +536,6 @@ void setup() {
 
   Serial.println("WIFI configured");
   Serial.printf("Current IP: %s\n", WiFi.localIP().toString().c_str());
-
-  // Reload config from persistent mem (EEPROM)
-  prefs.begin("config", false);
-  serverip = "192.168.1.24";//prefs.getString("serverip", "192.168.1.24");
-  prefs.end();
 
   if (allocateInferenceBuffer(EI_CLASSIFIER_RAW_SAMPLE_COUNT) == false) {
       ei_printf("ERR: Could not allocate audio buffer (size %d), this could be due to the window length of your model\r\n", EI_CLASSIFIER_RAW_SAMPLE_COUNT);
@@ -489,6 +551,5 @@ void setup() {
   xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
 }
 
-void loop() { 
-  drd.loop();
+void loop() {
 }
