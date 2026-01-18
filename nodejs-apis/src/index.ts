@@ -11,6 +11,8 @@ import { HttpError } from './errors';
 import swaggerUi from 'swagger-ui-express';
 import { defaultApiPath, getSwaggerDoc } from './swagger';
 import { registerNotificationApi } from './core/notifications';
+import { setupEchoListen } from './echo/listen';
+import { setupEchoReceiver } from './echo/receive';
 
 const app = express();
 
@@ -91,5 +93,13 @@ const app = express();
                 `Swagger available here: http://localhost:${port}/api-docs`
             );
         });
+    }
+
+    if ( process.env.ECHO_LISTEN === 'true') {
+        setupEchoListen();
+    }
+
+    if ( process.env.ECHO_RECEIVE === 'true' ) {
+        setupEchoReceiver();
     }
 })();

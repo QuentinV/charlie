@@ -4,9 +4,6 @@ import net from 'net';
 import mqtt from 'mqtt';
 import ffmpegPath from 'ffmpeg-static';
 import { spawn } from 'child_process';
-import { initAll } from '../init';
-
-initAll();
 
 const subscribers = {
     'echo/status': async (data: string) => {
@@ -42,27 +39,30 @@ const subscribers = {
     },
 };
 
-const aedes = new Aedes();
-const server = net.createServer(aedes.handle);
+export function setupEchoReceiver() {
+    const aedes = new Aedes();
+    const server = net.createServer(aedes.handle);
 
-const mqttPort = 9304;
-server.listen(mqttPort, function () {
-    console.log('MQTT broker started on port ' + mqttPort);
-});
-
-const mqttClient = mqtt.connect(`mqtt://localhost:` + mqttPort);
-mqttClient.on('connect', () => {
-    console.log('MQTT client connected to broker');
-    Object.keys(subscribers).forEach((s) => {
-        mqttClient.subscribe(s);
-        console.log(`[MQTT] subscribe to ${s}`);
+    const mqttPort = 9304;
+    server.listen(mqttPort, function () {
+        console.log('[ECHO] MQTT broker started on port ' + mqttPort);
     });
-});
 
-mqttClient.on('message', async (topic, message) => {
-    console.log(`Received on ${topic}: ${message.toString()}`);
-    subscribers[topic]?.(message.toString());
-});
+    const mqttClient = mqtt.connect(`mqtt://localhost:` + mqttPort);
+    mqttClient.on('connect', () => {
+        console.log('[ECHO] MQTT client connected to broker');
+        Object.keys(subscribers).forEach((s) => {
+            mqttClient.subscribe(s);
+            console.log(`[ECHO MQTT] subscribe to ${s}`);
+        });
+    });
+
+    mqttClient.on('message', async (topic, message) => {
+        console.log(`[ECHO MQTT]Received on ${topic}: ${message.toString()}`);
+        subscribers[topic]?.(message.toString());
+    });
+}
+
 
 /*
 TODO Camera

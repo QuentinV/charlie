@@ -9,10 +9,10 @@ import music from './tools/music';
 
 const tools = async (): Promise<Tools> => ({
     ...greetings,
-    ...notifications,
+    ...(process.env.TOOL_NOTIFICATION === 'true' ? notifications : {}),
     ...weather,
-    ...music,
-    ...torrent,
+    ...(process.env.TOOL_MUSIC === 'true' ? music : {}),
+    ...(process.env.TOOL_TORRENT === 'true' ? torrent : {}),
     ...(await devices()),
     ...(await getProvidersTools()),
 });

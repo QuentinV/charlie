@@ -13,5 +13,5 @@ export default {
     ...providers,
     ...routines,
     ...tools,
-    ...musics,
+    ...(process.env.TOOL_MUSIC === 'true' ? musics : {}),
 };
