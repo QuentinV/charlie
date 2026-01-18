@@ -13,6 +13,9 @@ import logging
 import io
 import struct
 import json
+import zipfile
+import requests
+import shutil
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
@@ -22,13 +25,56 @@ client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
 agent_id = os.getenv("AGENT_ID")
 cached_tools = None
 
-voskModel = Model(os.getenv("VOSK_MODEL"))
-voskSampleRate = os.getenv("VOSK_SAMPLE_RATE")
+voskModelKey = os.getenv("VOSK_MODEL_KEY")
+voskZip = voskModelKey + ".zip"
+voskZipPath =  "/vosk/" + voskZip
+voskModelUrl = "https://alphacephei.com/vosk/models/" + voskZip
+voskFolder = "/vosk/main"
+voskSampleRate = 16000
 
 if sse_host != "":
     logger.info("Starting in SSE mode with SSE_HOST=%s", sse_host)
 else:
      logger.info("Starting in stdio mode")
+
+def download_and_extract_vosk():
+    if os.path.isdir(voskFolder):
+        logger.info(f"Folder '{voskFolder}' already exists. Skipping download.")
+        return
+
+    logger.info(f"Downloading vosk model '{voskModelUrl}'...")
+    r = requests.get(voskModelUrl, stream=True)
+    r.raise_for_status()
+
+    with open(voskZipPath, "wb") as f:
+        for chunk in r.iter_content(chunk_size=8192):
+            if chunk:
+                f.write(chunk)
+
+    logger.info("Download vosk complete.")
+
+    logger.info("Extracting vosk model...")
+    with zipfile.ZipFile(voskZipPath, "r") as zip_ref:
+        # Find the top-level folder inside the ZIP
+        top_level_dirs = {name.split('/')[0] for name in zip_ref.namelist()}
+        inner_folder = next(iter(top_level_dirs))
+
+        # Extract to a temp directory
+        zip_ref.extractall(".")
+
+    os.makedirs(voskFolder, exist_ok=True)
+    for item in os.listdir(inner_folder):
+        src = os.path.join(inner_folder, item)
+        dst = os.path.join(voskFolder, item)
+        shutil.move(src, dst)
+
+    shutil.rmtree(inner_folder)
+
+    logger.info("Vosk model extraction complete.")
+    os.remove(voskZipPath)
+
+download_and_extract_vosk()
+voskModel = Model(voskFolder)
 
 @app.post("/ask")
 async def ask(request: Request):
