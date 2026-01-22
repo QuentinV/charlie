@@ -12,7 +12,7 @@ import swaggerUi from 'swagger-ui-express';
 import { defaultApiPath, getSwaggerDoc } from './swagger';
 import { registerNotificationApi } from './core/notifications';
 import { setupEchoListen } from './echo/listen';
-import { setupEchoReceiver } from './echo/receive';
+import { setupMqttServer } from './messaging/receive';
 
 const app = express();
 
@@ -95,11 +95,11 @@ const app = express();
         });
     }
 
-    if ( process.env.ECHO_LISTEN === 'true') {
+    if (process.env.ECHO_LISTEN === 'true') {
         setupEchoListen();
     }
 
-    if ( process.env.ECHO_RECEIVE === 'true' ) {
-        setupEchoReceiver();
+    if ((process.env.MQTT ?? 'true') === 'true') {
+        setupMqttServer();
     }
 })();

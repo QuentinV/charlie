@@ -26,7 +26,7 @@ const routes: RestApis = {
             } = body;
             const uuid = _id || uuidV4();
             await cs.providers.updateOne(
-                { _id: uuid, name },
+                { _id: uuid },
                 {
                     $set: {
                         _id: uuid,

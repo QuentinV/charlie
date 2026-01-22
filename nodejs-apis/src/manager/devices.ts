@@ -76,15 +76,19 @@ const routes: RestApis = {
             return cs.devices.find(filter).toArray();
         },
         post: async ({ body }) => {
-            const { name, externalId, provider, type }: Device = body;
-            const uuid = uuidV4();
-            await cs.devices.insertOne({
-                _id: uuid,
-                name,
-                externalId,
-                provider,
-                type,
-            });
+            const { _id, name, externalId, provider, type }: Device = body;
+            const uuid = _id || uuidV4();
+            await cs.devices.updateOne(
+                { _id: uuid },
+                {
+                    _id: uuid,
+                    name,
+                    externalId,
+                    provider,
+                    type,
+                },
+                { upsert: true }
+            );
             return { uuid };
         },
     },
