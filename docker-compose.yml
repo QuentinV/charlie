@@ -6,7 +6,9 @@ services:
             - NODE_ENV=production
             - PULSE_SERVER=unix:/tmp/pulse/native
         volumes:
-            - ./nodejs-apis:/app
+            - ./nodejs-apis/src:/app/src
+            - ./nodejs-apis/.env:/app/.env
+            - ./nodejs-apis/tsconfig.json:/app/tsconfig.json
             - ~/media/musics:/musics
             - ${XDG_RUNTIME_DIR}/pulse/native:/tmp/pulse/native
         ports:

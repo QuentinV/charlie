@@ -13,4 +13,8 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     && rm -rf /var/lib/apt/lists/*
 
+
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
 USER node
