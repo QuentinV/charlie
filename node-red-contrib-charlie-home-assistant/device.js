@@ -12,7 +12,7 @@ module.exports = function (RED) {
                 !config._id ||
                 !config.name ||
                 !config.externalId ||
-                !config.type
+                !config.deviceType
             )
                 return;
 
@@ -26,7 +26,7 @@ module.exports = function (RED) {
                     name: config.name,
                     externalId: config.externalId,
                     provider: conf.provider.id,
-                    type: config.type,
+                    type: config.deviceType,
                 }),
             });
 

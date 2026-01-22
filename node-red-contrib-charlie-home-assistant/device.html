@@ -6,7 +6,7 @@
         defaults: {
             name: { value: '' },
             id: { value: '' },
-            type: { value: 'light' },
+            deviceType: { value: 'light' },
             externalId: { value: '' },
         },
         inputs: 1,
@@ -43,8 +43,8 @@
 </div>
 
 <div class="form-row">
-    <label for="node-input-type">Type</label>
-    <select id="node-input-type" required>
+    <label for="node-input-deviceType">Type</label>
+    <select id="node-input-deviceType" required>
         <option value="light">Light</option>
         <option value="switch">Switch</option>
         <option value="shutter">Shutter</option>
