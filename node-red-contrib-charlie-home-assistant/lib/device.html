@@ -1,0 +1,51 @@
+<script type="text/javascript">
+    RED.nodes.registerType('charlie-device', {
+        category: 'function',
+        color: '#a6bbcf',
+        defaults: {
+            name: { value: '' },
+            id: { value: '' },
+            type: { value: 'light' },
+            externalId: { value: '' },
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: function (index) {
+            return index === 0 ? 'On' : index === 1 ? 'Off' : 'Pause';
+        },
+        icon: 'device.png',
+        label: function () {
+            return this.name || 'Device';
+        },
+        oneditprepare: function () {
+            $('#node-input-mode').change(function () {
+                const val = $(this).val();
+                $('#node-input-outputs').val(val === 'shutter' ? 3 : 2);
+            });
+        },
+    });
+</script>
+
+<div class="form-row">
+    <label for="node-input-id">Id</label>
+    <input id="node-input-id" required />
+</div>
+
+<div class="form-row">
+    <label for="node-input-name">Name</label>
+    <input id="node-input-name" required />
+</div>
+
+<div class="form-row">
+    <label for="node-input-externalId">External id</label>
+    <input id="node-input-externalId" required />
+</div>
+
+<div class="form-row">
+    <label for="node-input-type">Type</label>
+    <select id="node-input-type" required>
+        <option value="light">Light</option>
+        <option value="switch">Switch</option>
+        <option value="shutter">Shutter</option>
+    </select>
+</div>
