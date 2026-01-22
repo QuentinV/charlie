@@ -1,44 +1,43 @@
 import dgram from 'dgram';
 import { askDirect } from '../ai/ask';
+import { WebSocketServer } from 'ws';
 import { stt } from './stt';
 import { tts } from '../ai/tts';
-import { send } from './client';
+
+function sendPCMInChunks(ws, buffer, chunkSize = 4096) {
+    for (let i = 0; i < buffer.length; i += chunkSize) {
+        const chunk = buffer.slice(i, i + chunkSize);
+        ws.send(chunk, { binary: true });
+    }
+}
 
 export function setupEchoListen() {
-    // TODO do audio buffer by MAC address, reset after a timeout ?
-    let audioBuffer = [];
-    async function execute({ ip }) {
-        try {
-            console.log('audio received');
-            const text = await stt(audioBuffer);
-            console.log('spoken text', text);
-            const result = await askDirect(text);
-            console.log('result', result);
-            const resultAudio = await tts({ text: result });
-            await send({ ip, buffer: Buffer.from(resultAudio) });
-        } catch (e) {
-            console.log(e);
-        } finally {
-            audioBuffer = [];
-        }
-    }
+    const wss = new WebSocketServer({ port: 9303, path: '/ws/echo' });
 
-    // UDP Server for audio
-    const PORT_UDP_AUDIO = 9303;
-    const audioServer = dgram.createSocket('udp4');
-    audioServer.on('message', async (data, rinfo) => {
-        const msg = data.toString('utf-8');
-        if (msg === 'END') {
-            console.log('received END');
-            execute({ ip: rinfo.address });
-            return;
-        }
-        audioBuffer.push(data);
+    wss.on('connection', (ws, req) => {
+        console.log('[ECHO] Device connected');
+        let audioBuffer = [];
+        ws.on('message', async (msg, isBinary) => {
+            if (isBinary) {
+                audioBuffer.push(msg);
+                return;
+            }
+
+            if (msg.toString() === 'END') {
+                try {
+                    console.log('audio received');
+                    const text = await stt(audioBuffer);
+                    console.log('spoken text', text);
+                    const result = await askDirect(text);
+                    console.log('result', result);
+                    const resultAudio = await tts({ text: result });
+                    sendPCMInChunks(ws, Buffer.from(resultAudio));
+                } catch (e) {
+                    console.log(e);
+                } finally {
+                    audioBuffer = [];
+                }
+            }
+        });
     });
-
-    audioServer.on('listening', () => {
-        console.log(`[ECHO] Listening audio data on port ${PORT_UDP_AUDIO}`);
-    });
-
-    audioServer.bind(PORT_UDP_AUDIO);
 }

@@ -2,7 +2,6 @@
 #include "esp_system.h"
 #include "esp_heap_caps.h"
 #include <WiFiManager.h>
-#include <WiFiUdp.h>
 #include <WiFi.h>
 #include <Preferences.h>
 #include <Adafruit_GFX.h>
@@ -10,6 +9,7 @@
 #include "driver/i2s.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <WebSocketsClient.h>
 
 #define DRD_TIMEOUT 3
 
@@ -19,8 +19,7 @@
 #define WIFI_NAME "Charlie-Echo-Zero"
 #define WIFI_PASS "CharlieEchoZero123"
 
-#define AUDIO_UDP_PORT 9303
-#define AUDIO_TCP_PORT 12345
+#define WS_PORT 9303
 
 #define I2S_MIC_PORT I2S_NUM_0
 #define I2S_MIC_WS  GPIO_NUM_16
@@ -57,13 +56,14 @@ String serverip;
 
 // Objects
 Adafruit_NeoPixel pixels(1, GPIO_NUM_48, NEO_GRB + NEO_KHZ800);
-WiFiServer server(AUDIO_TCP_PORT);
-WiFiClient espClient;
+
+QueueHandle_t wsSendQueue;
+WebSocketsClient webSocket;
 
 // States
 unsigned long silenceStart = 0;
 bool mute = false;
-bool speaker = false;
+bool isWsConnected = false;
 
 /** Audio buffers, pointers and selectors */
 typedef struct {
@@ -80,8 +80,8 @@ bool debug_nn = false; // Set this to true to see e.g. features generated from t
 bool continuous_record = true;
 
 // Task handles
-TaskHandle_t receivePlayAudioHandle;
 TaskHandle_t wakeUpWordHandle;
+TaskHandle_t taskWebSocketHandle;
 
 bool test = true;
 
@@ -106,7 +106,7 @@ bool detectDoubleReset() {
 void setupWiFi() {
   prefs.begin("config", false);
   serverip = prefs.getString("serverIp", "");
-  //Serial.println("Loaded serverIp: " + serverip);
+  Serial.println("Loaded serverIp: " + serverip);
 
   WiFi.mode(WIFI_AP_STA);
 
@@ -142,6 +142,27 @@ void reset() {
   prefs.end();
   delay(4000);
   ESP.restart();
+}
+
+void playAudio(uint8_t* data, size_t len) {
+  size_t bytes_written;
+  i2s_write(I2S_SPK_PORT, data, len, &bytes_written, portMAX_DELAY);
+}
+
+void onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_DISCONNECTED:
+        isWsConnected = false;
+        break;
+    case WStype_CONNECTED:
+        isWsConnected = true;
+        break;
+    case WStype_BIN:
+        playAudio(payload, length);
+        break;
+    default:
+        break;
+  }
 }
 
 int setupMicI2S(uint32_t sampling_rate) {
@@ -330,8 +351,6 @@ void startMicCaptureSamples() {
 }
 
 void sendMicAudioTask(void *arg) {
-  //Serial.println("sendMicAudioTask - start");
-
   int32_t samples32[BUFFER_SIZE];
   int16_t samples16[BUFFER_SIZE];
 
@@ -347,11 +366,7 @@ void sendMicAudioTask(void *arg) {
     time_t t = time(NULL);
 
     if (t - startTime > 20) {
-      //Serial.println("sendMicAudioTask - timeout reached");
-      WiFiUDP udp;
-      udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
-      udp.print("END");
-      udp.endPacket();
+      webSocket.sendTXT("END");
       break;
     }
 
@@ -398,28 +413,16 @@ void sendMicAudioTask(void *arg) {
 
     if (rms < MIC_THRESHOLD_SOUND) {   
       if (silenceStart == 0 ) {
-        //Serial.println("sendMicAudioTask - its quiete");
         silenceStart = t;
       } else if (t - silenceStart > MIC_DURATION_SILENCE ) {
-        //Serial.println("sendMicAudioTask - it has been 2 seen quite send END");
-        WiFiUDP udp;
-        udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
-        udp.print("END");
-        udp.endPacket();
-        
+        webSocket.sendTXT("END");       
         break;
       }
     } else {
       silenceStart = 0;
     }
 
-    //Serial.println("sendMicAudioTask - end");
-    //Serial.println(serverip.c_str());
-    //Serial.printf("Read %d bytes (%d samples), RMS=%d\n", bytes_read, samples_read, rms);
-    WiFiUDP udp;
-    udp.beginPacket(serverip.c_str(), AUDIO_UDP_PORT);
-    udp.write((uint8_t*)samples16, samples_read * sizeof(int16_t));
-    udp.endPacket();
+    webSocket.sendBIN((uint8_t*)samples16, samples_read * sizeof(int16_t));
   }
 
   startMicCaptureSamples();
@@ -437,31 +440,6 @@ void memoryPrintTask(void *pvParameters) {
     Serial.printf("memoryPrintTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
     vTaskDelay(10000 / portTICK_PERIOD_MS);
   }
-}
-
-void receiveAndPlayAudioTask(void *arg) {
-  server.begin();
-
-  for (;;) {
-    WiFiClient client = server.available();
-    if (!client) {
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
-      continue;
-    }
-    
-    speaker = true;
-    uint8_t buffer[BUFFER_SIZE];
-    while (client.connected() && speaker) {
-      int len = client.read(buffer, sizeof(buffer));
-          
-      if (len > 0) {
-        size_t bytes_written;
-        i2s_write(I2S_SPK_PORT, buffer, len, &bytes_written, portMAX_DELAY);
-      }
-    }
-
-    client.stop();
-  } 
 }
 
 void startMicUserRecord() {
@@ -501,24 +479,20 @@ void wakeUpWordTask(void *arg) {
     
     if ( result.classification[0].value > WAKE_UP_WORD_ACCURACY) {
         onWakeWordDetected();
-    /*} else if (result.classification[1].value > 0.8f || result.classification[3].value > 0.8f) {
-        speaker = false;
-        ei_printf("Merci OR stop\n");*/
-    } /*else {
-      // print the predictions
-      ei_printf("Predictions ");
-      ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
-          result.timing.dsp, result.timing.classification, result.timing.anomaly);
-      ei_printf(": \n");
-      for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-          ei_printf("    %s: ", result.classification[ix].label);
-          ei_printf_float(result.classification[ix].value);
-          ei_printf("\n");
-      }
-    }*/
-
-    //Serial.printf("WakeUpWordTask - high water mark: %d words\n", uxTaskGetStackHighWaterMark(NULL));
+    }
   }
+}
+
+void wsTask(void *arg) {
+    webSocket.begin(serverip, WS_PORT, "/ws/echo");
+    webSocket.onEvent(onWebSocketEvent);
+    webSocket.setReconnectInterval(3000);
+    webSocket.enableHeartbeat(120000, 30000, 2);
+
+    while (true) {
+        webSocket.loop();
+        vTaskDelay(5 / portTICK_PERIOD_MS);
+    }
 }
 
 void setup() {
@@ -547,8 +521,8 @@ void setup() {
       ei_printf("Failed to start I2S!");
   }
   
-  xTaskCreate( receiveAndPlayAudioTask, "ReceivePlayAudio", 1024 * 8, NULL, 1, &receivePlayAudioHandle );
   xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
+  xTaskCreatePinnedToCore(wsTask, "TaskWebSocket", 1024 * 8, NULL, 1, &taskWebSocketHandle, 1);
 }
 
 void loop() {

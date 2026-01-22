@@ -19,8 +19,8 @@ services:
         restart: unless-stopped
         networks:
             - internal
-        devices:
-            - '/dev/snd:/dev/snd'
+        #devices:
+        #    - '/dev/snd:/dev/snd'
     ai-agents:
         build: ./python-apis
         container_name: charlie-ai-agents
