@@ -10,19 +10,15 @@
             externalId: { value: '' },
         },
         inputs: 1,
-        outputs: 2,
+        outputs: function () {
+            return this.deviceType === 'shutter' ? 3 : 2;
+        },
         outputLabels: function (index) {
             return index === 0 ? 'On' : index === 1 ? 'Off' : 'Pause';
         },
         icon: 'device.png',
         label: function () {
             return this.name || 'Device';
-        },
-        oneditprepare: function () {
-            $('#node-input-mode').change(function () {
-                const val = $(this).val();
-                $('#node-input-outputs').val(val === 'shutter' ? 3 : 2);
-            });
         },
     });
 </script>
