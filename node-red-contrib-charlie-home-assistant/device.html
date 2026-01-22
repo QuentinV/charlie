@@ -30,27 +30,29 @@
 </script>
 
 <script type="text/x-red" data-template-name="charlie-device">
-    <div class="form-row">
-        <label for="node-input-id">Id</label>
-        <input id="node-input-id" required />
-    </div>
+    <form id="dialog-form" class="form-horizontal" autocomplete="off">
+        <div class="form-row">
+            <label for="node-input-id">Id</label>
+            <input id="node-input-id" required />
+        </div>
 
-    <div class="form-row">
-        <label for="node-input-name">Name</label>
-        <input id="node-input-name" required />
-    </div>
+        <div class="form-row">
+            <label for="node-input-name">Name</label>
+            <input id="node-input-name" required />
+        </div>
 
-    <div class="form-row">
-        <label for="node-input-externalId">External id</label>
-        <input id="node-input-externalId" required />
-    </div>
+        <div class="form-row">
+            <label for="node-input-externalId">External id</label>
+            <input id="node-input-externalId" required />
+        </div>
 
-    <div class="form-row">
-        <label for="node-input-deviceType">Type</label>
-        <select id="node-input-deviceType" required>
-            <option value="light">Light</option>
-            <option value="switch">Switch</option>
-            <option value="shutter">Shutter</option>
-        </select>
-    </div>
+        <div class="form-row">
+            <label for="node-input-deviceType">Type</label>
+            <select id="node-input-deviceType" required>
+                <option value="light">Light</option>
+                <option value="switch">Switch</option>
+                <option value="shutter">Shutter</option>
+            </select>
+        </div>
+    </form>
 </script>
