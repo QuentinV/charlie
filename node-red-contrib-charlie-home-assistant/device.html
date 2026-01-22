@@ -11,7 +11,8 @@
         },
         inputs: 1,
         outputs: function () {
-            return (this.deviceType ?? 'light' === 'shutter') ? 3 : 2;
+            const type = this.deviceType || 'light';
+            return type === 'shutter' ? 3 : 2;
         },
         outputLabels: function (index) {
             return index === 0 ? 'On' : index === 1 ? 'Off' : 'Pause';
