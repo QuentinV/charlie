@@ -8,11 +8,12 @@
             id: { value: '' },
             deviceType: { value: 'light' },
             externalId: { value: '' },
+            outputs: { value: 2 },
         },
         inputs: 1,
         outputs: function () {
-            const type = this.deviceType || 'light';
-            return type === 'shutter' ? 3 : 2;
+            const n = Number(this.outputs);
+            return isNaN(n) ? 2 : n;
         },
         outputLabels: function (index) {
             return index === 0 ? 'On' : index === 1 ? 'Off' : 'Pause';
@@ -20,6 +21,10 @@
         icon: 'device.png',
         label: function () {
             return this.name || 'Device';
+        },
+        oneditsave: function () {
+            const type = $('#node-input-deviceType').val();
+            this.outputs = type === 'shutter' ? 3 : 2;
         },
     });
 </script>
