@@ -124,6 +124,8 @@ export async function changeDeviceState(deviceId: string, params: DeviceState) {
     if (res === true) {
         return getDeviceState(deviceId);
     }
+    if (res === false) return false;
+    await cs.devices.updateOne({ _id: deviceId }, { $set: { state: res } });
     return res;
 }
 
