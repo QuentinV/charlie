@@ -118,10 +118,8 @@ export async function getProviderFunctions(
 
 export async function changeDeviceState(deviceId: string, params: DeviceState) {
     console.log('changeDeviceState', deviceId, params);
-    const res = await call(
-        deviceId,
-        async ({ device, api, provider }) =>
-            !!(await api.changeDeviceState({ device, provider }, params))
+    const res = await call(deviceId, async ({ device, api, provider }) =>
+        api.changeDeviceState({ device, provider }, params)
     );
     if (res === true) {
         return getDeviceState(deviceId);

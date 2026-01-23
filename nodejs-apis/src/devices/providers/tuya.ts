@@ -14,7 +14,7 @@ const apis: ProvidersApis = {
             });
         },
         changeDeviceState: async ({ device: { externalId } }, { power }) =>
-            (
+            !!(
                 await client.device.changeFreezeState({
                     device_id: externalId,
                     state: power === 'on' ? 1 : 0,

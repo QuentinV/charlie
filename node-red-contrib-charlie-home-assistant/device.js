@@ -41,8 +41,13 @@ module.exports = function (RED) {
             });
 
             client.on('message', (topic, payload) => {
-                const res = JSON.parse(payload);
-                const oi = res.power === 'on' ? 0 : res.power === 'off' ? 1 : 2;
+                const res = JSON.parse(payload.toString());
+                const oi =
+                    res.power === 'on'
+                        ? 0
+                        : res.power === 'off' || config.deviceType === 'shutter'
+                          ? 1
+                          : 2;
 
                 const outputs = [null, null, null];
                 outputs[oi] = {

@@ -56,6 +56,21 @@ export default async () => {
                 }.`;
             },
         },
+        'fetch-devices-state': {
+            description: 'Get complete home devices states list.',
+            inputSchema: {},
+            exec: async () => {
+                const res = (await cs.devices.find().toArray()).map(
+                    ({ name, type, state }) => ({
+                        name,
+                        type,
+                        state,
+                    })
+                );
+                console.log('result', res);
+                return JSON.stringify(res);
+            },
+        },
         'fetch-device-additional-functions': {
             description: 'Get additional possible functions for a device.',
             inputSchema: {
