@@ -55,6 +55,7 @@ export interface Device {
 export const DeviceTypes = {
     light: 'light',
     switch: 'switch',
+    shutter: 'shutter',
     tv: 'tv',
     unknown: 'unknown',
 };
