@@ -67,9 +67,9 @@ module.exports = function (RED) {
             const payload = msg.payload;
 
             if (
-                payload.state !== 'on' ||
-                payload.state !== 'off' ||
-                payload.state !== 'pause'
+                payload.state === 'on' ||
+                payload.state === 'off' ||
+                payload.state === 'pause'
             ) {
                 try {
                     client.publish(
