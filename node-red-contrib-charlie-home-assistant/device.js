@@ -72,7 +72,7 @@ module.exports = function (RED) {
                 payload.state !== 'pause'
             ) {
                 try {
-                    mqttClient.publish(
+                    client.publish(
                         `device/state`,
                         JSON.stringify({
                             id: config.id,
