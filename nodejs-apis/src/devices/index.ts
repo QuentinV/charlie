@@ -17,11 +17,11 @@ import nanoleaf from './providers/nanoleafs';
 import clim from './providers/clim_mitshubishi';
 import customGarden from './providers/custom_garden';
 import tuya from './providers/tuya';
-import custom_default from './providers/custom_default';
+import default_custom from './providers/default_custom';
 
 // Register all possible providers here
 const providerApis: { [name: string]: ProvidersApis } = {
-    custom_default,
+    default_custom,
     ikea,
     sony_bravia_tv,
     nanoleaf,
