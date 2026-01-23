@@ -5,17 +5,20 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, config);
         const node = this;
 
-        conf.provider.charlieHost = conf.charlieHost;
-        conf.provider.apiPort = conf.apiPort;
-        conf.provider.mqttPort = conf.mqttPort;
+        conf.provider.charlieHost = config.charlieHost;
+        conf.provider.apiPort = config.apiPort;
+        conf.provider.mqttPort = config.mqttPort;
 
         (async () => {
-            if (!config.host) return;
+            if (!conf?.provider?.charlieHost) return;
             try {
                 const res = await fetch(`${apiUrl()}/api/providers`, {
                     method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify({
-                        _id,
+                        _id: config.id,
                         name: config.name,
                         codesource: 'default_custom',
                     }),

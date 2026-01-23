@@ -6,10 +6,11 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, config);
         const node = this;
         let ready = false;
+        let client = null;
 
         (async () => {
             if (
-                !config._id ||
+                !config.id ||
                 !config.name ||
                 !config.externalId ||
                 !config.deviceType
@@ -21,8 +22,11 @@ module.exports = function (RED) {
             // register device
             await fetch(`${apiUrl()}/api/devices`, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({
-                    _id: config._id,
+                    _id: config.id,
                     name: config.name,
                     externalId: config.externalId,
                     provider: conf.provider.id,
@@ -30,7 +34,7 @@ module.exports = function (RED) {
                 }),
             });
 
-            const client = mqtt.connect(mqttHost());
+            client = mqtt.connect(mqttHost());
 
             client.on('connect', () => {
                 client.subscribe(`device/${config._id}/state`);
@@ -59,13 +63,17 @@ module.exports = function (RED) {
 
             if (payload.state) {
                 try {
-                    await fetch(`${apiUrl()}/api/devices/${config._id}/state`, {
-                        method: 'PUT',
-                        body: JSON.stringify({
+                    mqttClient.publish(
+                        `device/state`,
+                        JSON.stringify({
+                            id: config.id,
                             power: payload.state,
                             level: payload.level ?? 100,
                         }),
-                    });
+                        {
+                            qos: 0,
+                        }
+                    );
                 } catch (e) {
                     node.warn('Error cannot send state to home assistant.');
                 }

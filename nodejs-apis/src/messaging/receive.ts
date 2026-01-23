@@ -3,6 +3,8 @@ import Aedes from 'aedes';
 import net from 'net';
 import mqtt from 'mqtt';
 
+export let mqttClient = null;
+
 export function setupMqttServer() {
     const aedes = new Aedes();
     const server = net.createServer(aedes.handle);
@@ -12,7 +14,7 @@ export function setupMqttServer() {
         console.log('[MQTT] broker started on port ' + mqttPort);
     });
 
-    const mqttClient = mqtt.connect(`mqtt://localhost:` + mqttPort);
+    mqttClient = mqtt.connect(`mqtt://localhost:` + mqttPort);
     mqttClient.on('connect', () => {
         console.log('[MQTT] client connected to broker');
         Object.keys(subscribers).forEach((s) => {

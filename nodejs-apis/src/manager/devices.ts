@@ -81,11 +81,13 @@ const routes: RestApis = {
             await cs.devices.updateOne(
                 { _id: uuid },
                 {
-                    _id: uuid,
-                    name,
-                    externalId,
-                    provider,
-                    type,
+                    $set: {
+                        _id: uuid,
+                        name,
+                        externalId,
+                        provider,
+                        type,
+                    },
                 },
                 { upsert: true }
             );

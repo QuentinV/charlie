@@ -26,7 +26,7 @@ export default async () => {
             inputSchema: {
                 // Use specific filters to limit token output
                 type: z.enum([dt0, ...dtrest]),
-                room: z.enum([r0, ...rrest, 'unknown']),
+                //    room: z.enum([r0, ...rrest, 'unknown']),
             },
             exec: async ({ type, room }) => {
                 console.log('fetch device list', type, room);

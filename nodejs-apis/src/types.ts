@@ -102,8 +102,8 @@ export interface ProviderApi {
     changeDeviceState: (
         meta: ProviderApiMetaInfo,
         params: DeviceState
-    ) => Promise<boolean>;
-    getDeviceState: (meta: ProviderApiMetaInfo) => Promise<DeviceState>;
+    ) => Promise<DeviceState | boolean>;
+    getDeviceState?: (meta: ProviderApiMetaInfo) => Promise<DeviceState>;
     getFunctions?: (
         meta: ProviderApiMetaInfo
     ) => Promise<ProviderFunctionDef[]>;

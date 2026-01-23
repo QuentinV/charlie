@@ -17,9 +17,11 @@ import nanoleaf from './providers/nanoleafs';
 import clim from './providers/clim_mitshubishi';
 import customGarden from './providers/custom_garden';
 import tuya from './providers/tuya';
+import custom_default from './providers/custom_default';
 
 // Register all possible providers here
 const providerApis: { [name: string]: ProvidersApis } = {
+    custom_default,
     ikea,
     sony_bravia_tv,
     nanoleaf,
@@ -121,7 +123,7 @@ export async function changeDeviceState(deviceId: string, params: DeviceState) {
         async ({ device, api, provider }) =>
             !!(await api.changeDeviceState({ device, provider }, params))
     );
-    if (res) {
+    if (res === true) {
         return getDeviceState(deviceId);
     }
     return res;
@@ -129,10 +131,15 @@ export async function changeDeviceState(deviceId: string, params: DeviceState) {
 
 export async function getDeviceState(deviceId: string) {
     return call(deviceId, async ({ device, api, provider }) => {
-        if (!api.getDeviceState) throw new NotFoundError();
-        const state = await api.getDeviceState({ device, provider });
-        await cs.devices.updateOne({ _id: device._id }, { $set: { state } });
-        return state;
+        if (api.getDeviceState) {
+            const state = await api.getDeviceState({ device, provider });
+            await cs.devices.updateOne(
+                { _id: device._id },
+                { $set: { state } }
+            );
+            return state;
+        }
+        return device.state;
     });
 }
 
