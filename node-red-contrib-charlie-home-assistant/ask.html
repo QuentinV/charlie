@@ -22,3 +22,112 @@
         </div>
     </form>
 </script>
+
+<script type="text/x-red" data-help-name="charlie-ask">
+        <p>
+            The <b>Charlie Ask</b> node sends a natural‑language prompt to the Charlie
+            assistant and returns the generated response. It acts as a simple interface
+            to the Charlie LLM backend and is designed for conversational flows,
+            automation queries, and contextual reasoning.
+        </p>
+
+        <h3>Inputs</h3>
+        <p>
+            This node accepts a single input message. The input must contain a
+            <code>payload</code> object with a <code>message</code> field:
+        </p>
+
+        <pre>
+    {
+        "message": "Your question or instruction"
+    }
+        </pre>
+
+        <ul>
+            <li><b>message</b> – Required. A string representing the prompt to send to
+                the assistant.</li>
+        </ul>
+
+        <p>Examples:</p>
+
+        <pre>
+    // Ask a question
+    { "message": "Quels appareils sont éteints ?" }
+
+    // Request an explanation
+    { "message": "Explique-moi comment fonctionne l'arrosage automatique." }
+
+    // Ask for help with automation
+    { "message": "Ouvre le volet du salon à 50%." }
+        </pre>
+
+        <h3>Outputs</h3>
+        <p>
+            The node outputs a single message containing the assistant's full response
+            in <code>msg.payload</code>. The structure includes:
+        </p>
+
+        <ul>
+            <li><b>input_entries</b> – The messages sent to the assistant.</li>
+            <li><b>output_entries</b> – The assistant’s reasoning steps, tool calls,
+                and final answer.</li>
+            <li><b>conversation_id</b> – Identifier for the ongoing conversation.</li>
+            <li><b>files</b> – Optional file attachments.</li>
+        </ul>
+
+        <p>
+            The final assistant answer is always found in the last
+            <code>output_entries</code> item with <code>type: "message.output"</code>.
+        </p>
+
+        <h4>Example Output</h4>
+
+        <pre>
+    {
+      "input_entries": [
+        {
+          "role": "user",
+          "content": "Quel appareils sont eteints ?",
+          "type": "message.input"
+        }
+      ],
+      "conversation_id": "conv_019bece990a773288d23949e97df190d",
+      "output_entries": [
+        {
+          "type": "function.call",
+          "name": "fetch-devices-state",
+          "arguments": "{}"
+        },
+        {
+          "type": "function.result",
+          "result": "[ ... device state list ... ]"
+        },
+        {
+          "type": "message.output",
+          "content": "Les appareils éteints sont l'ampoule du salon et la lumière cabannon2."
+        }
+      ]
+    }
+        </pre>
+
+        <h3>Details</h3>
+        <p>
+            The Charlie assistant may call internal tools (for example,
+            <code>fetch-devices-state</code>) to gather information before generating
+            the final answer. These intermediate steps are included in
+            <code>output_entries</code> for transparency and debugging.
+        </p>
+
+        <p>
+            The last <code>message.output</code> entry contains the assistant’s final
+            natural‑language response, which is typically what you will use in your
+            flow.
+        </p>
+
+        <h3>Usage</h3>
+        <p>
+            Connect inject, function, or automation nodes to generate the
+            <code>msg.payload.message</code>. The output can be routed to debug nodes,
+            dashboards, notification systems, or other Charlie nodes.
+        </p>
+</script>

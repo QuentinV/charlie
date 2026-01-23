@@ -57,3 +57,94 @@
         </div>
     </form>
 </script>
+
+<script type="text/x-red" data-help-name="charlie-device">
+        <p>
+            The <b>Charlie Device</b> node represents a controllable device managed by the
+            Charlie provider. It reacts to incoming messages and triggers the appropriate
+            action on the Charlie backend based on the content of <code>msg.payload</code>.
+        </p>
+
+        <h3>Inputs</h3>
+        <p>
+            This node accepts a single input message. The input must contain a
+            <code>payload</code> object describing the desired action:
+        </p>
+
+        <pre>
+    {
+        "state": "on" | "off" | "pause",
+        "level": &lt;number&gt;   // optional
+    }
+        </pre>
+
+        <ul>
+            <li><b>state</b> – Required. Defines the action to perform.</li>
+            <li><b>level</b> – Optional. A numeric value used for devices that support
+                intensity or position (e.g., dimmable lights, shutters).</li>
+        </ul>
+
+        <p>
+            Examples:
+        </p>
+
+        <pre>
+    // Turn on a light
+    { "state": "on" }
+
+    // Turn off a device
+    { "state": "off" }
+
+    // Set a shutter to 50%
+    { "state": "on", "level": 50 }
+
+    // Pause a shutter
+    { "state": "pause" }
+        </pre>
+
+        <h3>Outputs</h3>
+        <ul>
+            <li><b>Light / Switch / Sprinkler</b>: 2 outputs (On / Off)</li>
+            <li><b>Shutter</b>: 3 outputs (On / Off / Pause)</li>
+        </ul>
+
+        <p>
+            The number of outputs is automatically adjusted based on the selected
+            device type. Output labels are:
+        </p>
+
+        <ul>
+            <li><b>Output 1</b>: On</li>
+            <li><b>Output 2</b>: Off</li>
+            <li><b>Output 3</b> (shutter only): Pause</li>
+        </ul>
+
+        <h3>Properties</h3>
+        <ul>
+            <li><b>ID</b> – Unique identifier for this device within Charlie.</li>
+            <li><b>Name</b> – Display name shown in the Node‑RED editor.</li>
+            <li><b>External ID</b> – Identifier used by the Charlie backend.</li>
+            <li><b>Type</b> – Device category:
+                <ul>
+                    <li><b>Lum</b> – Light</li>
+                    <li><b>Interrupteur</b> – Switch</li>
+                    <li><b>Volet</b> – Shutter</li>
+                    <li><b>Arrosage</b> – Sprinkler</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>Details</h3>
+        <p>
+            When a valid payload is received, the node forwards the corresponding
+            command to the Charlie backend. For shutters, the optional
+            <code>level</code> attribute can be used to set a specific position.
+        </p>
+
+        <h3>Usage</h3>
+        <p>
+            Connect inject, function, or automation logic nodes to generate the
+            appropriate <code>msg.payload</code>. Route the outputs to the rest of
+            your flow depending on the action you want to perform.
+        </p>
+</script>
