@@ -37,7 +37,7 @@ module.exports = function (RED) {
             client = mqtt.connect(mqttHost());
 
             client.on('connect', () => {
-                client.subscribe(`device/${config._id}/state`);
+                client.subscribe(`device/${config.id}/state`);
             });
 
             client.on('message', (topic, payload) => {
@@ -51,7 +51,7 @@ module.exports = function (RED) {
 
                 const outputs = [null, null, null];
                 outputs[oi] = {
-                    topic: config._id,
+                    topic: config.id,
                     payload: { state: res.power, level: res.level },
                 };
 
