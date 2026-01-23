@@ -66,7 +66,11 @@ module.exports = function (RED) {
 
             const payload = msg.payload;
 
-            if (payload.state) {
+            if (
+                payload.state !== 'on' ||
+                payload.state !== 'off' ||
+                payload.state !== 'pause'
+            ) {
                 try {
                     mqttClient.publish(
                         `device/state`,
