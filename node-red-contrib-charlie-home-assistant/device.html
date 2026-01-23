@@ -4,10 +4,10 @@
         paletteLabel: 'Device',
         color: '#fff',
         defaults: {
-            name: { value: '' },
-            id: { value: '' },
-            deviceType: { value: 'light' },
-            externalId: { value: '' },
+            name: { value: '', required: true },
+            id: { value: '', required: true },
+            deviceType: { value: 'light', required: true },
+            externalId: { value: '', required: true },
             outputs: { value: 2 },
         },
         inputs: 1,
@@ -33,22 +33,22 @@
     <form id="dialog-form" class="form-horizontal" autocomplete="off">
         <div class="form-row">
             <label for="node-input-id">Id</label>
-            <input id="node-input-id" required />
+            <input id="node-input-id" />
         </div>
 
         <div class="form-row">
             <label for="node-input-name">Name</label>
-            <input id="node-input-name" required />
+            <input id="node-input-name" />
         </div>
 
         <div class="form-row">
             <label for="node-input-externalId">External id</label>
-            <input id="node-input-externalId" required />
+            <input id="node-input-externalId" />
         </div>
 
         <div class="form-row">
             <label for="node-input-deviceType">Type</label>
-            <select id="node-input-deviceType" required>
+            <select id="node-input-deviceType">
                 <option value="light">Light</option>
                 <option value="switch">Switch</option>
                 <option value="shutter">Shutter</option>

@@ -4,8 +4,8 @@
         paletteLabel: 'Provider',
         color: '#fff',
         defaults: {
-            id: { value: '' },
-            name: { value: '' },
+            id: { value: '', required: true },
+            name: { value: '', required: true },
             charlieHost: { value: 'localhost' },
             apiPort: { value: 9300 },
             mqttPort: { value: 9304 },
@@ -23,12 +23,12 @@
     <form id="dialog-form" class="form-horizontal" autocomplete="off">
         <div class="form-row">
             <label for="node-input-id"><i class="fa fa-tag"></i> ID</label>
-            <input type="text" id="node-input-id" required />
+            <input type="text" id="node-input-id" />
         </div>
 
         <div class="form-row">
             <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-            <input type="text" id="node-input-name" required />
+            <input type="text" id="node-input-name" />
         </div>
 
         <div class="form-row">
