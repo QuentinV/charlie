@@ -56,6 +56,7 @@ export const DeviceTypes = {
     light: 'light',
     switch: 'switch',
     shutter: 'shutter',
+    sprinkler: 'sprinkler',
     tv: 'tv',
     unknown: 'unknown',
 };
