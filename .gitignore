@@ -134,6 +134,8 @@ dist
 !.yarn/sdks
 !.yarn/versions
 
+python-apis/app/agent.json
+
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*

@@ -21,7 +21,6 @@ Agent id and mistral api key needs to be configured as env variable with `.env` 
 
 ```
 MISTRAL_API_KEY=
-AGENT_ID=
 SSE_HOST=host.docker.internal
 VOSK_MODEL_KEY=vosk-model-fr-0.22
 ```

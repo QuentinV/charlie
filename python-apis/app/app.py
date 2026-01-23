@@ -22,7 +22,6 @@ logger = logging.getLogger("uvicorn")
 
 sse_host = os.getenv("SSE_HOST")
 client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
-agent_id = os.getenv("AGENT_ID")
 cached_tools = None
 
 voskModelKey = os.getenv("VOSK_MODEL_KEY")
@@ -36,6 +35,51 @@ if sse_host != "":
     logger.info("Starting in SSE mode with SSE_HOST=%s", sse_host)
 else:
      logger.info("Starting in stdio mode")
+
+AGENT_FILE = "agent.json"
+AGENT_VERSION = 1
+
+CUSTOM_PROMPT = """
+You are a helpful home assistant with access to different devices through function calling. 
+Your name is Charlie. Keep your answer to user short, concise and optimize for text to speech. 
+For user answer do not use any format character like ** since it is not text to speech friendly. 
+If you find what the user ask for then avoid asking for confirmation and do it.
+"""
+
+def load_agent_id():
+    agent_id = None
+    version = 1
+
+    if os.path.exists(AGENT_FILE):
+       with open(AGENT_FILE, "r") as f:
+            data = json.load(f)
+            agent_id = data.get("agent_id", None)
+            version = data.get("version", 1)
+
+    if agent_id is None:
+        logger.info(f"Creating new agent for mistral AI")
+        created = client.beta.agents.create(
+            name="charlie-agent",
+            instructions=CUSTOM_PROMPT,
+            model="mistral-large-latest"
+        )
+        agent_id = created.id
+
+    if agent_id is not None and version < AGENT_VERSION:
+        logger.info(f"Agent require update to new version")
+        client.beta.agents.update(
+            agent_id=agent_id, 
+            instructions=CUSTOM_PROMPT
+        )
+
+    with open(AGENT_FILE, "w") as f:
+        json.dump({"agent_id": agent_id, "version": AGENT_VERSION}, f)
+
+    logger.info(f"Use agent id {agent_id}")
+    
+    return agent_id
+        
+agent_id = load_agent_id()
 
 def download_and_extract_vosk():
     if os.path.isdir(voskFolder):
