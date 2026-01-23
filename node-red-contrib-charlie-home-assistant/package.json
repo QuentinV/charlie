@@ -10,7 +10,8 @@
   "node-red": {
     "nodes": {
       "provider": "provider.js",
-      "device": "device.js"
+      "device": "device.js",
+      "ask": "ask.js"
     }
   },
   "dependencies": {
