@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$SCRIPT_DIR"
-UPDATE_SCRIPT="$REPO_DIR/restart.sh"
+UPDATE_SCRIPT="$REPO_DIR/update.sh"
 
 cd "$REPO_DIR" || exit 1
 
