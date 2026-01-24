@@ -1,6 +1,3 @@
-cd nodejs-apis
-yarn install
-cd ..
-
+# restart service
 docker compose stop
 docker compose up --remove-orphans -d
