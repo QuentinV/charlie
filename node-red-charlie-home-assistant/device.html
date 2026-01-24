@@ -5,7 +5,7 @@
         color: '#fff',
         defaults: {
             name: { value: '', required: true },
-            id: { value: '', required: true },
+            deviceId: { value: '', required: true },
             deviceType: { value: 'light', required: true },
             externalId: { value: '', required: true },
             outputs: { value: 2 },
@@ -32,8 +32,8 @@
 <script type="text/x-red" data-template-name="charlie-device">
     <form id="dialog-form" class="form-horizontal" autocomplete="off">
         <div class="form-row">
-            <label for="node-input-id">Id</label>
-            <input id="node-input-id" />
+            <label for="node-input-deviceId">Id</label>
+            <input id="node-input-deviceId" />
         </div>
 
         <div class="form-row">

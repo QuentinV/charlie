@@ -4,7 +4,7 @@
         paletteLabel: 'Provider',
         color: '#fff',
         defaults: {
-            id: { value: '', required: true },
+            providerId: { value: '', required: true },
             name: { value: '', required: true },
             charlieHost: { value: 'localhost' },
             apiPort: { value: 9300 },
@@ -22,8 +22,8 @@
 <script type="text/x-red" data-template-name="charlie-provider">
     <form id="dialog-form" class="form-horizontal" autocomplete="off">
         <div class="form-row">
-            <label for="node-input-id"><i class="fa fa-tag"></i> ID</label>
-            <input type="text" id="node-input-id" />
+            <label for="node-input-providerId"><i class="fa fa-tag"></i> ID</label>
+            <input type="text" id="node-input-providerId" />
         </div>
 
         <div class="form-row">

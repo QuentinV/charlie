@@ -18,7 +18,7 @@ module.exports = function (RED) {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        _id: config.id,
+                        _id: config.providerId,
                         name: config.name,
                         codesource: 'default_custom',
                     }),
