@@ -1,9 +1,12 @@
 {
-  "name": "red-contrib-charlie-home-assistant",
+  "name": "@charlie/node-red-home-assistant",
   "version": "1.0.0",
   "description": "Create and control your own device with Charlie",
   "license": "ISC",
-  "author": "",
+  "keywords": [
+    "node-red"
+  ],
+  "author": "Quentin Vanhauteghem",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
