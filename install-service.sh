@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-git config core.fileMode false
-
 set -e
 
 SERVICE_NAME="charlie-update.service"
