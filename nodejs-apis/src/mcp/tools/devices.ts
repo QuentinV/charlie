@@ -34,7 +34,7 @@ export default async () => {
                     .map((d: Device) => `- id: ${d._id} / name: ${d.name}`)
                     .join('\n')}`;
                 console.log('result', res);
-                return res;
+                return `Identify if user means one specific or a group of devices and use the name to select relevant devices from the list: ${res}`;
             },
         },
         'change-device-state': {
