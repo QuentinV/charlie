@@ -34,7 +34,6 @@ services:
             - ./vosk:/vosk
         environment:
             - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-            - AGENT_ID=${AGENT_ID}
             - SSE_HOST=http://${SSE_HOST}:9300/sse
             - VOSK_MODEL_KEY=${VOSK_MODEL_KEY}
             - VOSK_SAMPLE_RATE=${VOSK_SAMPLE_RATE}
