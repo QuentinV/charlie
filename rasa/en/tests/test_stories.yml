@@ -1,0 +1,65 @@
+version: '3.1'
+
+stories:
+    - story: test greet
+      steps:
+          - user: |
+                hello
+            intent: greet
+          - action: utter_greet
+
+    - story: test ask weather
+      steps:
+          - user: |
+                what's the weather
+            intent: ask_weather
+          - action: action_get_weather
+
+    - story: test get device state
+      steps:
+          - user: |
+                is the living room light on
+            intent: get_device_state
+            entities:
+                - device: 'living room light'
+          - action: action_get_device_state
+
+    - story: test set device state
+      steps:
+          - user: |
+                turn on the kitchen light
+            intent: set_device_state
+            entities:
+                - device: 'kitchen light'
+                - state: 'on'
+          - action: action_set_device_state
+
+    # Optional: multi-turn test
+    - story: test multi turn device clarification
+      steps:
+          - user: |
+                turn it on
+            intent: set_device_state
+            entities:
+                - state: 'on'
+          - action: action_set_device_state
+          - user: |
+                what about the living room light
+            intent: get_device_state
+            entities:
+                - device: 'living room light'
+          - action: action_get_device_state
+
+    # Optional: weather then device
+    - story: test weather then device
+      steps:
+          - user: |
+                tell me the weather
+            intent: ask_weather
+          - action: action_get_weather
+          - user: |
+                is the gate open
+            intent: get_device_state
+            entities:
+                - device: 'gate'
+          - action: action_get_device_state

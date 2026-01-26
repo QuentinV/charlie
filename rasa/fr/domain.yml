@@ -1,0 +1,47 @@
+version: '3.1'
+
+intents:
+    - greet
+    - ask_weather
+    - set_device_state
+    - get_device_state
+
+entities:
+    - device
+    - state
+    - location
+
+slots:
+    device:
+        type: text
+        influence_conversation: true
+        mappings:
+            - type: from_entity
+              entity: device
+
+    state:
+        type: text
+        influence_conversation: true
+        mappings:
+            - type: from_entity
+              entity: state
+
+    location:
+        type: text
+        influence_conversation: true
+        mappings:
+            - type: from_entity
+              entity: location
+
+responses:
+    utter_greet:
+        - text: 'Bonjour, que puis-je faire pour vous ?'
+
+    utter_default:
+        - text: 'Je n’ai pas compris. Pouvez-vous reformuler ?'
+
+actions:
+    - action_get_weather
+    - action_set_device_state
+    - action_get_device_state
+    - action_default_fallback

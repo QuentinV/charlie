@@ -1,0 +1,90 @@
+version: '3.1'
+
+nlu:
+    - intent: greet
+      examples: |
+          - salut
+          - bonjour
+          - coucou
+          - hey
+          - bonsoir
+          - yo
+          - salut assistant
+          - bonjour à toi
+
+    - intent: ask_weather
+      examples: |
+          - quel temps fait-il
+          - il fait quel temps
+          - météo
+          - donne-moi la météo
+          - quel temps aujourd'hui
+          - il va pleuvoir
+          - est-ce qu'il fait beau
+          - temps demain
+
+    - intent: set_device_state
+      examples: |
+          - allume [la lumière du salon](device)
+          - éteins [la lumière du salon](device)
+          - allume [la cuisine](device)
+          - éteins [la cuisine](device)
+          - mets [la lampe du bureau](device) [en marche](state)
+          - mets [la lampe du bureau](device) [à off](state)
+          - allume [la chambre](device)
+          - éteins [la chambre](device)
+          - ouvre [le portail](device)
+          - ferme [le portail](device)
+          - ouvre [la porte du garage](device)
+          - ferme [la porte du garage](device)
+          - allume-la
+          - éteins-le
+          - allume-les
+          - mets-le [en marche](state)
+          - coupe-le
+          - rallume-le
+          - allume ça
+          - éteins ça
+          - mets [le chauffage](device) [à on](state)
+          - mets [le chauffage](device) [à off](state)
+          - active [le ventilateur](device)
+          - désactive [le ventilateur](device)
+          - allume [la lumière](device) [du salon](location)
+          - éteins [la lumière](device) [de la cuisine](location)
+
+    - intent: get_device_state
+      examples: |
+          - est-ce que [la lumière du salon](device) est allumée
+          - est-ce que [la lumière du salon](device) est éteinte
+          - [la lumière du salon](device) est-elle allumée
+          - [la lumière du salon](device) est-elle éteinte
+          - l'état de [la cuisine](device)
+          - c'est allumé dans [la cuisine](location)
+          - c'est éteint dans [la cuisine](location)
+          - est-ce que [le portail](device) est ouvert
+          - est-ce que [le portail](device) est fermé
+          - le portail est ouvert ou fermé
+          - la lumière est-elle allumée
+          - et [la chambre](device)
+          - et dans [la cuisine](location)
+          - et l'autre
+          - qu'en est-il de [la lumière du bureau](device)
+          - l'état de ça
+          - c'est allumé
+
+    - synonym: on
+      examples: |
+          - allumé
+          - en marche
+          - actif
+          - ouvrir
+          - ouvert
+
+    - synonym: off
+      examples: |
+          - éteint
+          - éteinte
+          - fermé
+          - fermer
+          - coupé
+          - désactivé

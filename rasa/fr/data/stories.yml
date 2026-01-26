@@ -1,0 +1,93 @@
+version: '3.1'
+
+stories:
+    - story: salutation simple
+      steps:
+          - intent: greet
+            user: 'salut'
+          - action: utter_greet
+
+    - story: demander la météo
+      steps:
+          - intent: ask_weather
+            user: 'quel temps fait-il'
+          - action: action_get_weather
+
+    - story: demander état lumière salon
+      steps:
+          - intent: get_device_state
+            user: 'est-ce que la lumière du salon est allumée'
+            entities:
+                - device: 'lumière du salon'
+          - action: action_get_device_state
+
+    - story: allumer lumière salon
+      steps:
+          - intent: set_device_state
+            user: 'allume la lumière du salon'
+            entities:
+                - device: 'lumière du salon'
+                - state: 'on'
+          - action: action_set_device_state
+
+    - story: éteindre lumière cuisine
+      steps:
+          - intent: set_device_state
+            user: 'éteins la lumière de la cuisine'
+            entities:
+                - device: 'lumière de la cuisine'
+                - state: 'off'
+          - action: action_set_device_state
+
+    - story: multi_turn_pronom
+      steps:
+          - intent: set_device_state
+            user: 'allume ça'
+            entities:
+                - state: 'on'
+          - action: action_set_device_state
+          - intent: get_device_state
+            user: 'et la cuisine'
+            entities:
+                - device: 'cuisine'
+          - action: action_get_device_state
+
+    - story: météo puis état appareil
+      steps:
+          - intent: ask_weather
+            user: 'donne-moi la météo'
+          - action: action_get_weather
+          - intent: get_device_state
+            user: 'et le portail'
+            entities:
+                - device: 'portail'
+          - action: action_get_device_state
+
+    - story: clarification appareil
+      steps:
+          - intent: set_device_state
+            user: 'allume-la'
+            entities:
+                - state: 'on'
+          - action: action_set_device_state
+          - intent: set_device_state
+            user: 'non, la lumière du bureau'
+            entities:
+                - device: 'lumière du bureau'
+                - state: 'on'
+          - action: action_set_device_state
+
+    - story: enchainement commandes
+      steps:
+          - intent: set_device_state
+            user: 'allume la chambre'
+            entities:
+                - device: 'chambre'
+                - state: 'on'
+          - action: action_set_device_state
+          - intent: set_device_state
+            user: 'et la cuisine aussi'
+            entities:
+                - device: 'cuisine'
+                - state: 'on'
+          - action: action_set_device_state

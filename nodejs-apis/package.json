@@ -7,7 +7,8 @@
     "start": "tsx src/index.ts",
     "dev": "nodemon --watch src --ext ts --exec tsx src/index.ts",
     "d": "tsx src/core/ipscan.ts",
-    "generate-webpush-keys": "tsx src/generate-webpush-keys.ts"
+    "generate-webpush-keys": "tsx src/generate-webpush-keys.ts",
+    "rasa": "tsx src/ai/nlu.ts"
   },
   "repository": {
     "type": "git",
