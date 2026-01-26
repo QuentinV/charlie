@@ -1,5 +1,5 @@
 import dgram from 'dgram';
-import { askDirect } from '../ai/ask';
+import { askDirect } from '../ai/llm';
 import { WebSocketServer } from 'ws';
 import { stt } from './stt';
 import { tts } from '../ai/tts';
