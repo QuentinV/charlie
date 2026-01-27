@@ -42,9 +42,7 @@ nlu:
           - active la [prise](device)
           - allume les [lumières](device) dans la [cuisine](room)
           - allume le [chauffage](device)
-          - allume la [TV](device)
-          - allume la [machine à café](device)
-          - allume le [déshumidificateur](device)
+          - allume la [tv](device)
           - allume la [guirlande](device)
           - allume la lumière du [bureau](room)
           - allume la lampe du [couloir](room)
@@ -64,23 +62,20 @@ nlu:
           - désactive la [prise](device)
           - éteins toutes les [lumières](device) dans la [cuisine](room)
           - éteins le [chauffage](device)
-          - éteins la [TV](device)
-          - coupe la [machine à café](device)
-          - arrête le [déshumidificateur](device)
-          - éteins la [guirlande](device)
+          - éteins la [tv](device)
           - éteins la lumière du [bureau](room)
           - coupe la lampe du [couloir](room)
           - eteins la [lampe](device)   # typo‑tolerance
           - etein la lumiere du [salon](room)   # typo‑tolerance
           - éteins la [lumière](device) du [salon](room) et la [lampe](device) de la [cuisine](room)
-          - coupe la [TV](device) et le [chauffage](device) du [salon](room)
+          - coupe la [tv](device) et le [chauffage](device) du [salon](room)
           - éteins la lampe de la [chambre de Léo](room)
           - éteins la lumière dans la [pièce principale](room)
 
     - intent: set_device_value
       examples: |
           - règle le [ventilateur](device) à [3](value)
-          - mets la [TV](device) sur [20](value)
+          - mets la [tv](device) sur [20](value)
           - mets la [lumière](device) à [50](value) pour cent
           - règle la [prise](device) à [80](value)
           - mets le [chauffage](device) sur [2](value)
@@ -92,13 +87,13 @@ nlu:
           - mets la lumière à [max](value)
           - mets la lumière au [minimum](value)
           - mets la [lumière](device) du [salon](room) à [30](value) et le [chauffage](device) à [21](value)
-          - règle la [TV](device) sur [15](value) et la [lampe](device) à [40](value)
+          - règle la [tv](device) sur [15](value) et la [lampe](device) à [40](value)
 
     - intent: increase_device_value
       examples: |
           - augmente la puissance du [ventilateur](device)
           - monte un peu la [lumière](device)
-          - augmente le niveau de la [TV](device)
+          - augmente le niveau de la [tv](device)
           - mets la [lampe](device) un peu plus fort
           - augmente la puissance du [chauffage](device)
           - monte la [guirlande](device)
@@ -115,7 +110,7 @@ nlu:
       examples: |
           - baisse la puissance du [ventilateur](device)
           - diminue la [lumière](device)
-          - baisse le niveau de la [TV](device)
+          - baisse le niveau de la [tv](device)
           - mets la [lampe](device) plus bas
           - baisse la puissance du [chauffage](device)
           - baisse la [guirlande](device)
@@ -133,7 +128,7 @@ nlu:
           - est‑ce que la [lampe](device) est allumée ?
           - la [lumière](device) du [salon](room) est allumée ?
           - le [chauffage](device) fonctionne ?
-          - la [TV](device) est allumée ?
+          - la [tv](device) est allumée ?
           - est‑ce que le [ventilateur](device) tourne ?
           - la [prise](device) est activée ?
           - la [guirlande](device) est allumée ?
