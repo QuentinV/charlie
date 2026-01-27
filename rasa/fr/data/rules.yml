@@ -13,6 +13,16 @@ rules:
     # ACKNOWLEDGEMENT FOR SIMPLE COMMANDS
     ######################################################################
 
+    - rule: Greet user
+      steps:
+          - intent: greet
+          - action: utter_greet
+
+    - rule: Stop current action
+      steps:
+          - intent: stop
+          - action: utter_stop
+
     - rule: Acknowledge device control
       steps:
           - intent: turn_on_device

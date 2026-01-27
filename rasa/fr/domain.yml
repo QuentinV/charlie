@@ -1,6 +1,8 @@
 version: '3.1'
 
 intents:
+    - greet
+
     - turn_on_device
     - turn_off_device
     - set_device_value
@@ -44,13 +46,13 @@ intents:
     - next_track
     - previous_track
 
+    - stop
+
 entities:
     - device
-    - device_group
     - room
     - value
     - city
-    - weather_type
 
 slots:
     device:
@@ -60,16 +62,9 @@ slots:
             - type: from_entity
               entity: device
 
-    device_group:
-        type: text
-        influence_conversation: true
-        mappings:
-            - type: from_entity
-              entity: device_group
-
     room:
         type: text
-        influence_conversation: true
+        influence_conversation: false
         mappings:
             - type: from_entity
               entity: room
@@ -88,14 +83,10 @@ slots:
             - type: from_entity
               entity: city
 
-    weather_type:
-        type: text
-        influence_conversation: false
-        mappings:
-            - type: from_entity
-              entity: weather_type
-
 responses:
+    utter_greet:
+        - text: 'Bonjour, que puis‑je faire pour toi ?'
+
     utter_default:
         - text: 'Désolé, je n’ai pas compris. Peux‑tu reformuler ?'
 
@@ -110,6 +101,9 @@ responses:
 
     utter_weather:
         - text: 'Voici la météo.'
+
+    utter_stop:
+        - text: 'D’accord, j’arrête.'
 
 session_config:
     session_expiration_time: 60

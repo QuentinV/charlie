@@ -1,5 +1,35 @@
 version: '3.1'
 nlu:
+    - intent: greet
+      examples: |
+          - salut
+          - bonjour
+          - coucou
+          - hello
+          - hey
+          - bonsoir
+          - salut ça va
+          - yo
+          - hé
+          - bonjour assistant
+
+    - intent: stop
+      examples: |
+          - stop
+          - arrête
+          - annule
+          - laisse tomber
+          - oublie
+          - non c’est bon
+          - ça suffit
+          - annule ça
+          - arrête tout
+          - stoppe
+          - non finalement
+          - on arrête
+          - arrête la musique
+          - stop la musique
+
     ######################################################################
     # DEVICE CONTROL
     ######################################################################
@@ -22,6 +52,9 @@ nlu:
           - allume la lumierre dans la [cuisine](room)   # typo‑tolerance
           - allume la [lumière](device) du [salon](room) et la [lampe](device) du [bureau](room)
           - allume la [lampe](device) du [salon](room) et la [guirlande](device) du [jardin](room)
+          - allume la lumière du [salon](room)
+          - allume le chauffage du [bureau du fond](room)
+          - allume la lumière du [garage 2](room)
 
     - intent: turn_off_device
       examples: |
@@ -41,6 +74,8 @@ nlu:
           - etein la lumiere du [salon](room)   # typo‑tolerance
           - éteins la [lumière](device) du [salon](room) et la [lampe](device) de la [cuisine](room)
           - coupe la [TV](device) et le [chauffage](device) du [salon](room)
+          - éteins la lampe de la [chambre de Léo](room)
+          - éteins la lumière dans la [pièce principale](room)
 
     - intent: set_device_value
       examples: |
@@ -499,7 +534,7 @@ nlu:
           - météo ce soir
           - il va pleuvoir demain ?
           - il va faire beau après-demain ?
-          - il va pleuvoir a [Pari](city)   # typo‑tolerance
+          - il va pleuvoir a [Pari](city)
 
     ######################################################################
     # MUSIC
@@ -523,8 +558,7 @@ nlu:
           - mets du Jul
           - mets le dernier album de Daft Punk
           - joue ma playlist préférée
-          - joue la radio NRJ
-          - joue de la music   # typo‑tolerance
+          - joue de la music
 
     - intent: pause_music
       examples: |
@@ -584,215 +618,208 @@ nlu:
 
     - lookup: device
       examples: |
-          - lampe
+          - shutter
+          - light
+          - heater
+          - ac
+          - speaker
           - lumière
-          - volets
+          - lumiere
+          - lumère
+          - lumere
+          - lumire
+          - lampe
+          - ampoule
+          - plafonnier
+          - spot
+          - led
+          - bandeau led
+          - guirlande
+          - neon
+          - néon
           - volet
+          - volets
           - store
           - stores
+          - rideau
+          - rideaux
           - rideau électrique
           - chauffage
           - radiateur
+          - thermostat
+          - clim
+          - climatisation
           - ventilateur
-          - tv
-          - télé
-          - télévision
-          - prise
-          - prise connectée
-          - guirlande
-          - déshumidificateur
-          - machine à café
           - enceinte
           - haut-parleur
+          - speaker
+          - television
+          - télé
+          - tv
+          - home cinema
+          - barre de son
+          - soundbar
+          - prise
+          - interrupteur
+          - switch
+          - multiprise
 
-    - lookup: device_group
-      examples: |
-          - lumières
-          - lampes
-          - éclairages
-          - spots
-          - plafonniers
-          - volets
-          - stores
-          - rideaux électriques
-          - prises
-          - prises connectées
-          - appareils
+    ######################################################################
+    # DEVICES
+    ######################################################################
+synonyms:
+    light:
+        - lumière
+        - lumiere
+        - lumère
+        - lumere
+        - lumire
+        - lumière
+        - lumieer
+        - lumie
+        - lumir
+        - lum
+        - lumière du salon
+        - lumiere du salon
+        - lape
+        - lamp
+        - lammp
+        - lampe du salon
+        - lampe de bureau
+        - ampule
+        - ampul
+        - ampoule led
+        - ampoule connectée
+        - plafonier
+        - plafonnir
+        - plafonnie
+        - plafon
+        - spot led
+        - spote
+        - sspot
+        - bandeau led
+        - strip led
+        - ruban led
+        - led strip
+        - nanoleaf
+        - nanoleafs
+        - neon
+        - neons
+        - nean
+        - guirlande
 
-    - lookup: room
-      examples: |
-          - salon
-          - séjour
-          - chambre
-          - chambre à coucher
-          - cuisine
-          - bureau
-          - salle de bain
-          - salle de bains
-          - sdb
-          - garage
-          - terrasse
-          - jardin
-          - couloir
-          - entrée
-          - grenier
+    shutter:
+        - volet
+        - volets
+        - volet roulant
+        - volets roulants
+        - volet electrique
+        - volets electriques
+        - volet éléctrique
+        - volets éléctriques
+        - stores
+        - store banne
+        - store électrique
+        - store electrique
+        - rideaux
+        - rideau électrique
+        - rideaux électriques
+        - rideau connecte
+        - rideau connectés
 
-    - lookup: group_keyword
-      examples: |
-          - toutes
-          - tous
-          - tout
-          - ensemble
-          - partout
-          - global
-          - totalité
+    heater:
+        - chauffage
+        - chaufage
+        - chauffage electrique
+        - chauffage électrique
+        - chauffage du salon
+        - radiater
+        - radiateur electrique
+        - radiateur électrique
+        - radia
 
-    - lookup: weather_type
-      examples: |
-          - pluie
-          - beau
-          - soleil
-          - chaud
-          - froid
-          - neige
-          - vent
-          - orage
-          - nuageux
-          - couvert
+    thermostat:
+        - termostat
+        - thermostate
 
-    - lookup: music_item
-      examples: |
-          - playlist
-          - album
-          - chanson
-          - morceau
-          - titre
-          - radio
+    ac:
+        - clim
+        - climatiseur
+        - climatisation reversible
+        - clim reversible
+        - clim réversible
+        - ventilo
+        - ventillateur
+        - ventillateur
+        - ventil
 
-    - lookup: routine
-      examples: |
-          - réveil
-          - coucher
-          - soirée film
-          - mode nuit
-          - mode vacances
-          - départ
-          - arrivée
+    speaker:
+        - speaker
+        - enceinte
+        - enceint
+        - enceite
+        - enceinte bluetooth
+        - enceinte du salon
+        - speaker
+        - haut-parleur
+        - haut parleur
+        - home cinema
+        - home-cinema
+        - systeme home cinema
+        - barre de son
+        - home cinéma
+        - soundbar
+
+    tv:
+        - télévision
+        - tele
+        - télé
+        - tv
+        - televiseur
+        - television
+        - televition
+        - la tele
+        - la tv
+
+    switch:
+        - prise
+        - prisse
+        - prise connectée
+        - prise intelligente
+        - interrupteur
+        - interupteur
+        - interrupteur connecté
+        - switch
+        - switch mural
+        - multiprise
+        - multi prise
+        - multi-prise
+        - multiprisse
 
     ######################################################################
     # SEMANTIC VALUE SYNONYMS
     ######################################################################
 
-    - synonym: max
-      examples: |
-          - à fond
-          - au max
-          - maximum
-          - le plus fort
+    max:
+        - à fond
+        - au max
+        - maximum
+        - le plus fort
 
-    - synonym: minimum
-      examples: |
-          - au minimum
-          - minimum
-          - le plus bas
+    min:
+        - minimum
+        - au minimum
+        - minimum
+        - le plus bas
 
-    - synonym: un peu
-      examples: |
-          - légèrement
-          - un petit peu
-          - un chouïa
+    small:
+        - un peu
+        - légèrement
+        - un petit peu
+        - un chouïa
 
-    - synonym: beaucoup
-      examples: |
-          - bien plus
-          - fortement
-          - vraiment plus
-
-    ######################################################################
-    # OTHER SYNONYMS
-    ######################################################################
-
-    - synonym: tv
-      examples: |
-          - télé
-          - télévision
-
-    - synonym: lumière
-      examples: |
-          - lampe
-          - lumière du plafond
-          - plafonnier
-          - spots
-          - éclairage
-
-    - synonym: chauffage
-      examples: |
-          - radiateur
-          - chauffage électrique
-
-    - synonym: volet
-      examples: |
-          - volets
-          - store
-          - stores
-          - rideau électrique
-          - volets roulants
-          - rideaux électriques
-
-    - synonym: lumières
-      examples: |
-          - lampes
-          - éclairages
-          - spots
-          - plafonniers
-
-    - synonym: prises
-      examples: |
-          - prises connectées
-          - prises intelligentes
-
-    - synonym: salon
-      examples: |
-          - séjour
-          - pièce principale
-
-    - synonym: chambre
-      examples: |
-          - chambre à coucher
-          - petite chambre
-
-    - synonym: salle de bain
-      examples: |
-          - salle de bains
-          - sdb
-          - salle d’eau
-
-    - synonym: pluie
-      examples: |
-          - pleuvoir
-          - il pleut
-
-    - synonym: beau
-      examples: |
-          - beau temps
-          - faire beau
-          - il fait beau
-          - soleil
-
-    - synonym: froid
-      examples: |
-          - faire froid
-          - il fait froid
-          - temps froid
-
-    - synonym: chaud
-      examples: |
-          - faire chaud
-          - il fait chaud
-          - temps chaud
-
-    - synonym: vent
-      examples: |
-          - venteux
-          - il y a du vent
-          - beaucoup de vent
+    high:
+        - beaucoup
+        - bien plus
+        - fortement
+        - vraiment plus

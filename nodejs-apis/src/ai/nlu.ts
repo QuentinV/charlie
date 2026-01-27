@@ -12,7 +12,7 @@ async function callRasa(text: string) {
 }
 
 (async () => {
-    const res = await callRasa('Allume la lumière de la cuisine');
+    const res = await callRasa('Allume la lumière du salon');
     console.log(JSON.stringify(res));
 })();
 
