@@ -1,90 +1,798 @@
 version: '3.1'
-
 nlu:
-    - intent: greet
-      examples: |
-          - salut
-          - bonjour
-          - coucou
-          - hey
-          - bonsoir
-          - yo
-          - salut assistant
-          - bonjour à toi
+    ######################################################################
+    # DEVICE CONTROL
+    ######################################################################
 
-    - intent: ask_weather
+    - intent: turn_on_device
       examples: |
-          - quel temps fait-il
-          - il fait quel temps
-          - météo
-          - donne-moi la météo
-          - quel temps aujourd'hui
-          - il va pleuvoir
-          - est-ce qu'il fait beau
-          - temps demain
+          - allume la [lampe](device)
+          - allume la [lumière](device) du [salon](room)
+          - mets en marche le [ventilateur](device)
+          - active la [prise](device)
+          - allume les [lumières](device) dans la [cuisine](room)
+          - allume le [chauffage](device)
+          - allume la [TV](device)
+          - allume la [machine à café](device)
+          - allume le [déshumidificateur](device)
+          - allume la [guirlande](device)
+          - allume la lumière du [bureau](room)
+          - allume la lampe du [couloir](room)
+          - allume la lumire du [salon](room)   # typo‑tolerance
+          - allume la lumierre dans la [cuisine](room)   # typo‑tolerance
+          - allume la [lumière](device) du [salon](room) et la [lampe](device) du [bureau](room)
+          - allume la [lampe](device) du [salon](room) et la [guirlande](device) du [jardin](room)
 
-    - intent: set_device_state
+    - intent: turn_off_device
       examples: |
-          - allume [la lumière du salon](device)
-          - éteins [la lumière du salon](device)
-          - allume [la cuisine](device)
-          - éteins [la cuisine](device)
-          - mets [la lampe du bureau](device) [en marche](state)
-          - mets [la lampe du bureau](device) [à off](state)
-          - allume [la chambre](device)
-          - éteins [la chambre](device)
-          - ouvre [le portail](device)
-          - ferme [le portail](device)
-          - ouvre [la porte du garage](device)
-          - ferme [la porte du garage](device)
-          - allume-la
-          - éteins-le
-          - allume-les
-          - mets-le [en marche](state)
-          - coupe-le
-          - rallume-le
-          - allume ça
-          - éteins ça
-          - mets [le chauffage](device) [à on](state)
-          - mets [le chauffage](device) [à off](state)
-          - active [le ventilateur](device)
-          - désactive [le ventilateur](device)
-          - allume [la lumière](device) [du salon](location)
-          - éteins [la lumière](device) [de la cuisine](location)
+          - éteins la [lampe](device)
+          - coupe la [lumière](device) du [salon](room)
+          - arrête le [ventilateur](device)
+          - désactive la [prise](device)
+          - éteins toutes les [lumières](device) dans la [cuisine](room)
+          - éteins le [chauffage](device)
+          - éteins la [TV](device)
+          - coupe la [machine à café](device)
+          - arrête le [déshumidificateur](device)
+          - éteins la [guirlande](device)
+          - éteins la lumière du [bureau](room)
+          - coupe la lampe du [couloir](room)
+          - eteins la [lampe](device)   # typo‑tolerance
+          - etein la lumiere du [salon](room)   # typo‑tolerance
+          - éteins la [lumière](device) du [salon](room) et la [lampe](device) de la [cuisine](room)
+          - coupe la [TV](device) et le [chauffage](device) du [salon](room)
 
-    - intent: get_device_state
+    - intent: set_device_value
       examples: |
-          - est-ce que [la lumière du salon](device) est allumée
-          - est-ce que [la lumière du salon](device) est éteinte
-          - [la lumière du salon](device) est-elle allumée
-          - [la lumière du salon](device) est-elle éteinte
-          - l'état de [la cuisine](device)
-          - c'est allumé dans [la cuisine](location)
-          - c'est éteint dans [la cuisine](location)
-          - est-ce que [le portail](device) est ouvert
-          - est-ce que [le portail](device) est fermé
-          - le portail est ouvert ou fermé
-          - la lumière est-elle allumée
-          - et [la chambre](device)
-          - et dans [la cuisine](location)
-          - et l'autre
-          - qu'en est-il de [la lumière du bureau](device)
-          - l'état de ça
-          - c'est allumé
+          - règle le [ventilateur](device) à [3](value)
+          - mets la [TV](device) sur [20](value)
+          - mets la [lumière](device) à [50](value) pour cent
+          - règle la [prise](device) à [80](value)
+          - mets le [chauffage](device) sur [2](value)
+          - mets la [lampe](device) à [10](value)
+          - règle le [déshumidificateur](device) à [40](value)
+          - mets la [guirlande](device) à [30](value)
+          - règle la [machine à café](device) sur [1](value)
+          - mets le [ventilateur](device) à [5](value)
+          - mets la lumière à [max](value)
+          - mets la lumière au [minimum](value)
+          - mets la [lumière](device) du [salon](room) à [30](value) et le [chauffage](device) à [21](value)
+          - règle la [TV](device) sur [15](value) et la [lampe](device) à [40](value)
 
-    - synonym: on
+    - intent: increase_device_value
       examples: |
-          - allumé
-          - en marche
-          - actif
-          - ouvrir
-          - ouvert
+          - augmente la puissance du [ventilateur](device)
+          - monte un peu la [lumière](device)
+          - augmente le niveau de la [TV](device)
+          - mets la [lampe](device) un peu plus fort
+          - augmente la puissance du [chauffage](device)
+          - monte la [guirlande](device)
+          - augmente la vitesse du [ventilateur](device)
+          - mets la [prise](device) plus haut
+          - augmente la luminosité de la [lampe](device)
+          - monte la [machine à café](device)
+          - augmente la lumière [un peu](value)
+          - augmente la lumière [beaucoup](value)
+          - augmente la [lumière](device) du [salon](room) et la [lampe](device) du [bureau](room)
+          - augmente la puissance du [chauffage](device) et la vitesse du [ventilateur](device)
 
-    - synonym: off
+    - intent: decrease_device_value
       examples: |
-          - éteint
-          - éteinte
-          - fermé
-          - fermer
-          - coupé
-          - désactivé
+          - baisse la puissance du [ventilateur](device)
+          - diminue la [lumière](device)
+          - baisse le niveau de la [TV](device)
+          - mets la [lampe](device) plus bas
+          - baisse la puissance du [chauffage](device)
+          - baisse la [guirlande](device)
+          - diminue la vitesse du [ventilateur](device)
+          - mets la [prise](device) plus bas
+          - baisse la luminosité de la [lampe](device)
+          - baisse la [machine à café](device)
+          - baisse la lumière [un peu](value)
+          - baisse la lumière [beaucoup](value)
+          - baisse la [lumière](device) du [salon](room) et la [lampe](device) de la [cuisine](room)
+          - diminue la vitesse du [ventilateur](device) et la puissance du [chauffage](device)
+
+    - intent: query_device_state
+      examples: |
+          - est‑ce que la [lampe](device) est allumée ?
+          - la [lumière](device) du [salon](room) est allumée ?
+          - le [chauffage](device) fonctionne ?
+          - la [TV](device) est allumée ?
+          - est‑ce que le [ventilateur](device) tourne ?
+          - la [prise](device) est activée ?
+          - la [guirlande](device) est allumée ?
+          - est‑ce que la [machine à café](device) est en marche ?
+          - la [lumière](device) de la [cuisine](room) est éteinte ?
+          - le [déshumidificateur](device) est actif ?
+          - la lumire du [salon](room) est allumée ?   # typo‑tolerance
+          - la [lumière](device) du [salon](room) et celle de la [cuisine](room) sont allumées ?
+
+    ######################################################################
+    # ENVIRONMENT & COMFORT
+    ######################################################################
+
+    - intent: set_temperature
+      examples: |
+          - règle la température du [salon](room) à [22](value)
+          - mets la [chambre](room) à [19](value) degrés
+          - mets le [bureau](room) à [20](value)
+          - règle la température de la [cuisine](room) à [21](value)
+          - mets le [salon](room) à [23](value)
+          - règle la température dans la [chambre](room) à [18](value)
+          - mets la [salle de bain](room) à [24](value)
+          - règle le chauffage du [bureau](room) à [20](value)
+          - mets la température du [salon](room) à [21](value)
+          - mets la [cuisine](room) à [19](value)
+          - mets la température au [maximum](value)
+          - mets la température au [minimum](value)
+          - mets le [salon](room) à [21](value) et la [chambre](room) à [19](value)
+          - règle la [cuisine](room) à [20](value) et le [bureau](room) à [22](value)
+
+    - intent: increase_temperature
+      examples: |
+          - augmente la température du [salon](room)
+          - fais plus chaud dans la [chambre](room)
+          - monte un peu la température du [bureau](room)
+          - chauffe un peu la [cuisine](room)
+          - augmente la chaleur dans la [salle de bain](room)
+          - mets un peu plus chaud dans le [salon](room)
+          - monte la température de la [chambre](room)
+          - chauffe un peu le [bureau](room)
+          - augmente la température dans la [cuisine](room)
+          - mets plus chaud dans la [salle de bain](room)
+          - chauffe [un peu](value)
+          - chauffe [beaucoup](value)
+          - augmente la température du [salon](room) et de la [chambre](room)
+          - chauffe un peu la [cuisine](room) et la [salle de bain](room)
+
+    - intent: decrease_temperature
+      examples: |
+          - baisse la température du [salon](room)
+          - fais plus frais dans la [chambre](room)
+          - diminue un peu la température du [bureau](room)
+          - refroidis un peu la [cuisine](room)
+          - baisse la chaleur dans la [salle de bain](room)
+          - mets un peu plus frais dans le [salon](room)
+          - baisse la température de la [chambre](room)
+          - refroidis un peu le [bureau](room)
+          - baisse la température dans la [cuisine](room)
+          - mets plus frais dans la [salle de bain](room)
+          - refroidis [un peu](value)
+          - refroidis [beaucoup](value)
+          - baisse la température du [salon](room) et de la [cuisine](room)
+          - mets plus frais dans la [chambre](room) et le [bureau](room)
+
+    ######################################################################
+    # BRIGHTNESS
+    ######################################################################
+
+    - intent: set_brightness
+      examples: |
+          - mets la [lumière](device) du [salon](room) à [40](value) pour cent
+          - règle la luminosité de la [lampe](device) à [60](value)
+          - mets la [chambre](room) à [30](value) de luminosité
+          - règle la [cuisine](room) à [50](value)
+          - mets la [lampe](device) du [bureau](room) à [20](value)
+          - règle la luminosité dans la [salle de bain](room) à [70](value)
+          - mets la [guirlande](device) à [10](value)
+          - règle la [lumière](device) du [salon](room) à [80](value)
+          - mets la [lampe](device) à [25](value)
+          - règle la luminosité de la [cuisine](room) à [35](value)
+          - mets la lumière au [maximum](value)
+          - mets la lumière au [minimum](value)
+          - mets la [lumière](device) du [salon](room) à [30](value) et celle de la [cuisine](room) à [50](value)
+          - règle la [lampe](device) du [bureau](room) à [20](value) et la [guirlande](device) à [10](value)
+
+    - intent: increase_brightness
+      examples: |
+          - augmente la luminosité du [salon](room)
+          - mets la [lampe](device) plus fort
+          - éclaire un peu plus la [cuisine](room)
+          - augmente la lumière dans la [chambre](room)
+          - mets plus de lumière dans le [bureau](room)
+          - augmente la luminosité de la [lampe](device)
+          - éclaire davantage la [salle de bain](room)
+          - mets la [guirlande](device) plus fort
+          - augmente la lumière du [salon](room)
+          - mets plus de luminosité dans la [cuisine](room)
+          - éclaire [un peu](value)
+          - éclaire [beaucoup](value)
+          - augmente la luminosité du [salon](room) et de la [cuisine](room)
+          - mets plus de lumière dans la [chambre](room) et le [bureau](room)
+
+    - intent: decrease_brightness
+      examples: |
+          - baisse la luminosité du [salon](room)
+          - mets la [lampe](device) plus bas
+          - diminue la lumière dans la [cuisine](room)
+          - baisse la lumière de la [chambre](room)
+          - mets moins de lumière dans le [bureau](room)
+          - baisse la luminosité de la [lampe](device)
+          - assombrit un peu la [salle de bain](room)
+          - baisse la [guirlande](device)
+          - diminue la lumière du [salon](room)
+          - mets moins de luminosité dans la [cuisine](room)
+          - baisse la lumière [un peu](value)
+          - baisse la lumière [beaucoup](value)
+          - baisse la luminosité du [salon](room) et de la [chambre](room)
+          - mets moins de lumière dans la [cuisine](room) et le [bureau](room)
+
+    ######################################################################
+    # VOLUME
+    ######################################################################
+
+    - intent: set_volume
+      examples: |
+          - mets le volume à [30](value)
+          - règle le son à [20](value)
+          - mets le volume du [salon](room) à [40](value)
+          - règle le son du [bureau](room) à [15](value)
+          - mets le volume à [10](value) pour cent
+          - règle le son à [50](value)
+          - mets le volume du [salon](room) à [25](value)
+          - règle le son du [bureau](room) à [35](value)
+          - mets le volume à [60](value)
+          - règle le son à [5](value)
+          - mets le volume au [maximum](value)
+          - mets le volume au [minimum](value)
+          - mets le volume du [salon](room) à [30](value) et celui du [bureau](room) à [20](value)
+          - règle le son de la [cuisine](room) à [15](value) et du [salon](room) à [25](value)
+
+    - intent: increase_volume
+      examples: |
+          - augmente le volume
+          - monte un peu le son
+          - mets plus fort
+          - augmente le son dans le [salon](room)
+          - monte le volume du [bureau](room)
+          - mets le son plus fort
+          - augmente un peu le volume
+          - monte le son dans la [cuisine](room)
+          - mets plus de volume
+          - augmente le son du [salon](room)
+          - monte le son [un peu](value)
+          - monte le son [beaucoup](value)
+          - augmente le volume du [salon](room) et de la [cuisine](room)
+          - monte un peu le son dans la [chambre](room) et le [bureau](room)
+
+    - intent: decrease_volume
+      examples: |
+          - baisse le volume
+          - mets le son plus bas
+          - baisse un peu le son
+          - baisse le volume du [salon](room)
+          - mets moins fort
+          - baisse le son dans le [bureau](room)
+          - diminue le volume
+          - mets le son plus doux
+          - baisse un peu le volume
+          - baisse le son dans la [cuisine](room)
+          - baisse le son [un peu](value)
+          - baisse le son [beaucoup](value)
+          - baisse le volume du [salon](room) et de la [cuisine](room)
+          - mets le son plus bas dans la [chambre](room) et le [bureau](room)
+
+    ######################################################################
+    # SHUTTERS (VOLETS)
+    ######################################################################
+
+    - intent: open_shutter
+      examples: |
+          - ouvre le [volet](device)
+          - ouvre les [volets](device) du [salon](room)
+          - remonte le [volet](device) de la [chambre](room)
+          - lève les [volets](device)
+          - ouvre complètement le [volet](device)
+          - ouvre les [stores](device)
+          - relève le [volet](device) du [bureau](room)
+          - ouvre le [rideau électrique](device)
+          - remonte les [volets](device) de la [cuisine](room)
+          - ouvre tout dans le [salon](room)
+          - ouvre les volet du [salon](room)   # typo‑tolerance
+          - ouvre les [volets](device) du [salon](room) et de la [chambre](room)
+          - remonte les [volets](device) de la [cuisine](room) et du [bureau](room)
+
+    - intent: close_shutter
+      examples: |
+          - ferme le [volet](device)
+          - ferme les [volets](device) du [salon](room)
+          - descends le [volet](device) de la [chambre](room)
+          - baisse les [volets](device)
+          - ferme complètement le [volet](device)
+          - ferme les [stores](device)
+          - abaisse le [volet](device) du [bureau](room)
+          - ferme le [rideau électrique](device)
+          - baisse les [volets](device) de la [cuisine](room)
+          - ferme tout dans le [salon](room)
+          - ferme les volet du [salon](room)   # typo‑tolerance
+          - ferme les [volets](device) du [salon](room) et de la [cuisine](room)
+          - baisse les [volets](device) de la [chambre](room) et du [bureau](room)
+
+    - intent: pause_shutter
+      examples: |
+          - stoppe le [volet](device)
+          - mets le [volet](device) en pause
+          - arrête les [volets](device)
+          - bloque le [volet](device) maintenant
+          - stoppe les [volets](device) du [salon](room)
+          - mets en pause le [volet](device) de la [chambre](room)
+          - arrête le mouvement du [volet](device)
+          - stoppe tout de suite les [volets](device)
+          - mets en pause les [stores](device)
+          - arrête le [rideau électrique](device)
+
+    ######################################################################
+    # GROUP COMMANDS
+    ######################################################################
+
+    - intent: turn_on_group
+      examples: |
+          - allume toutes les lumières
+          - allume tout dans le [salon](room)
+          - allume tous les volets
+          - allume tout dans la maison
+          - allume toutes les prises
+          - allume toutes les lampes du [couloir](room)
+          - allume tout le rez-de-chaussée
+          - allume tous les appareils
+          - allume tout dans la [cuisine](room)
+          - allume toutes les lumières du [bureau](room)
+          - allume toutes les lumières du [salon](room) et de la [cuisine](room)
+          - allume tous les volets du [salon](room) et de la [chambre](room)
+
+    - intent: turn_off_group
+      examples: |
+          - éteins toutes les lumières
+          - éteins tout dans le [salon](room)
+          - éteins tous les volets
+          - éteins tout dans la maison
+          - coupe toutes les prises
+          - éteins toutes les lampes du [couloir](room)
+          - éteins tout le rez-de-chaussée
+          - arrête tous les appareils
+          - éteins tout dans la [cuisine](room)
+          - éteins toutes les lumières du [bureau](room)
+          - éteins toutes les lumières du [salon](room) et de la [cuisine](room)
+          - éteins tous les volets du [salon](room) et de la [chambre](room)
+
+    ######################################################################
+    # TIMERS & ALARMS
+    ######################################################################
+
+    - intent: set_timer
+      examples: |
+          - mets un minuteur de [10 minutes](value)
+          - lance un minuteur de [5 minutes](value)
+          - démarre un minuteur de [30 secondes](value)
+          - mets un timer de [2 minutes](value)
+          - lance un compte à rebours de [1 minute](value)
+          - mets un minuteur pour [10 minutes](value)
+          - démarre un timer de [3 minutes](value)
+          - lance un minuteur de [20 minutes](value)
+          - mets un compte à rebours de [45 secondes](value)
+          - démarre un minuteur de [15 minutes](value)
+          - mets un minuteur [dans 10 minutes](value)
+          - mets un minuteur [dans une demi-heure](value)
+          - mets un minuteur [dans 2 minutes](value)
+          - mets un minuteur [dans 30 secondes](value)
+          - mets un minuteur [dans une minute](value)
+          - mets un minuteur de [10 minute](value)   # typo‑tolerance
+
+    - intent: cancel_timer
+      examples: |
+          - annule le minuteur
+          - stoppe le minuteur
+          - arrête le timer
+          - annule le compte à rebours
+          - supprime le minuteur
+          - stoppe le compte à rebours
+          - arrête le minuteur en cours
+          - annule le timer en cours
+          - arrête tout minuteur
+          - stoppe tous les timers
+          - annule le minutteur   # typo‑tolerance
+
+    - intent: pause_timer
+      examples: |
+          - mets le minuteur en pause
+          - pause le minuteur
+          - mets le timer en pause
+          - mets le compte à rebours en pause
+          - pause le timer
+          - mets en pause le minuteur en cours
+          - mets en pause le compte à rebours
+          - mets le minuteur en pause maintenant
+          - mets le timer en pause maintenant
+          - pause le minutteur   # typo‑tolerance
+
+    - intent: resume_timer
+      examples: |
+          - reprends le minuteur
+          - continue le minuteur
+          - reprends le timer
+          - continue le compte à rebours
+          - relance le minuteur
+          - relance le timer
+          - reprends le minuteur en pause
+          - continue le minuteur en pause
+          - reprends le compte à rebours
+          - relance le minuteur en pause
+
+    - intent: query_time_remaining
+      examples: |
+          - combien reste‑t‑il sur le minuteur ?
+          - il reste combien de temps ?
+          - combien de temps avant la fin du minuteur ?
+          - combien reste‑t‑il sur le timer ?
+          - il reste combien au minuteur ?
+          - combien de temps reste‑t‑il ?
+          - combien reste‑t‑il au compte à rebours ?
+          - il reste combien au timer ?
+          - combien de temps avant la fin ?
+          - combien reste‑t‑il ?
+          - il reste combien de temp ?   # typo‑tolerance
+
+    ######################################################################
+    # ALARMS
+    ######################################################################
+
+    - intent: set_alarm
+      examples: |
+          - mets une alarme à [7h](value)
+          - réveille‑moi à [6h30](value)
+          - mets une alarme demain à [8h](value)
+          - mets une alarme pour [7h15](value)
+          - programme une alarme à [9h](value)
+          - mets une alarme à [5h45](value)
+          - mets une alarme pour demain matin à [6h](value)
+          - programme une alarme pour [7h](value)
+          - mets une alarme à [8h30](value)
+          - réveille‑moi demain à [7h](value)
+          - mets une alarme [ce soir](value)
+          - mets une alarme [demain matin](value)
+          - mets une alarme [à midi](value)
+          - mets une alarme [à minuit](value)
+          - mets une alarme [dans 10 minutes](value)
+          - mets une alarme [dans une heure](value)
+          - mets une alarme à [7h0](value)   # typo‑tolerance
+
+    - intent: cancel_alarm
+      examples: |
+          - annule l’alarme
+          - supprime l’alarme
+          - désactive l’alarme
+          - annule toutes les alarmes
+          - supprime toutes les alarmes
+          - désactive toutes les alarmes
+          - arrête l’alarme
+          - coupe l’alarme
+          - annule l’alarme en cours
+          - stoppe l’alarme
+          - annule l'alarme maintenant
+          - annule l'alarme tout de suite
+          - annule l'alarme svp
+          - annule l'alarme stp
+          - annule l'alarmee   # typo‑tolerance
+
+    ######################################################################
+    # WEATHER
+    ######################################################################
+
+    - intent: get_weather
+      examples: |
+          - quel temps fait‑il ?
+          - c’est quoi la météo aujourd’hui ?
+          - il va pleuvoir ?
+          - est‑ce qu’il va faire beau ?
+          - il va neiger ?
+          - il va faire froid ?
+          - il va faire chaud ?
+          - il y aura du vent ?
+          - météo pour [Paris](city)
+          - quel temps fait‑il à [Lyon](city) ?
+          - donne‑moi la météo de [Marseille](city)
+          - il va faire beau demain ?
+          - il va pleuvoir cet après‑midi ?
+          - il fera quel temps ce soir ?
+          - météo demain matin
+          - météo ce soir
+          - il va pleuvoir demain ?
+          - il va faire beau après-demain ?
+          - il va pleuvoir a [Pari](city)   # typo‑tolerance
+
+    ######################################################################
+    # MUSIC
+    ######################################################################
+
+    - intent: play_music
+      examples: |
+          - joue de la musique
+          - mets de la musique
+          - lance une chanson
+          - mets un peu de musique
+          - joue quelque chose
+          - mets un son
+          - lance un morceau
+          - joue de la musique dans le [salon](room)
+          - mets une chanson
+          - joue un titre
+          - joue du rock
+          - mets du jazz
+          - mets du rap français
+          - mets du Jul
+          - mets le dernier album de Daft Punk
+          - joue ma playlist préférée
+          - joue la radio NRJ
+          - joue de la music   # typo‑tolerance
+
+    - intent: pause_music
+      examples: |
+          - mets la musique en pause
+          - pause la musique
+          - arrête la musique
+          - stoppe la musique
+          - mets en pause le morceau
+          - mets en pause la chanson
+          - pause le son
+          - mets la musique en pause maintenant
+          - arrête la chanson
+          - stoppe le morceau
+
+    - intent: resume_music
+      examples: |
+          - reprends la musique
+          - continue la musique
+          - relance la musique
+          - remets la musique
+          - continue le morceau
+          - reprends la chanson
+          - relance le son
+          - remets le morceau
+          - continue la chanson
+          - reprends le son
+
+    - intent: next_track
+      examples: |
+          - piste suivante
+          - chanson suivante
+          - morceau suivant
+          - passe à la suivante
+          - mets la suivante
+          - change de chanson
+          - change de morceau
+          - passe au titre suivant
+          - suivant
+          - passe à la prochaine
+
+    - intent: previous_track
+      examples: |
+          - piste précédente
+          - chanson précédente
+          - morceau précédent
+          - retourne à la précédente
+          - mets la précédente
+          - titre d’avant
+          - chanson d’avant
+          - morceau d’avant
+          - revient en arrière
+          - repasse la précédente
+
+    ######################################################################
+    # LOOKUPS
+    ######################################################################
+
+    - lookup: device
+      examples: |
+          - lampe
+          - lumière
+          - volets
+          - volet
+          - store
+          - stores
+          - rideau électrique
+          - chauffage
+          - radiateur
+          - ventilateur
+          - tv
+          - télé
+          - télévision
+          - prise
+          - prise connectée
+          - guirlande
+          - déshumidificateur
+          - machine à café
+          - enceinte
+          - haut-parleur
+
+    - lookup: device_group
+      examples: |
+          - lumières
+          - lampes
+          - éclairages
+          - spots
+          - plafonniers
+          - volets
+          - stores
+          - rideaux électriques
+          - prises
+          - prises connectées
+          - appareils
+
+    - lookup: room
+      examples: |
+          - salon
+          - séjour
+          - chambre
+          - chambre à coucher
+          - cuisine
+          - bureau
+          - salle de bain
+          - salle de bains
+          - sdb
+          - garage
+          - terrasse
+          - jardin
+          - couloir
+          - entrée
+          - grenier
+
+    - lookup: group_keyword
+      examples: |
+          - toutes
+          - tous
+          - tout
+          - ensemble
+          - partout
+          - global
+          - totalité
+
+    - lookup: weather_type
+      examples: |
+          - pluie
+          - beau
+          - soleil
+          - chaud
+          - froid
+          - neige
+          - vent
+          - orage
+          - nuageux
+          - couvert
+
+    - lookup: music_item
+      examples: |
+          - playlist
+          - album
+          - chanson
+          - morceau
+          - titre
+          - radio
+
+    - lookup: routine
+      examples: |
+          - réveil
+          - coucher
+          - soirée film
+          - mode nuit
+          - mode vacances
+          - départ
+          - arrivée
+
+    ######################################################################
+    # SEMANTIC VALUE SYNONYMS
+    ######################################################################
+
+    - synonym: max
+      examples: |
+          - à fond
+          - au max
+          - maximum
+          - le plus fort
+
+    - synonym: minimum
+      examples: |
+          - au minimum
+          - minimum
+          - le plus bas
+
+    - synonym: un peu
+      examples: |
+          - légèrement
+          - un petit peu
+          - un chouïa
+
+    - synonym: beaucoup
+      examples: |
+          - bien plus
+          - fortement
+          - vraiment plus
+
+    ######################################################################
+    # OTHER SYNONYMS
+    ######################################################################
+
+    - synonym: tv
+      examples: |
+          - télé
+          - télévision
+
+    - synonym: lumière
+      examples: |
+          - lampe
+          - lumière du plafond
+          - plafonnier
+          - spots
+          - éclairage
+
+    - synonym: chauffage
+      examples: |
+          - radiateur
+          - chauffage électrique
+
+    - synonym: volet
+      examples: |
+          - volets
+          - store
+          - stores
+          - rideau électrique
+          - volets roulants
+          - rideaux électriques
+
+    - synonym: lumières
+      examples: |
+          - lampes
+          - éclairages
+          - spots
+          - plafonniers
+
+    - synonym: prises
+      examples: |
+          - prises connectées
+          - prises intelligentes
+
+    - synonym: salon
+      examples: |
+          - séjour
+          - pièce principale
+
+    - synonym: chambre
+      examples: |
+          - chambre à coucher
+          - petite chambre
+
+    - synonym: salle de bain
+      examples: |
+          - salle de bains
+          - sdb
+          - salle d’eau
+
+    - synonym: pluie
+      examples: |
+          - pleuvoir
+          - il pleut
+
+    - synonym: beau
+      examples: |
+          - beau temps
+          - faire beau
+          - il fait beau
+          - soleil
+
+    - synonym: froid
+      examples: |
+          - faire froid
+          - il fait froid
+          - temps froid
+
+    - synonym: chaud
+      examples: |
+          - faire chaud
+          - il fait chaud
+          - temps chaud
+
+    - synonym: vent
+      examples: |
+          - venteux
+          - il y a du vent
+          - beaucoup de vent

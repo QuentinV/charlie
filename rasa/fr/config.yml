@@ -64,4 +64,4 @@ policies:
 
     - name: TEDPolicy
       max_history: 5
-      epochs: 50
+      epochs: 100

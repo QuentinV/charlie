@@ -1,93 +1,198 @@
 version: '3.1'
-
 stories:
-    - story: salutation simple
-      steps:
-          - intent: greet
-            user: 'salut'
-          - action: utter_greet
+    ######################################################################
+    # BASIC DEVICE CONTROL
+    ######################################################################
 
-    - story: demander la météo
+    - story: Turn on a device
       steps:
-          - intent: ask_weather
-            user: 'quel temps fait-il'
-          - action: action_get_weather
+          - intent: turn_on_device
+          - action: utter_ack
 
-    - story: demander état lumière salon
+    - story: Turn off a device
       steps:
-          - intent: get_device_state
-            user: 'est-ce que la lumière du salon est allumée'
-            entities:
-                - device: 'lumière du salon'
-          - action: action_get_device_state
+          - intent: turn_off_device
+          - action: utter_ack
 
-    - story: allumer lumière salon
+    - story: Set device value
       steps:
-          - intent: set_device_state
-            user: 'allume la lumière du salon'
-            entities:
-                - device: 'lumière du salon'
-                - state: 'on'
-          - action: action_set_device_state
+          - intent: set_device_value
+          - action: utter_ack
 
-    - story: éteindre lumière cuisine
+    - story: Increase device value
       steps:
-          - intent: set_device_state
-            user: 'éteins la lumière de la cuisine'
-            entities:
-                - device: 'lumière de la cuisine'
-                - state: 'off'
-          - action: action_set_device_state
+          - intent: increase_device_value
+          - action: utter_ack
 
-    - story: multi_turn_pronom
+    - story: Decrease device value
       steps:
-          - intent: set_device_state
-            user: 'allume ça'
-            entities:
-                - state: 'on'
-          - action: action_set_device_state
-          - intent: get_device_state
-            user: 'et la cuisine'
-            entities:
-                - device: 'cuisine'
-          - action: action_get_device_state
+          - intent: decrease_device_value
+          - action: utter_ack
 
-    - story: météo puis état appareil
+    - story: Query device state
       steps:
-          - intent: ask_weather
-            user: 'donne-moi la météo'
-          - action: action_get_weather
-          - intent: get_device_state
-            user: 'et le portail'
-            entities:
-                - device: 'portail'
-          - action: action_get_device_state
+          - intent: query_device_state
+          - action: utter_ack
 
-    - story: clarification appareil
-      steps:
-          - intent: set_device_state
-            user: 'allume-la'
-            entities:
-                - state: 'on'
-          - action: action_set_device_state
-          - intent: set_device_state
-            user: 'non, la lumière du bureau'
-            entities:
-                - device: 'lumière du bureau'
-                - state: 'on'
-          - action: action_set_device_state
+    ######################################################################
+    # ENVIRONMENT CONTROL
+    ######################################################################
 
-    - story: enchainement commandes
+    - story: Set temperature
       steps:
-          - intent: set_device_state
-            user: 'allume la chambre'
-            entities:
-                - device: 'chambre'
-                - state: 'on'
-          - action: action_set_device_state
-          - intent: set_device_state
-            user: 'et la cuisine aussi'
-            entities:
-                - device: 'cuisine'
-                - state: 'on'
-          - action: action_set_device_state
+          - intent: set_temperature
+          - action: utter_ack
+
+    - story: Increase temperature
+      steps:
+          - intent: increase_temperature
+          - action: utter_ack
+
+    - story: Decrease temperature
+      steps:
+          - intent: decrease_temperature
+          - action: utter_ack
+
+    - story: Set brightness
+      steps:
+          - intent: set_brightness
+          - action: utter_ack
+
+    - story: Increase brightness
+      steps:
+          - intent: increase_brightness
+          - action: utter_ack
+
+    - story: Decrease brightness
+      steps:
+          - intent: decrease_brightness
+          - action: utter_ack
+
+    - story: Set volume
+      steps:
+          - intent: set_volume
+          - action: utter_ack
+
+    - story: Increase volume
+      steps:
+          - intent: increase_volume
+          - action: utter_ack
+
+    - story: Decrease volume
+      steps:
+          - intent: decrease_volume
+          - action: utter_ack
+
+    ######################################################################
+    # SHUTTERS
+    ######################################################################
+
+    - story: Open shutter
+      steps:
+          - intent: open_shutter
+          - action: utter_ack
+
+    - story: Close shutter
+      steps:
+          - intent: close_shutter
+          - action: utter_ack
+
+    - story: Pause shutter
+      steps:
+          - intent: pause_shutter
+          - action: utter_ack
+
+    ######################################################################
+    # GROUP COMMANDS
+    ######################################################################
+
+    - story: Turn on group
+      steps:
+          - intent: turn_on_group
+          - action: utter_ack
+
+    - story: Turn off group
+      steps:
+          - intent: turn_off_group
+          - action: utter_ack
+
+    ######################################################################
+    # TIMERS
+    ######################################################################
+
+    - story: Set timer
+      steps:
+          - intent: set_timer
+          - action: utter_timer_set
+
+    - story: Cancel timer
+      steps:
+          - intent: cancel_timer
+          - action: utter_ack
+
+    - story: Pause timer
+      steps:
+          - intent: pause_timer
+          - action: utter_ack
+
+    - story: Resume timer
+      steps:
+          - intent: resume_timer
+          - action: utter_ack
+
+    - story: Query time remaining
+      steps:
+          - intent: query_time_remaining
+          - action: utter_ack
+
+    ######################################################################
+    # ALARMS
+    ######################################################################
+
+    - story: Set alarm
+      steps:
+          - intent: set_alarm
+          - action: utter_alarm_set
+
+    - story: Cancel alarm
+      steps:
+          - intent: cancel_alarm
+          - action: utter_ack
+
+    ######################################################################
+    # WEATHER
+    ######################################################################
+
+    - story: Get weather
+      steps:
+          - intent: get_weather
+          - action: utter_weather
+
+    ######################################################################
+    # MUSIC
+    ######################################################################
+
+    - story: Play music
+      steps:
+          - intent: play_music
+          - action: utter_ack
+
+    - story: Pause music
+      steps:
+          - intent: pause_music
+          - action: utter_ack
+
+    - story: Resume music
+      steps:
+          - intent: resume_music
+          - action: utter_ack
+
+    - story: Next track
+      steps:
+          - intent: next_track
+          - action: utter_ack
+
+    - story: Previous track
+      steps:
+          - intent: previous_track
+          - action: utter_ack

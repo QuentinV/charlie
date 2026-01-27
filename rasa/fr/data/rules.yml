@@ -1,22 +1,211 @@
 version: '3.1'
-
 rules:
-    - rule: greet
-      steps:
-          - intent: greet
-          - action: utter_greet
+    ######################################################################
+    # FALLBACK HANDLING
+    ######################################################################
 
-    - rule: weather
+    - rule: Fallback when user message is not understood
       steps:
-          - intent: ask_weather
-          - action: action_get_weather
+          - intent: nlu_fallback
+          - action: utter_default
 
-    - rule: get device state
-      steps:
-          - intent: get_device_state
-          - action: action_get_device_state
+    ######################################################################
+    # ACKNOWLEDGEMENT FOR SIMPLE COMMANDS
+    ######################################################################
 
-    - rule: set device state
+    - rule: Acknowledge device control
       steps:
-          - intent: set_device_state
-          - action: action_set_device_state
+          - intent: turn_on_device
+          - action: utter_ack
+
+    - rule: Acknowledge device shutdown
+      steps:
+          - intent: turn_off_device
+          - action: utter_ack
+
+    - rule: Acknowledge device value change
+      steps:
+          - intent: set_device_value
+          - action: utter_ack
+
+    - rule: Acknowledge device increase
+      steps:
+          - intent: increase_device_value
+          - action: utter_ack
+
+    - rule: Acknowledge device decrease
+      steps:
+          - intent: decrease_device_value
+          - action: utter_ack
+
+    ######################################################################
+    # ENVIRONMENT CONTROL
+    ######################################################################
+
+    - rule: Acknowledge temperature setting
+      steps:
+          - intent: set_temperature
+          - action: utter_ack
+
+    - rule: Acknowledge temperature increase
+      steps:
+          - intent: increase_temperature
+          - action: utter_ack
+
+    - rule: Acknowledge temperature decrease
+      steps:
+          - intent: decrease_temperature
+          - action: utter_ack
+
+    - rule: Acknowledge brightness setting
+      steps:
+          - intent: set_brightness
+          - action: utter_ack
+
+    - rule: Acknowledge brightness increase
+      steps:
+          - intent: increase_brightness
+          - action: utter_ack
+
+    - rule: Acknowledge brightness decrease
+      steps:
+          - intent: decrease_brightness
+          - action: utter_ack
+
+    - rule: Acknowledge volume setting
+      steps:
+          - intent: set_volume
+          - action: utter_ack
+
+    - rule: Acknowledge volume increase
+      steps:
+          - intent: increase_volume
+          - action: utter_ack
+
+    - rule: Acknowledge volume decrease
+      steps:
+          - intent: decrease_volume
+          - action: utter_ack
+
+    ######################################################################
+    # SHUTTERS
+    ######################################################################
+
+    - rule: Acknowledge shutter opening
+      steps:
+          - intent: open_shutter
+          - action: utter_ack
+
+    - rule: Acknowledge shutter closing
+      steps:
+          - intent: close_shutter
+          - action: utter_ack
+
+    - rule: Acknowledge shutter pause
+      steps:
+          - intent: pause_shutter
+          - action: utter_ack
+
+    ######################################################################
+    # GROUP COMMANDS
+    ######################################################################
+
+    - rule: Acknowledge group turn on
+      steps:
+          - intent: turn_on_group
+          - action: utter_ack
+
+    - rule: Acknowledge group turn off
+      steps:
+          - intent: turn_off_group
+          - action: utter_ack
+
+    ######################################################################
+    # TIMERS
+    ######################################################################
+
+    - rule: Timer set
+      steps:
+          - intent: set_timer
+          - action: utter_timer_set
+
+    - rule: Timer cancelled
+      steps:
+          - intent: cancel_timer
+          - action: utter_ack
+
+    - rule: Timer paused
+      steps:
+          - intent: pause_timer
+          - action: utter_ack
+
+    - rule: Timer resumed
+      steps:
+          - intent: resume_timer
+          - action: utter_ack
+
+    - rule: Query time remaining
+      steps:
+          - intent: query_time_remaining
+          - action: utter_ack
+
+    ######################################################################
+    # ALARMS
+    ######################################################################
+
+    - rule: Alarm set
+      steps:
+          - intent: set_alarm
+          - action: utter_alarm_set
+
+    - rule: Alarm cancelled
+      steps:
+          - intent: cancel_alarm
+          - action: utter_ack
+
+    ######################################################################
+    # WEATHER
+    ######################################################################
+
+    - rule: Provide weather
+      steps:
+          - intent: get_weather
+          - action: utter_weather
+
+    ######################################################################
+    # MUSIC
+    ######################################################################
+
+    - rule: Play music
+      steps:
+          - intent: play_music
+          - action: utter_ack
+
+    - rule: Pause music
+      steps:
+          - intent: pause_music
+          - action: utter_ack
+
+    - rule: Resume music
+      steps:
+          - intent: resume_music
+          - action: utter_ack
+
+    - rule: Next track
+      steps:
+          - intent: next_track
+          - action: utter_ack
+
+    - rule: Previous track
+      steps:
+          - intent: previous_track
+          - action: utter_ack
+
+    ######################################################################
+    # SESSION START
+    ######################################################################
+
+    - rule: Session start
+      steps:
+          - action: action_session_start
+          - action: utter_default

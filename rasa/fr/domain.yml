@@ -1,15 +1,56 @@
 version: '3.1'
 
 intents:
-    - greet
-    - ask_weather
-    - set_device_state
-    - get_device_state
+    - turn_on_device
+    - turn_off_device
+    - set_device_value
+    - increase_device_value
+    - decrease_device_value
+    - query_device_state
+
+    - set_temperature
+    - increase_temperature
+    - decrease_temperature
+
+    - set_brightness
+    - increase_brightness
+    - decrease_brightness
+
+    - set_volume
+    - increase_volume
+    - decrease_volume
+
+    - open_shutter
+    - close_shutter
+    - pause_shutter
+
+    - turn_on_group
+    - turn_off_group
+
+    - set_timer
+    - cancel_timer
+    - pause_timer
+    - resume_timer
+    - query_time_remaining
+
+    - set_alarm
+    - cancel_alarm
+
+    - get_weather
+
+    - play_music
+    - pause_music
+    - resume_music
+    - next_track
+    - previous_track
 
 entities:
     - device
-    - state
-    - location
+    - device_group
+    - room
+    - value
+    - city
+    - weather_type
 
 slots:
     device:
@@ -19,29 +60,57 @@ slots:
             - type: from_entity
               entity: device
 
-    state:
+    device_group:
         type: text
         influence_conversation: true
         mappings:
             - type: from_entity
-              entity: state
+              entity: device_group
 
-    location:
+    room:
         type: text
         influence_conversation: true
         mappings:
             - type: from_entity
-              entity: location
+              entity: room
+
+    value:
+        type: text
+        influence_conversation: false
+        mappings:
+            - type: from_entity
+              entity: value
+
+    city:
+        type: text
+        influence_conversation: true
+        mappings:
+            - type: from_entity
+              entity: city
+
+    weather_type:
+        type: text
+        influence_conversation: false
+        mappings:
+            - type: from_entity
+              entity: weather_type
 
 responses:
-    utter_greet:
-        - text: 'Bonjour, que puis-je faire pour vous ?'
-
     utter_default:
-        - text: 'Je n’ai pas compris. Pouvez-vous reformuler ?'
+        - text: 'Désolé, je n’ai pas compris. Peux‑tu reformuler ?'
 
-actions:
-    - action_get_weather
-    - action_set_device_state
-    - action_get_device_state
-    - action_default_fallback
+    utter_ack:
+        - text: 'C’est fait.'
+
+    utter_timer_set:
+        - text: 'Minuteur lancé.'
+
+    utter_alarm_set:
+        - text: 'Alarme programmée.'
+
+    utter_weather:
+        - text: 'Voici la météo.'
+
+session_config:
+    session_expiration_time: 60
+    carry_over_slots_to_new_session: true

@@ -150,4 +150,5 @@ logs.txt
 TODO.md
 demo
 
-rasa/.rasa
+rasa/**/.rasa
+rasa/**/results
