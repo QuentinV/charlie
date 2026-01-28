@@ -53,6 +53,7 @@ entities:
     - room
     - value
     - city
+    - device_name
 
 slots:
     device:
@@ -68,6 +69,13 @@ slots:
         mappings:
             - type: from_entity
               entity: room
+
+    device_name:
+        type: text
+        influence_conversation: false
+        mappings:
+            - type: from_entity
+              entity: device_name
 
     value:
         type: text
