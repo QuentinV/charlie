@@ -41,6 +41,7 @@
     "mqtt": "^5.14.1",
     "music-metadata": "^11.10.3",
     "net": "^1.0.2",
+    "node-polyglot": "^2.6.0",
     "node-ssdp": "^4.0.1",
     "node-tradfri-client": "^3.2.0",
     "nodemailer": "^7.0.11",

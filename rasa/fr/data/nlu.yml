@@ -86,8 +86,8 @@ nlu:
           - éteins la [tv](device)
           - éteins la lumière du [bureau](room)
           - coupe la lampe du [couloir](room)
-          - eteins la [lampe](device)   # typo‑tolerance
-          - etein la lumiere du [salon](room)   # typo‑tolerance
+          - eteins la [lampe](device)
+          - etein la lumiere du [salon](room)
           - éteins la [lumière](device) du [salon](room) et la [lampe](device) de la [cuisine](room)
           - coupe la [tv](device) et le [chauffage](device) du [salon](room)
           - éteins la lampe de la [chambre de Léo](room)
@@ -130,6 +130,26 @@ nlu:
           - mets la lumière au [minimum](value)
           - mets la [lumière](device) du [salon](room) à [30](value) et le [chauffage](device) à [21](value)
           - règle la [tv](device) sur [15](value) et la [lampe](device) à [40](value)
+          - règle la [lumière](device) du [cabanon bleu](room) à [60](value)
+          - mets la [lumière](device) du [module B](room) sur [25](value)
+          - règle la [lumière](device) du [secteur nord](room) à [10](value)
+          - mets la [lumière](device) du [bloc technique 3](room) à [75](value)
+          - règle la [lumière](device) du [zone alpha](room) sur [90](value)
+          - mets la [lumière](device) du [atelier bois](room) à [35](value)
+          - règle la [lumière](device) du [local technique](room) à [15](value)
+          - mets la [lumière](device) du [studio invité](room) sur [50](value)
+          - règle la [lampe Ikea](device_name) à [40](value)
+          - mets le [plafonnier rond](device_name) sur [70](value)
+          - règle la [guirlande extérieure](device_name) à [20](value)
+          - mets la [lampe de chevet](device_name) à [15](value)
+          - règle le [ventilo Dyson](device_name) sur [3](value)
+          - mets la [lampe du sapin](device_name) à [100](value)
+          - règle le [bandeau LED TV](device_name) à [60](value)
+          - mets la [lampe gaming rouge](device_name) sur [90](value)
+          - mets la [lumière](device) du [salon](room) sur [faible](value)
+          - règle la [lampe](device) à un niveau [fort](value)
+          - mets la [guirlande](device) sur [moyen](value)
+          - règle le [chauffage](device) sur [doux](value)
 
     - intent: increase_device_value
       examples: |
@@ -147,6 +167,27 @@ nlu:
           - augmente la lumière [beaucoup](value)
           - augmente la [lumière](device) du [salon](room) et la [lampe](device) du [bureau](room)
           - augmente la puissance du [chauffage](device) et la vitesse du [ventilateur](device)
+          - augmente la [lumière](device) du [cabanon bleu](room)
+          - monte la [lumière](device) du [module B](room)
+          - augmente la [lumière](device) du [secteur nord](room)
+          - monte la [lumière](device) du [bloc technique 3](room)
+          - augmente la [lumière](device) du [zone alpha](room)
+          - monte la [lumière](device) du [atelier bois](room)
+          - augmente la [lumière](device) du [local technique](room)
+          - monte la [lumière](device) du [studio invité](room)
+          - augmente la [lampe Ikea](device_name)
+          - monte le [plafonnier rond](device_name)
+          - augmente la [guirlande extérieure](device_name)
+          - mets la [lampe de chevet](device_name) plus fort
+          - augmente le [ventilo Dyson](device_name)
+          - monte la [lampe du sapin](device_name)
+          - augmente le [bandeau LED TV](device_name)
+          - mets la [lampe gaming rouge](device_name) plus haut
+          - augmente la [lumière](device) [fort](value)
+          - monte la [lampe](device) [au maximum](value)
+          - augmente la [guirlande](device) [un peu plus](value)
+          - mets le [chauffage](device) [plus chaud](value)
+          - augmente la [lumière](device) [au maximum](value) dans le [salon](room)
 
     - intent: decrease_device_value
       examples: |
@@ -164,21 +205,58 @@ nlu:
           - baisse la lumière [beaucoup](value)
           - baisse la [lumière](device) du [salon](room) et la [lampe](device) de la [cuisine](room)
           - diminue la vitesse du [ventilateur](device) et la puissance du [chauffage](device)
+          - baisse la [lumière](device) du [cabanon bleu](room)
+          - diminue la [lumière](device) du [module B](room)
+          - baisse la [lumière](device) du [secteur nord](room)
+          - diminue la [lumière](device) du [bloc technique 3](room)
+          - baisse la [lumière](device) du [zone alpha](room)
+          - diminue la [lumière](device) du [atelier bois](room)
+          - baisse la [lumière](device) du [local technique](room)
+          - diminue la [lumière](device) du [studio invité](room)
+          - baisse la [lampe Ikea](device_name)
+          - diminue le [plafonnier rond](device_name)
+          - baisse la [guirlande extérieure](device_name)
+          - mets la [lampe de chevet](device_name) plus bas
+          - diminue le [ventilo Dyson](device_name)
+          - baisse la [lampe du sapin](device_name)
+          - diminue le [bandeau LED TV](device_name)
+          - mets la [lampe gaming rouge](device_name) plus bas
+          - baisse la [lumière](device) [au minimum](value)
+          - diminue la [lampe](device) [un peu moins](value)
+          - baisse la [guirlande](device) [faible](value)
+          - mets le [chauffage](device) [plus froid](value)
+          - diminue la [lumière](device) [légèrement](value) dans le [salon](room)
 
     - intent: query_device_state
       examples: |
-          - est‑ce que la [lampe](device) est allumée ?
-          - la [lumière](device) du [salon](room) est allumée ?
-          - le [chauffage](device) fonctionne ?
-          - la [tv](device) est allumée ?
-          - est‑ce que le [ventilateur](device) tourne ?
-          - la [prise](device) est activée ?
-          - la [guirlande](device) est allumée ?
-          - est‑ce que la [machine à café](device) est en marche ?
-          - la [lumière](device) de la [cuisine](room) est éteinte ?
-          - le [déshumidificateur](device) est actif ?
-          - la lumire du [salon](room) est allumée ?   # typo‑tolerance
-          - la [lumière](device) du [salon](room) et celle de la [cuisine](room) sont allumées ?
+          - est‑ce que la [lampe](device) est allumée
+          - la [lumière](device) du [salon](room) est allumée
+          - le [chauffage](device) fonctionne
+          - la [tv](device) est allumée
+          - est‑ce que le [ventilateur](device) tourne
+          - la [prise](device) est activée
+          - la [guirlande](device) est allumée
+          - est‑ce que la [machine à café](device) est en marche
+          - la [lumière](device) de la [cuisine](room) est éteinte
+          - le [déshumidificateur](device) est actif
+          - la lumire du [salon](room) est allumée
+          - la [lumière](device) du [salon](room) et celle de la [cuisine](room) sont allumées
+          - la [lumière](device) du [cabanon bleu](room) est allumée
+          - est‑ce que la [lumière](device) du [module B](room) est allumée
+          - la [lumière](device) du [secteur nord](room) est‑elle éteinte
+          - est‑ce que la [lumière](device) du [bloc technique 3](room) fonctionne
+          - la [lumière](device) du [zone alpha](room) est allumée
+          - la [lumière](device) du [atelier bois](room) est‑elle active
+          - est‑ce que la [lumière](device) du [local technique](room) est allumée
+          - la [lumière](device) du [studio invité](room) est‑elle éteinte
+          - est‑ce que la [lampe Ikea](device_name) est allumée
+          - la [lampe de chevet](device_name) est‑elle éteinte
+          - est‑ce que le [plafonnier rond](device_name) fonctionne
+          - la [guirlande extérieure](device_name) est‑elle allumée
+          - est‑ce que le [ventilo Dyson](device_name) tourne
+          - la [lampe du sapin](device_name) est‑elle active
+          - est‑ce que le [bandeau LED TV](device_name) est allumé
+          - la [lampe gaming rouge](device_name) est‑elle allumée
 
     ######################################################################
     # ENVIRONMENT & COMFORT
@@ -346,26 +424,38 @@ nlu:
           - mets le son plus bas dans la [chambre](room) et le [bureau](room)
 
     ######################################################################
-    # SHUTTERS (VOLETS)
+    # OPEN DEVICE
     ######################################################################
 
-    - intent: open_shutter
+    - intent: open_device
       examples: |
           - ouvre le [volet](device)
           - ouvre les [volets](device) du [salon](room)
           - remonte le [volet](device) de la [chambre](room)
-          - lève les [volets](device)
+          - relève les [volets](device)
           - ouvre complètement le [volet](device)
           - ouvre les [stores](device)
           - relève le [volet](device) du [bureau](room)
           - ouvre le [rideau électrique](device)
           - remonte les [volets](device) de la [cuisine](room)
           - ouvre tout dans le [salon](room)
-          - ouvre les volet du [salon](room)   # typo‑tolerance
           - ouvre les [volets](device) du [salon](room) et de la [chambre](room)
-          - remonte les [volets](device) de la [cuisine](room) et du [bureau](room)
+          - ouvre les [volets](device) du [cabanon bleu](room)
+          - remonte les [volets](device) du [module B](room)
+          - ouvre les [volets](device) du [secteur nord](room)
+          - relève les [volets](device) du [bloc technique 3](room)
+          - ouvre les [volets](device) du [zone alpha](room)
+          - ouvre le [volet Velux](device_name)
+          - remonte le [store Ikea](device_name)
+          - ouvre le [rideau Somfy](device_name)
+          - relève le [store extérieur gris](device_name)
+          - lève complètement les [volets](device)
+          - ouvre un peu les [stores](device)
+          - remonte entièrement le [volet](device)
+          - ouvre les [volets](device) dans toute la [maison](room)
+          - relève les [volets](device) du [salon](room) et du [secteur nord](room)
 
-    - intent: close_shutter
+    - intent: close_device
       examples: |
           - ferme le [volet](device)
           - ferme les [volets](device) du [salon](room)
@@ -377,11 +467,23 @@ nlu:
           - ferme le [rideau électrique](device)
           - baisse les [volets](device) de la [cuisine](room)
           - ferme tout dans le [salon](room)
-          - ferme les volet du [salon](room)   # typo‑tolerance
           - ferme les [volets](device) du [salon](room) et de la [cuisine](room)
-          - baisse les [volets](device) de la [chambre](room) et du [bureau](room)
+          - ferme les [volets](device) du [cabanon bleu](room)
+          - abaisse les [volets](device) du [module B](room)
+          - ferme les [volets](device) du [secteur nord](room)
+          - descends les [volets](device) du [bloc technique 3](room)
+          - ferme les [volets](device) du [zone alpha](room)
+          - ferme le [volet Velux](device_name)
+          - abaisse le [store Ikea](device_name)
+          - ferme le [rideau Somfy](device_name)
+          - descends le [store extérieur gris](device_name)
+          - ferme complètement les [volets](device)
+          - abaisse un peu les [stores](device)
+          - descends entièrement le [volet](device)
+          - ferme les [volets](device) dans toute la [maison](room)
+          - abaisse les [volets](device) du [salon](room) et du [secteur nord](room)
 
-    - intent: pause_shutter
+    - intent: pause_device
       examples: |
           - stoppe le [volet](device)
           - mets le [volet](device) en pause
@@ -393,6 +495,20 @@ nlu:
           - stoppe tout de suite les [volets](device)
           - mets en pause les [stores](device)
           - arrête le [rideau électrique](device)
+          - stoppe les [volets](device) du [cabanon bleu](room)
+          - mets en pause les [volets](device) du [module B](room)
+          - arrête les [volets](device) du [secteur nord](room)
+          - stoppe les [volets](device) du [bloc technique 3](room)
+          - mets en pause les [volets](device) du [zone alpha](room)
+          - stoppe le [volet Velux](device_name)
+          - mets en pause le [store Ikea](device_name)
+          - arrête le [rideau Somfy](device_name)
+          - stoppe le [store extérieur gris](device_name)
+          - arrête immédiatement les [volets](device)
+          - mets en pause le mouvement des [stores](device)
+          - stoppe le [volet](device) en plein milieu
+          - bloque les [volets](device) dans le [salon](room)
+          - arrête les [volets](device) du [salon](room) et du [secteur nord](room)
 
     ######################################################################
     # GROUP COMMANDS
@@ -400,33 +516,61 @@ nlu:
 
     - intent: turn_on_group
       examples: |
-          - allume toutes les lumières
+          - allume toutes les [lumières](device)
           - allume tout dans le [salon](room)
-          - allume tous les volets
+          - ouvre tous les [volets](device)
           - allume tout dans la maison
-          - allume toutes les prises
-          - allume toutes les lampes du [couloir](room)
-          - allume tout le rez-de-chaussée
+          - active toutes les [prises](device)
+          - allume toutes les [lampes](device) du [couloir](room)
+          - ouvre tout le [rez-de-chaussée](room)
           - allume tous les appareils
           - allume tout dans la [cuisine](room)
-          - allume toutes les lumières du [bureau](room)
-          - allume toutes les lumières du [salon](room) et de la [cuisine](room)
-          - allume tous les volets du [salon](room) et de la [chambre](room)
+          - allume toutes les [lumières](device) du [bureau](room)
+          - allume toutes les [lumières](device) du [salon](room) et de la [cuisine](room)
+          - ouvre tous les [volets](device) du [salon](room) et de la [chambre](room)
+          - allume tout dans le [cabanon bleu](room)
+          - ouvre tous les [volets](device) du [module B](room)
+          - allume toutes les [lampes](device) du [secteur nord](room)
+          - ouvre tout dans le [bloc technique 3](room)
+          - allume toutes les [lumières](device) de la [zone alpha](room)
+          - allume toutes les [lampes Ikea](device_name)
+          - ouvre tous les [volets Velux](device_name)
+          - active toutes les [prises connectées TP-Link](device_name)
+          - allume toutes les [lampes gaming rouges](device_name)
+          - ouvre tous les [stores extérieurs gris](device_name)
+          - ouvre tout ce qui peut s’ouvrir dans le [salon](room)
+          - allume tout ce qui est éteint dans la maison
+          - active tous les appareils du [rez-de-chaussée](room)
+          - ouvre tous les volets et allume toutes les lumières du [salon](room)
 
     - intent: turn_off_group
       examples: |
-          - éteins toutes les lumières
+          - éteins toutes les [lumières](device)
           - éteins tout dans le [salon](room)
-          - éteins tous les volets
+          - ferme tous les [volets](device)
           - éteins tout dans la maison
-          - coupe toutes les prises
-          - éteins toutes les lampes du [couloir](room)
-          - éteins tout le rez-de-chaussée
+          - coupe toutes les [prises](device)
+          - éteins toutes les [lampes](device) du [couloir](room)
+          - ferme tout le [rez-de-chaussée](room)
           - arrête tous les appareils
           - éteins tout dans la [cuisine](room)
-          - éteins toutes les lumières du [bureau](room)
-          - éteins toutes les lumières du [salon](room) et de la [cuisine](room)
-          - éteins tous les volets du [salon](room) et de la [chambre](room)
+          - éteins toutes les [lumières](device) du [bureau](room)
+          - éteins toutes les [lumières](device) du [salon](room) et de la [cuisine](room)
+          - ferme tous les [volets](device) du [salon](room) et de la [chambre](room)
+          - éteins tout dans le [cabanon bleu](room)
+          - ferme tous les [volets](device) du [module B](room)
+          - coupe toutes les [lampes](device) du [secteur nord](room)
+          - ferme tout dans le [bloc technique 3](room)
+          - éteins toutes les [lumières](device) de la [zone alpha](room)
+          - éteins toutes les [lampes Ikea](device_name)
+          - ferme tous les [volets Velux](device_name)
+          - coupe toutes les [prises connectées TP-Link](device_name)
+          - éteins toutes les [lampes gaming rouges](device_name)
+          - ferme tous les [stores extérieurs gris](device_name)
+          - ferme tout ce qui peut se fermer dans le [salon](room)
+          - éteins tout ce qui est allumé dans la maison
+          - arrête tous les appareils du [rez-de-chaussée](room)
+          - ferme tous les volets et éteins toutes les lumières du [salon](room)
 
     ######################################################################
     # TIMERS & ALARMS
@@ -449,7 +593,7 @@ nlu:
           - mets un minuteur [dans 2 minutes](value)
           - mets un minuteur [dans 30 secondes](value)
           - mets un minuteur [dans une minute](value)
-          - mets un minuteur de [10 minute](value)   # typo‑tolerance
+          - mets un minuteur de [10 minute](value)
 
     - intent: cancel_timer
       examples: |
@@ -463,7 +607,7 @@ nlu:
           - annule le timer en cours
           - arrête tout minuteur
           - stoppe tous les timers
-          - annule le minutteur   # typo‑tolerance
+          - annule le minutteur
 
     - intent: pause_timer
       examples: |
@@ -476,7 +620,7 @@ nlu:
           - mets en pause le compte à rebours
           - mets le minuteur en pause maintenant
           - mets le timer en pause maintenant
-          - pause le minutteur   # typo‑tolerance
+          - pause le minutteur
 
     - intent: resume_timer
       examples: |
@@ -503,7 +647,7 @@ nlu:
           - il reste combien au timer ?
           - combien de temps avant la fin ?
           - combien reste‑t‑il ?
-          - il reste combien de temp ?   # typo‑tolerance
+          - il reste combien de temp ?
 
     ######################################################################
     # ALARMS
@@ -527,7 +671,7 @@ nlu:
           - mets une alarme [à minuit](value)
           - mets une alarme [dans 10 minutes](value)
           - mets une alarme [dans une heure](value)
-          - mets une alarme à [7h0](value)   # typo‑tolerance
+          - mets une alarme à [7h0](value)
 
     - intent: cancel_alarm
       examples: |
@@ -545,7 +689,7 @@ nlu:
           - annule l'alarme tout de suite
           - annule l'alarme svp
           - annule l'alarme stp
-          - annule l'alarmee   # typo‑tolerance
+          - annule l'alarmee
 
     ######################################################################
     # WEATHER

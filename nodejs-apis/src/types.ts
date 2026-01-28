@@ -33,7 +33,7 @@ export type RestApis = { [route: string]: RestApi };
 
 // --- Tools
 export interface Tool<P> {
-    description: string;
+    description?: string;
     inputSchema?: any;
     exec: (params?: P) => Promise<string | void>;
     disabled?: boolean;

@@ -89,17 +89,17 @@ stories:
 
     - story: Open shutter
       steps:
-          - intent: open_shutter
+          - intent: open_device
           - action: utter_ack
 
     - story: Close shutter
       steps:
-          - intent: close_shutter
+          - intent: close_device
           - action: utter_ack
 
     - story: Pause shutter
       steps:
-          - intent: pause_shutter
+          - intent: pause_device
           - action: utter_ack
 
     ######################################################################

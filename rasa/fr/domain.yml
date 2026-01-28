@@ -22,9 +22,9 @@ intents:
     - increase_volume
     - decrease_volume
 
-    - open_shutter
-    - close_shutter
-    - pause_shutter
+    - open_device
+    - close_device
+    - pause_device
 
     - turn_on_group
     - turn_off_group

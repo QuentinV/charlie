@@ -1,5 +1,5 @@
 import { NotFoundError } from '../errors';
-import tools from '../mcp/tools';
+import tools from '../tools/mcp';
 import { RestApis } from '../types';
 
 const routes: RestApis = {

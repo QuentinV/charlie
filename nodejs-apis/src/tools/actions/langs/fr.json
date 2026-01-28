@@ -1,0 +1,13 @@
+{
+    "brightness": {},
+    "devices": {},
+    "greet": {
+        "response": "Salut, comment tu vas aujourd'hui ?"
+    },
+    "group": {},
+    "music": {},
+    "temperature": {},
+    "timer": {},
+    "volume": {},
+    "weather": {}
+}

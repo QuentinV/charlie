@@ -125,21 +125,21 @@ nlu:
     # SHUTTERS
     ######################################################################
 
-    - intent: open_shutter
+    - intent: open_device
       examples: |
           - ouvre les volets du salon
           - remonte le volet de la chambre
           - ouvre les volet du salon   # typo
           - ouvre les volets du salon et de la chambre
 
-    - intent: close_shutter
+    - intent: close_device
       examples: |
           - ferme les volets du salon
           - baisse le volet de la chambre
           - ferme les volet du salon   # typo
           - ferme les volets du salon et de la cuisine
 
-    - intent: pause_shutter
+    - intent: pause_device
       examples: |
           - stoppe le volet
           - mets les volets en pause
