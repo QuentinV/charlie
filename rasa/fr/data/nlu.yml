@@ -847,160 +847,133 @@ nlu:
 
     ######################################################################
     # DEVICES
-    ######################################################################
-synonyms:
-    light:
-        - lumière
-        - lumiere
-        - lumère
-        - lumere
-        - lumire
-        - lumière
-        - lumieer
-        - lumie
-        - lumir
-        - lum
-        - lumière du salon
-        - lumiere du salon
-        - lape
-        - lamp
-        - lammp
-        - lampe du salon
-        - lampe de bureau
-        - ampule
-        - ampul
-        - ampoule led
-        - ampoule connectée
-        - plafonier
-        - plafonnir
-        - plafonnie
-        - plafon
-        - spot led
-        - spote
-        - sspot
-        - bandeau led
-        - strip led
-        - ruban led
-        - led strip
-        - nanoleaf
-        - nanoleafs
-        - neon
-        - neons
-        - nean
-        - guirlande
+    #####################################################################
+    - synonym: light
+      examples: |
+          - lumière
+          - lumiere
+          - lumère
+          - lumere
+          - lumire
+          - lumière
+          - lumieer
+          - lumie
+          - lumir
+          - lum
+          - lape
+          - lamp
+          - lammp
+          - ampule
+          - ampul
+          - ampoule
+          - plafonier
+          - plafonnir
+          - plafonnie
+          - plafon
+          - spot led
+          - spote
+          - sspot
+          - bandeau led
+          - strip led
+          - ruban led
+          - led strip
+          - nanoleaf
+          - nanoleafs
+          - neon
+          - neons
+          - nean
+          - guirlande
 
-    shutter:
-        - volet
-        - volets
-        - volet roulant
-        - volets roulants
-        - volet electrique
-        - volets electriques
-        - volet éléctrique
-        - volets éléctriques
-        - stores
-        - store banne
-        - store électrique
-        - store electrique
-        - rideaux
-        - rideau électrique
-        - rideaux électriques
-        - rideau connecte
-        - rideau connectés
+    - synonym: shutter
+      examples: |
+          - volet
+          - volets
+          - stores
+          - rideaux
 
-    heater:
-        - chauffage
-        - chaufage
-        - chauffage electrique
-        - chauffage électrique
-        - chauffage du salon
-        - radiater
-        - radiateur electrique
-        - radiateur électrique
-        - radia
+    - synonym: heater
+      examples: |
+          - chauffage
+          - chaufage
+          - radiater
+          - radiateur
+          - radia
 
-    thermostat:
-        - termostat
-        - thermostate
+    - synonym: thermostat
+      examples: |
+          - termostat
+          - thermostate
 
-    ac:
-        - clim
-        - climatiseur
-        - climatisation reversible
-        - clim reversible
-        - clim réversible
-        - ventilo
-        - ventillateur
-        - ventillateur
-        - ventil
+    - synonym: ac
+      examples: |
+          - clim
+          - climatiseur
+          - climatisation
+          - ventilo
+          - ventillateur
+          - ventil
 
-    speaker:
-        - speaker
-        - enceinte
-        - enceint
-        - enceite
-        - enceinte bluetooth
-        - enceinte du salon
-        - speaker
-        - haut-parleur
-        - haut parleur
-        - home cinema
-        - home-cinema
-        - systeme home cinema
-        - barre de son
-        - home cinéma
-        - soundbar
+    - synonym: speaker
+      examples: |
+          - speaker
+          - enceinte
+          - enceint
+          - enceite
+          - haut-parleur
+          - haut parleur
+          - home cinema
+          - home-cinema
+          - barre de son
+          - home cinéma
+          - soundbar
 
-    tv:
-        - télévision
-        - tele
-        - télé
-        - tv
-        - televiseur
-        - television
-        - televition
-        - la tele
-        - la tv
+    - synonym: tv
+      examples: |
+          - télévision
+          - tele
+          - télé
+          - tv
+          - televiseur
+          - television
+          - la tele
+          - la tv
 
-    switch:
-        - prise
-        - prisse
-        - prise connectée
-        - prise intelligente
-        - interrupteur
-        - interupteur
-        - interrupteur connecté
-        - switch
-        - switch mural
-        - multiprise
-        - multi prise
-        - multi-prise
-        - multiprisse
+    - synonym: switch
+      examples: |
+          - prise
+          - prisse
+          - interrupteur
+          - interupteur
+          - switch
+          - switch mural
+          - multiprise
+          - multi prise
+          - multi-prise
+          - multiprisse
 
-    ######################################################################
-    # SEMANTIC VALUE SYNONYMS
-    ######################################################################
+    - synonym: max
+      examples: |
+          - à fond
+          - au max
+          - maximum
+          - le plus fort
 
-    max:
-        - à fond
-        - au max
-        - maximum
-        - le plus fort
+    - synonym: min
+      examples: |
+          - minimum
+          - au minimum
+          - le plus bas
 
-    min:
-        - minimum
-        - au minimum
-        - minimum
-        - le plus bas
+    - synonym: small
+      examples: |
+          - un peu
+          - légèrement
+          - un petit peu
+          - un chouïa
 
-    small:
-        - un peu
-        - légèrement
-        - un petit peu
-        - un chouïa
-
-    high:
-        - beaucoup
-        - bien plus
-        - fortement
-        - vraiment plus
+    - synonym: high
+      examples: |
+          - beaucoup
+          - bien plus
+          - fortement
+          - vraiment plus

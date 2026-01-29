@@ -2,7 +2,7 @@ import { Tools } from '../../types';
 import greetings from './impl/greet';
 import devices from './impl/devices';
 
-export const actions = async (): Promise<Tools> => ({
+export const getActions = async (): Promise<Tools> => ({
     ...greetings,
     ...devices,
 });

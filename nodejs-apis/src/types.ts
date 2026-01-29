@@ -35,7 +35,7 @@ export type RestApis = { [route: string]: RestApi };
 export interface Tool<P> {
     description?: string;
     inputSchema?: any;
-    exec: (params?: P) => Promise<string | void>;
+    exec: (params?: P) => Promise<string | void | boolean>;
     disabled?: boolean;
     instance?: any;
 }
@@ -78,8 +78,10 @@ export interface Provider {
     multidevices?: boolean;
 }
 
+export type PowerType = 'on' | 'off' | 'pause';
+
 export interface DeviceState {
-    power: 'on' | 'off' | 'pause';
+    power: PowerType;
     level?: number;
     additional?: object;
 }

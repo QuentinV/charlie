@@ -34,7 +34,16 @@ export async function buildMcpServer(app: any) {
                             )}`
                         );
                         const res = await c.exec(params);
-                        if (res) {
+                        if (res === true || res === false) {
+                            return {
+                                content: [
+                                    {
+                                        type: 'text',
+                                        text: res ? 'Success' : 'Failed',
+                                    },
+                                ],
+                            };
+                        } else if (res) {
                             return {
                                 content: [
                                     {
