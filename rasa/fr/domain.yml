@@ -1,0 +1,120 @@
+version: '3.1'
+
+intents:
+    - greet
+
+    - turn_on_device
+    - turn_off_device
+    - set_device_value
+    - increase_device_value
+    - decrease_device_value
+    - query_device_state
+
+    - set_temperature
+    - increase_temperature
+    - decrease_temperature
+
+    - set_brightness
+    - increase_brightness
+    - decrease_brightness
+
+    - set_volume
+    - increase_volume
+    - decrease_volume
+
+    - open_device
+    - close_device
+    - pause_device
+
+    - turn_on_group
+    - turn_off_group
+
+    - set_timer
+    - cancel_timer
+    - pause_timer
+    - resume_timer
+
+    - query_time_remaining
+
+    - set_alarm
+    - cancel_alarm
+
+    - get_weather
+
+    - play_music
+    - pause_music
+    - resume_music
+    - next_track
+    - previous_track
+
+    - stop
+
+entities:
+    - device
+    - room
+    - value
+    - city
+    - device_name
+    - tail
+
+slots:
+    device:
+        type: text
+        influence_conversation: true
+        mappings:
+            - type: from_entity
+              entity: device
+
+    room:
+        type: text
+        influence_conversation: false
+        mappings:
+            - type: from_entity
+              entity: room
+
+    device_name:
+        type: text
+        influence_conversation: false
+        mappings:
+            - type: from_entity
+              entity: device_name
+
+    value:
+        type: text
+        influence_conversation: false
+        mappings:
+            - type: from_entity
+              entity: value
+
+    city:
+        type: text
+        influence_conversation: true
+        mappings:
+            - type: from_entity
+              entity: city
+
+responses:
+    utter_greet:
+        - text: 'Bonjour, que puis‑je faire pour toi ?'
+
+    utter_default:
+        - text: 'Désolé, je n’ai pas compris. Peux‑tu reformuler ?'
+
+    utter_ack:
+        - text: 'C’est fait.'
+
+    utter_timer_set:
+        - text: 'Minuteur lancé.'
+
+    utter_alarm_set:
+        - text: 'Alarme programmée.'
+
+    utter_weather:
+        - text: 'Voici la météo.'
+
+    utter_stop:
+        - text: 'D’accord, j’arrête.'
+
+session_config:
+    session_expiration_time: 60
+    carry_over_slots_to_new_session: true

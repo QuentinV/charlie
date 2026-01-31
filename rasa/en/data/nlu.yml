@@ -1,0 +1,30 @@
+version: '3.1'
+
+nlu:
+    - intent: greet
+      examples: |
+          - hello
+          - hi
+          - hey
+          - good morning
+
+    - intent: ask_weather
+      examples: |
+          - what's the weather
+          - tell me the weather
+          - is it raining
+          - weather forecast
+
+    - intent: get_device_state
+      examples: |
+          - is the gate open
+          - what's the status of the garage door
+          - is the living room light on
+          - check the heater
+
+    - intent: set_device_state
+      examples: |
+          - open the gate
+          - close the garage door
+          - turn on the living room light
+          - switch off the heater

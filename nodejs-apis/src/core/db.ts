@@ -4,7 +4,7 @@ import { MongoClient } from 'mongodb';
 let db: any = null;
 
 const getDb = async () => {
-    const host = process.env.DB_HOST;
+    const host = process.env.DB_HOST ?? 'db:27017';
     if (!host) throw Error('DB HOST missing');
     const url = `mongodb://${host}`;
     const dbName = 'charlie';

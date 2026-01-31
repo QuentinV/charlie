@@ -7,7 +7,9 @@
     "start": "tsx src/index.ts",
     "dev": "nodemon --watch src --ext ts --exec tsx src/index.ts",
     "d": "tsx src/core/ipscan.ts",
-    "generate-webpush-keys": "tsx src/generate-webpush-keys.ts"
+    "generate-webpush-keys": "tsx src/generate-webpush-keys.ts",
+    "rasa": "tsx src/ai/nlu.ts",
+    "echo-test": "tsx src/echo/audio_test.ts"
   },
   "repository": {
     "type": "git",
@@ -40,6 +42,7 @@
     "mqtt": "^5.14.1",
     "music-metadata": "^11.10.3",
     "net": "^1.0.2",
+    "node-polyglot": "^2.6.0",
     "node-ssdp": "^4.0.1",
     "node-tradfri-client": "^3.2.0",
     "nodemailer": "^7.0.11",

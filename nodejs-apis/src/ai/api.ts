@@ -1,5 +1,5 @@
 import { RestApis } from '../types';
-import { ask } from './ask';
+import { ask } from './flow';
 
 const routes: RestApis = {
     'assistant/chat': {

@@ -1,0 +1,276 @@
+version: '3.1'
+stories:
+    ######################################################################
+    # BASIC DEVICE CONTROL
+    ######################################################################
+
+    - story: Turn on a device (E2E)
+      steps:
+          - user: |
+                allume la lumière du salon
+            intent: turn_on_device
+          - action: utter_ack
+
+    - story: Turn off a device (E2E)
+      steps:
+          - user: |
+                éteins la lampe du bureau
+            intent: turn_off_device
+          - action: utter_ack
+
+    - story: Set device value (E2E)
+      steps:
+          - user: |
+                mets la lumière à 40
+            intent: set_device_value
+          - action: utter_ack
+
+    ######################################################################
+    # MULTI-ENTITY COMMANDS
+    ######################################################################
+
+    - story: Multi-entity turn on (E2E)
+      steps:
+          - user: |
+                allume la lumière du salon et la lampe du bureau
+            intent: turn_on_device
+          - action: utter_ack
+
+    - story: Multi-entity turn off (E2E)
+      steps:
+          - user: |
+                éteins la lumière du salon et de la cuisine
+            intent: turn_off_device
+          - action: utter_ack
+
+    - story: Multi-entity value setting (E2E)
+      steps:
+          - user: |
+                mets la lumière du salon à 30 et le chauffage à 21
+            intent: set_device_value
+          - action: utter_ack
+
+    ######################################################################
+    # ENVIRONMENT CONTROL
+    ######################################################################
+
+    - story: Set temperature (E2E)
+      steps:
+          - user: |
+                mets le salon à 21 degrés
+            intent: set_temperature
+          - action: utter_ack
+
+    - story: Increase temperature (E2E)
+      steps:
+          - user: |
+                augmente la température du salon
+            intent: increase_temperature
+          - action: utter_ack
+
+    - story: Decrease temperature (E2E)
+      steps:
+          - user: |
+                baisse la température de la chambre
+            intent: decrease_temperature
+          - action: utter_ack
+
+    ######################################################################
+    # BRIGHTNESS
+    ######################################################################
+
+    - story: Set brightness (E2E)
+      steps:
+          - user: |
+                mets la lumière du salon à 50
+            intent: set_brightness
+          - action: utter_ack
+
+    - story: Increase brightness (E2E)
+      steps:
+          - user: |
+                augmente la luminosité de la cuisine
+            intent: increase_brightness
+          - action: utter_ack
+
+    - story: Decrease brightness (E2E)
+      steps:
+          - user: |
+                baisse la luminosité du salon
+            intent: decrease_brightness
+          - action: utter_ack
+
+    ######################################################################
+    # VOLUME
+    ######################################################################
+
+    - story: Set volume (E2E)
+      steps:
+          - user: |
+                mets le volume à 30
+            intent: set_volume
+          - action: utter_ack
+
+    - story: Increase volume (E2E)
+      steps:
+          - user: |
+                augmente le volume
+            intent: increase_volume
+          - action: utter_ack
+
+    - story: Decrease volume (E2E)
+      steps:
+          - user: |
+                baisse le volume du salon
+            intent: decrease_volume
+          - action: utter_ack
+
+    ######################################################################
+    # SHUTTERS
+    ######################################################################
+
+    - story: Open shutters (E2E)
+      steps:
+          - user: |
+                ouvre les volets du salon
+            intent: open_shutter
+          - action: utter_ack
+
+    - story: Close shutters (E2E)
+      steps:
+          - user: |
+                ferme les volets de la cuisine
+            intent: close_shutter
+          - action: utter_ack
+
+    - story: Pause shutters (E2E)
+      steps:
+          - user: |
+                mets les volets en pause
+            intent: pause_shutter
+          - action: utter_ack
+
+    ######################################################################
+    # GROUP COMMANDS
+    ######################################################################
+
+    - story: Turn on group (E2E)
+      steps:
+          - user: |
+                allume toutes les lumières
+            intent: turn_on_group
+          - action: utter_ack
+
+    - story: Turn off group (E2E)
+      steps:
+          - user: |
+                éteins toutes les lumières
+            intent: turn_off_group
+          - action: utter_ack
+
+    ######################################################################
+    # TIMERS
+    ######################################################################
+
+    - story: Set timer (E2E)
+      steps:
+          - user: |
+                mets un minuteur de 10 minutes
+            intent: set_timer
+          - action: utter_timer_set
+
+    - story: Cancel timer (E2E)
+      steps:
+          - user: |
+                annule le minuteur
+            intent: cancel_timer
+          - action: utter_ack
+
+    - story: Pause timer (E2E)
+      steps:
+          - user: |
+                mets le minuteur en pause
+            intent: pause_timer
+          - action: utter_ack
+
+    - story: Resume timer (E2E)
+      steps:
+          - user: |
+                reprends le minuteur
+            intent: resume_timer
+          - action: utter_ack
+
+    - story: Query time remaining (E2E)
+      steps:
+          - user: |
+                il reste combien de temps ?
+            intent: query_time_remaining
+          - action: utter_ack
+
+    ######################################################################
+    # ALARMS
+    ######################################################################
+
+    - story: Set alarm (E2E)
+      steps:
+          - user: |
+                mets une alarme à 7h
+            intent: set_alarm
+          - action: utter_alarm_set
+
+    - story: Cancel alarm (E2E)
+      steps:
+          - user: |
+                annule l’alarme
+            intent: cancel_alarm
+          - action: utter_ack
+
+    ######################################################################
+    # WEATHER
+    ######################################################################
+
+    - story: Get weather (E2E)
+      steps:
+          - user: |
+                quel temps fait‑il ?
+            intent: get_weather
+          - action: utter_weather
+
+    ######################################################################
+    # MUSIC
+    ######################################################################
+
+    - story: Play music (E2E)
+      steps:
+          - user: |
+                joue de la musique
+            intent: play_music
+          - action: utter_ack
+
+    - story: Pause music (E2E)
+      steps:
+          - user: |
+                mets la musique en pause
+            intent: pause_music
+          - action: utter_ack
+
+    - story: Resume music (E2E)
+      steps:
+          - user: |
+                reprends la musique
+            intent: resume_music
+          - action: utter_ack
+
+    - story: Next track (E2E)
+      steps:
+          - user: |
+                piste suivante
+            intent: next_track
+          - action: utter_ack
+
+    - story: Previous track (E2E)
+      steps:
+          - user: |
+                piste précédente
+            intent: previous_track
+          - action: utter_ack

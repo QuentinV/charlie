@@ -1,0 +1,14 @@
+{
+    "folders": [
+        {
+            "name": "echo-zero-bis",
+            "path": "./",
+        },
+    ],
+    "settings": {
+        "files.associations": {
+            "new": "cpp",
+            "stdexcept": "cpp",
+        },
+    },
+}

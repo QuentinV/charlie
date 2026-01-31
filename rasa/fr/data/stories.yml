@@ -1,0 +1,198 @@
+version: '3.1'
+stories:
+    ######################################################################
+    # BASIC DEVICE CONTROL
+    ######################################################################
+
+    - story: Turn on a device
+      steps:
+          - intent: turn_on_device
+          - action: utter_ack
+
+    - story: Turn off a device
+      steps:
+          - intent: turn_off_device
+          - action: utter_ack
+
+    - story: Set device value
+      steps:
+          - intent: set_device_value
+          - action: utter_ack
+
+    - story: Increase device value
+      steps:
+          - intent: increase_device_value
+          - action: utter_ack
+
+    - story: Decrease device value
+      steps:
+          - intent: decrease_device_value
+          - action: utter_ack
+
+    - story: Query device state
+      steps:
+          - intent: query_device_state
+          - action: utter_ack
+
+    ######################################################################
+    # ENVIRONMENT CONTROL
+    ######################################################################
+
+    - story: Set temperature
+      steps:
+          - intent: set_temperature
+          - action: utter_ack
+
+    - story: Increase temperature
+      steps:
+          - intent: increase_temperature
+          - action: utter_ack
+
+    - story: Decrease temperature
+      steps:
+          - intent: decrease_temperature
+          - action: utter_ack
+
+    - story: Set brightness
+      steps:
+          - intent: set_brightness
+          - action: utter_ack
+
+    - story: Increase brightness
+      steps:
+          - intent: increase_brightness
+          - action: utter_ack
+
+    - story: Decrease brightness
+      steps:
+          - intent: decrease_brightness
+          - action: utter_ack
+
+    - story: Set volume
+      steps:
+          - intent: set_volume
+          - action: utter_ack
+
+    - story: Increase volume
+      steps:
+          - intent: increase_volume
+          - action: utter_ack
+
+    - story: Decrease volume
+      steps:
+          - intent: decrease_volume
+          - action: utter_ack
+
+    ######################################################################
+    # SHUTTERS
+    ######################################################################
+
+    - story: Open shutter
+      steps:
+          - intent: open_device
+          - action: utter_ack
+
+    - story: Close shutter
+      steps:
+          - intent: close_device
+          - action: utter_ack
+
+    - story: Pause shutter
+      steps:
+          - intent: pause_device
+          - action: utter_ack
+
+    ######################################################################
+    # GROUP COMMANDS
+    ######################################################################
+
+    - story: Turn on group
+      steps:
+          - intent: turn_on_group
+          - action: utter_ack
+
+    - story: Turn off group
+      steps:
+          - intent: turn_off_group
+          - action: utter_ack
+
+    ######################################################################
+    # TIMERS
+    ######################################################################
+
+    - story: Set timer
+      steps:
+          - intent: set_timer
+          - action: utter_timer_set
+
+    - story: Cancel timer
+      steps:
+          - intent: cancel_timer
+          - action: utter_ack
+
+    - story: Pause timer
+      steps:
+          - intent: pause_timer
+          - action: utter_ack
+
+    - story: Resume timer
+      steps:
+          - intent: resume_timer
+          - action: utter_ack
+
+    - story: Query time remaining
+      steps:
+          - intent: query_time_remaining
+          - action: utter_ack
+
+    ######################################################################
+    # ALARMS
+    ######################################################################
+
+    - story: Set alarm
+      steps:
+          - intent: set_alarm
+          - action: utter_alarm_set
+
+    - story: Cancel alarm
+      steps:
+          - intent: cancel_alarm
+          - action: utter_ack
+
+    ######################################################################
+    # WEATHER
+    ######################################################################
+
+    - story: Get weather
+      steps:
+          - intent: get_weather
+          - action: utter_weather
+
+    ######################################################################
+    # MUSIC
+    ######################################################################
+
+    - story: Play music
+      steps:
+          - intent: play_music
+          - action: utter_ack
+
+    - story: Pause music
+      steps:
+          - intent: pause_music
+          - action: utter_ack
+
+    - story: Resume music
+      steps:
+          - intent: resume_music
+          - action: utter_ack
+
+    - story: Next track
+      steps:
+          - intent: next_track
+          - action: utter_ack
+
+    - story: Previous track
+      steps:
+          - intent: previous_track
+          - action: utter_ack

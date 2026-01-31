@@ -1,0 +1,13 @@
+action_endpoint:
+    url: 'http://localhost:9300/raza/webhook'
+
+# tracker_store:
+#  type: redis
+#  url: localhost
+#  port: 6379
+#  db: 0
+
+# event_broker:
+#  type: paho
+#  url: "mqtt://localhost"
+#  topic: "rasa/events"
