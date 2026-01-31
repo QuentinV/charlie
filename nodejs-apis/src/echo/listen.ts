@@ -2,6 +2,7 @@ import { WebSocketServer } from 'ws';
 import { stt } from './stt';
 import { tts } from '../ai/tts';
 import { ask } from '../ai/flow';
+import fs from 'fs';
 
 function sendPCMInChunks(ws, buffer, chunkSize = 4096) {
     for (let i = 0; i < buffer.length; i += chunkSize) {
@@ -29,6 +30,7 @@ export function setupEchoListen() {
                     console.log('spoken text', text);
                     const result = await ask(text);
                     console.log('result', result);
+                    ws.send(result ? 'Ok! :-)' : ':-(');
                     const resultAudio = await tts({ text: result });
                     sendPCMInChunks(ws, Buffer.from(resultAudio));
                 } catch (e) {

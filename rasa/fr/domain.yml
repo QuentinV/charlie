@@ -33,6 +33,7 @@ intents:
     - cancel_timer
     - pause_timer
     - resume_timer
+
     - query_time_remaining
 
     - set_alarm
@@ -54,6 +55,7 @@ entities:
     - value
     - city
     - device_name
+    - tail
 
 slots:
     device:

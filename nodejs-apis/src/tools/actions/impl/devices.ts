@@ -8,6 +8,7 @@ interface DeviceRequest {
     device?: string;
     room?: string;
     device_name?: string;
+    tail?: string;
 }
 
 interface DeviceValueRequest extends DeviceRequest {
@@ -37,9 +38,10 @@ async function findDevice({
     device: deviceType,
     room: roomSearch,
     device_name,
+    tail,
 }: DeviceRequest): Promise<Device | undefined> {
     const room = await getRoom(roomSearch);
-    if (room === null) {
+    if (!tail && room === null) {
         console.log('no room found for ', roomSearch);
         return null;
     }
@@ -61,13 +63,14 @@ async function findDevice({
 
     const devices = await cs.devices.find(filter).toArray();
     if (!devices?.length) {
-        console.log('no device found');
         return null;
     }
 
+    if (!device_name) device_name = tail;
+
     if (!device_name) {
         console.log('no device name provided so pick first one');
-        return devices[0];
+        return devices?.[0] ?? null;
     }
 
     const fuse = new Fuse(devices, {
@@ -75,6 +78,7 @@ async function findDevice({
         threshold: 0.3,
     });
 
+    console.log('found', fuse.search(device_name)[0]?.item);
     return fuse.search(device_name)[0]?.item as Device;
 }
 
@@ -83,10 +87,12 @@ async function changeDevice(
     power: PowerType
 ): Promise<boolean> {
     const device = await findDevice(req);
-    const res = await changeDeviceState(device._id, {
-        power,
-    });
-    return !!res;
+    if (device) {
+        return !!changeDeviceState(device._id, {
+            power,
+        });
+    }
+    return null;
 }
 
 export const tools: Tools = {

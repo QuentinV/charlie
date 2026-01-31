@@ -74,6 +74,11 @@ nlu:
           - allume la [lampe du sapin](device_name)
           - allume le [bandeau LED TV](device_name)
           - allume la [lampe gaming rouge](device_name)
+          - allume [la lumière du salon](tail)
+          - allume [la lampe du bureau](tail)
+          - allume [le plafonnier du couloir](tail)
+          - allume [la lumière de la cuisine](tail)
+          - allume [la lumière du garage](tail)
 
     - intent: turn_off_device
       examples: |
@@ -113,6 +118,16 @@ nlu:
           - éteins la [lampe du sapin](device_name)
           - coupe le [bandeau LED TV](device_name)
           - éteins la [lampe gaming rouge](device_name)
+          - éteins [la lumière du salon](tail)
+          - éteins [la lampe du bureau](tail)
+          - éteins [le plafonnier du couloir](tail)
+          - éteins [la lumière de la cuisine](tail)
+          - éteins [la lumière du garage](tail)
+          - coupe [la lumière du salon](tail)
+          - coupe [la lampe du bureau](tail)
+          - coupe [le plafonnier du couloir](tail)
+          - coupe [la lumière de la cuisine](tail)
+          - coupe [la lumière du garage](tail)
 
     - intent: set_device_value
       examples: |
@@ -454,6 +469,8 @@ nlu:
           - remonte entièrement le [volet](device)
           - ouvre les [volets](device) dans toute la [maison](room)
           - relève les [volets](device) du [salon](room) et du [secteur nord](room)
+          - ouvre le [volet Velux](tail)
+          - ouvre le [volet](tail)
 
     - intent: close_device
       examples: |
@@ -482,6 +499,12 @@ nlu:
           - descends entièrement le [volet](device)
           - ferme les [volets](device) dans toute la [maison](room)
           - abaisse les [volets](device) du [salon](room) et du [secteur nord](room)
+          - abaisse les [volets du module B](tail)
+          - ferme les [volets du secteur nord](tail)
+          - descends les [volets du bloc technique 3](tail)
+          - ferme les [volets du zone alpha](tail)
+          - ferme le [volet Velux](tail)
+          - abaisse le [store Ikea](tail)
 
     - intent: pause_device
       examples: |
@@ -509,6 +532,9 @@ nlu:
           - stoppe le [volet](device) en plein milieu
           - bloque les [volets](device) dans le [salon](room)
           - arrête les [volets](device) du [salon](room) et du [secteur nord](room)
+          - arrête le [rideau Somfy](tail)
+          - stoppe le [store extérieur gris](tail)
+          - pause le [volet](tail)
 
     ######################################################################
     # GROUP COMMANDS
@@ -796,6 +822,9 @@ nlu:
     ######################################################################
     # LOOKUPS
     ######################################################################
+    - regex: tail
+      examples: |
+          - .+
 
     - lookup: device
       examples: |

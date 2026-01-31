@@ -13,6 +13,7 @@
 #include <Wire.h> 
 #include <Adafruit_AHTX0.h> 
 #include <Adafruit_BMP280.h>
+#include <Adafruit_SSD1306.h>
 
 #define DRD_TIMEOUT 3
 
@@ -34,6 +35,12 @@
 #define I2S_SPK_BCLK GPIO_NUM_5
 #define I2S_SPK_DIN GPIO_NUM_6
 
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+#define OLED_RESET    -1
+#define OLED_SDA      GPIO_NUM_1
+#define OLED_SCL      GPIO_NUM_2
+
 #define BUFFER_SIZE 512
 
 #define MIC_THRESHOLD_SOUND 400
@@ -54,6 +61,7 @@ WiFiManager wm;
 String serverip;
 
 // Objects
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 Adafruit_NeoPixel pixels(1, GPIO_NUM_48, NEO_GRB + NEO_KHZ800);
 Adafruit_AHTX0 aht; 
 Adafruit_BMP280 bmp;
@@ -84,6 +92,7 @@ bool continuous_record = true;
 
 // Task handles
 TaskHandle_t wakeUpWordHandle;
+TaskHandle_t screenHandle;
 TaskHandle_t taskWebSocketHandle;
 
 bool debug_nn = false; // Set this to true to see e.g. features generated from the raw signal
@@ -119,6 +128,10 @@ void setupWiFi() {
   WiFiManagerParameter customServiceIp("serverIp", "Charlie server IP", serverip.c_str(), 16);
   wm.addParameter(&customServiceIp);
 
+  display.clearDisplay();
+  display.setCursor(0, 10);
+  display.println(WIFI_PASS);
+  display.display();
   bool res = wm.autoConnect(WIFI_NAME, WIFI_PASS);
 
   if (!res) {
@@ -148,8 +161,35 @@ void reset() {
 }
 
 void playAudio(uint8_t* data, size_t len) {
-  size_t bytes_written;
-  i2s_write(I2S_SPK_PORT, data, len, &bytes_written, portMAX_DELAY);
+    int16_t* samples = (int16_t*)data;
+    size_t sample_count = len / 2;
+
+    float volume = 0.5f;  // clean, safe, non-distorting
+
+    for (size_t i = 0; i < sample_count; i++) {
+        float s = samples[i] * volume;
+
+        // clamp
+        if (s > 32767) s = 32767;
+        if (s < -32768) s = -32768;
+
+        samples[i] = (int16_t)s;
+    }
+
+    size_t bytes_written;
+    i2s_write(I2S_SPK_PORT, data, len, &bytes_written, portMAX_DELAY);
+}
+
+void displayTextWs(String msg) {
+    display.clearDisplay();
+    display.setTextSize(1);
+
+    int16_t x, y;
+    uint16_t w, h;
+    display.getTextBounds(msg.c_str(), 0, 0, &x, &y, &w, &h);
+    display.setCursor((SCREEN_WIDTH - w) / 2, (SCREEN_HEIGHT - h) / 2);
+    display.printf("%s", msg.c_str());
+    display.display();
 }
 
 void onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
@@ -163,7 +203,9 @@ void onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     case WStype_BIN:
         playAudio(payload, length);
         break;
-    default:
+     case WStype_TEXT:
+        String msg = String((char*)payload);
+        displayTextWs(msg);
         break;
   }
 }
@@ -265,10 +307,9 @@ void setupSpeakerI2S() {
   i2s_set_pin(I2S_SPK_PORT, &spk_pins);
 }
 
-
 void captureMicSamplesTask(void *arg) {
     continuous_record = true;
-    
+
     const size_t chunk_bytes   = (size_t)arg;
     const size_t chunk_samples = chunk_bytes / sizeof(int16_t);
 
@@ -319,7 +360,18 @@ void startMicCaptureSamples() {
   xTaskCreate(captureMicSamplesTask, "CaptureMicSamples", 1024 * 32, (void*)sample_buffer_size, 10, NULL);
 }
 
+void drawListeningScreen() {
+    display.clearDisplay();
+    display.fillRoundRect(56, 10, 16, 28, 4, WHITE);
+    display.fillCircle(64, 10, 10, WHITE);
+    display.drawLine(64, 38, 64, 50, WHITE);
+    display.drawLine(54, 50, 74, 50, WHITE);
+    display.display();
+}
+
 void sendMicAudioTask(void *arg) {
+    drawListeningScreen();
+
     int32_t samples32[BUFFER_SIZE]; 
     int16_t samples16[BUFFER_SIZE];
 
@@ -375,7 +427,7 @@ void sendMicAudioTask(void *arg) {
         }
 
         int rms = sqrt((double)sumsq / frames_read);
-        Serial.printf("RMS %d \n", rms);
+        //Serial.printf("RMS %d \n", rms);
 
         // ===== Silence detection =====
         if (rms < MIC_THRESHOLD_SOUND) {
@@ -494,33 +546,85 @@ void wsTask(void *arg) {
     }
 }
 
+
+void displayStatusOnScreenTask(void *arg) {
+
+    while(true) {
+        time_t t = time(NULL);
+        struct tm *timeinfo = localtime(&t);
+
+        //sensors_event_t humidity, temp;
+        //aht.getEvent(&humidity, &temp);
+
+        //float temperature = bmp.readTemperature();//temp.temperature;
+        //float hum  = humidity.relative_humidity;
+
+        display.clearDisplay();
+
+        // top left
+        //display.setTextSize(1);
+        //display.setCursor(0, 0);
+        //display.printf("%.1fC", temperature);
+
+        // top right
+        //display.setCursor(SCREEN_WIDTH - 30, 0);
+        //display.printf("%.1f%%", hum);
+
+        //display.display();
+
+        // Middle centered
+        display.setTextSize(3);
+        char timestr[16];
+        strftime(timestr, sizeof(timestr), "%H:%M", timeinfo);
+        int16_t x, y;
+        uint16_t w, h;
+        display.getTextBounds(timestr, 0, 0, &x, &y, &w, &h);
+        display.setCursor((SCREEN_WIDTH - w) / 2, (SCREEN_HEIGHT - h) / 2);
+        display.print(timestr);
+        display.display();
+
+        display.setTextSize(1);
+
+        // Compute milliseconds until next minute boundary
+        int ms_left = ((59 - timeinfo->tm_sec) * 1000) + (1000 - (timeinfo->tm_sec * 1000 % 1000));
+        if (ms_left < 0 || ms_left > 60000) {
+            ms_left = 1000;
+        }
+        // Sleep until next minute
+        vTaskDelay(pdMS_TO_TICKS(ms_left));
+    }
+  
+}
+
 void setup() {
   Serial.begin(115200); 
+
+  setenv("TZ", "CETCEST,M3.5.0,M10.5.0/3", 1);
+  tzset();
 
   if (detectDoubleReset()) {
     reset();
     return;
   }
 
-  Wire.begin(18, 16);
+  Wire.begin(OLED_SDA, OLED_SCL);
+  if (display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    display.setRotation(2);
+    display.ssd1306_command(SSD1306_DISPLAYON);
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(1);
+    display.clearDisplay();
+    display.setCursor(0, 10);
+    display.println("Salut");
+    display.display();
+  }
+
+  pinMode(8, INPUT_PULLUP);
+  pinMode(9, INPUT_PULLUP);
+  Wire.begin(9, 8);
 
   aht.begin();
-  bmp.begin(0x77);
-
-  
-  /*
-   aht.getEvent(&humidity, &temp);
-      
-      JsonDocument resp;
-      resp["hum"] = String(humidity.relative_humidity);
-      resp["aht_temp"] = String(temp.temperature);
-      resp["bmp_temp"] = String(bmp.readTemperature());
-      resp["pressure"] = String(bmp.readPressure() / 100.0F);
-
-      String out; 
-      serializeJson(resp, out);
-      request->send(200, "application/json", out);
-      */
+  bmp.begin(0x76);
 
   pixels.begin();
   pixels.setBrightness(50);
@@ -541,6 +645,7 @@ void setup() {
   }
   
   xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
+  xTaskCreate( displayStatusOnScreenTask, "ScreenDisplay", 4096, NULL, 1, &screenHandle );
   xTaskCreatePinnedToCore(wsTask, "TaskWebSocket", 1024 * 8, NULL, 1, &taskWebSocketHandle, 1);
 }
 
