@@ -11,8 +11,6 @@
 #include "freertos/task.h"
 #include <WebSocketsClient.h>
 #include <Wire.h> 
-#include <Adafruit_AHTX0.h> 
-#include <Adafruit_BMP280.h>
 #include <Adafruit_SSD1306.h>
 
 #define DRD_TIMEOUT 3
@@ -43,8 +41,8 @@
 
 #define BUFFER_SIZE 512
 
-#define MIC_THRESHOLD_SOUND 400
-#define MIC_DURATION_SILENCE 2
+#define MIC_THRESHOLD_SOUND 500
+#define MIC_DURATION_SILENCE 1
 
 #define WAKE_UP_WORD_ACCURACY 0.5f
 
@@ -63,8 +61,6 @@ String serverip;
 // Objects
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 Adafruit_NeoPixel pixels(1, GPIO_NUM_48, NEO_GRB + NEO_KHZ800);
-Adafruit_AHTX0 aht; 
-Adafruit_BMP280 bmp;
 
 QueueHandle_t wsSendQueue;
 WebSocketsClient webSocket;
@@ -553,24 +549,7 @@ void displayStatusOnScreenTask(void *arg) {
         time_t t = time(NULL);
         struct tm *timeinfo = localtime(&t);
 
-        //sensors_event_t humidity, temp;
-        //aht.getEvent(&humidity, &temp);
-
-        //float temperature = bmp.readTemperature();//temp.temperature;
-        //float hum  = humidity.relative_humidity;
-
         display.clearDisplay();
-
-        // top left
-        //display.setTextSize(1);
-        //display.setCursor(0, 0);
-        //display.printf("%.1fC", temperature);
-
-        // top right
-        //display.setCursor(SCREEN_WIDTH - 30, 0);
-        //display.printf("%.1f%%", hum);
-
-        //display.display();
 
         // Middle centered
         display.setTextSize(3);
@@ -599,9 +578,6 @@ void displayStatusOnScreenTask(void *arg) {
 void setup() {
   Serial.begin(115200); 
 
-  setenv("TZ", "CETCEST,M3.5.0,M10.5.0/3", 1);
-  tzset();
-
   if (detectDoubleReset()) {
     reset();
     return;
@@ -618,13 +594,6 @@ void setup() {
     display.println("Salut");
     display.display();
   }
-
-  pinMode(8, INPUT_PULLUP);
-  pinMode(9, INPUT_PULLUP);
-  Wire.begin(9, 8);
-
-  aht.begin();
-  bmp.begin(0x76);
 
   pixels.begin();
   pixels.setBrightness(50);
@@ -644,6 +613,11 @@ void setup() {
       ei_printf("Failed to start I2S!");
   }
   
+  setenv("TZ", "CETCEST,M3.5.0,M10.5.0/3", 1);
+  tzset();
+
+  configTime(3600, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
+
   xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
   xTaskCreate( displayStatusOnScreenTask, "ScreenDisplay", 4096, NULL, 1, &screenHandle );
   xTaskCreatePinnedToCore(wsTask, "TaskWebSocket", 1024 * 8, NULL, 1, &taskWebSocketHandle, 1);

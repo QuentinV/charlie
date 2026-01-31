@@ -48,14 +48,18 @@
 
 const char* ei_classifier_inferencing_categories_891362_1[] = { "charlie", "noise", "unknown" };
 
-EI_CLASSIFIER_DSP_AXES_INDEX_TYPE ei_dsp_config_891362_3_axes[] = { 0 };
-const uint32_t ei_dsp_config_891362_3_axes_size = 1;
-ei_dsp_config_mfe_t ei_dsp_config_891362_3 = {
-    3, // uint32_t blockId
+ei_dsp_named_axis_t ei_dsp_config_891362_11_named_axes[] = {
+    { .name = "Signal", .axis = 0 }
+};
+size_t ei_dsp_config_891362_11_named_axes_size = 1;
+EI_CLASSIFIER_DSP_AXES_INDEX_TYPE ei_dsp_config_891362_11_axes[] = { 0 };
+const uint32_t ei_dsp_config_891362_11_axes_size = 1;
+ei_dsp_config_mfe_t ei_dsp_config_891362_11 = {
+    11, // uint32_t blockId
     4, // int implementationVersion
     1, // int length of axes
-    NULL, // named axes
-    0, // size of the named axes array
+    ei_dsp_config_891362_11_named_axes, // named axes
+    ei_dsp_config_891362_11_named_axes_size, // size of the named axes array
     0.02f, // float frame_length
     0.01f, // float frame_stride
     40, // int num_filters
@@ -68,13 +72,13 @@ ei_dsp_config_mfe_t ei_dsp_config_891362_3 = {
 
 const uint8_t ei_dsp_blocks_891362_1_size = 1;
 ei_model_dsp_t ei_dsp_blocks_891362_1[ei_dsp_blocks_891362_1_size] = {
-    { // DSP block 3
-        3,
+    { // DSP block 11
+        11,
         3960, // output size
         &extract_mfe_features, // DSP function pointer
-        (void*)&ei_dsp_config_891362_3, // pointer to config struct
-        ei_dsp_config_891362_3_axes, // array of offsets into the input stream, one for each axis
-        ei_dsp_config_891362_3_axes_size, // number of axes
+        (void*)&ei_dsp_config_891362_11, // pointer to config struct
+        ei_dsp_config_891362_11_axes, // array of offsets into the input stream, one for each axis
+        ei_dsp_config_891362_11_axes_size, // number of axes
         1, // version
         nullptr, // factory function
         nullptr, // data normalization config
@@ -103,7 +107,7 @@ ei_learning_block_config_tflite_graph_t ei_learning_block_config_891362_5 = {
 };
 
 const uint8_t ei_learning_blocks_891362_1_size = 1;
-const uint32_t ei_learning_block_891362_5_inputs[1] = { 3 };
+const uint32_t ei_learning_block_891362_5_inputs[1] = { 11 };
 const uint8_t ei_learning_block_891362_5_inputs_size = 1;
 const ei_learning_block_t ei_learning_blocks_891362_1[ei_learning_blocks_891362_1_size] = {
     {
@@ -145,7 +149,7 @@ const ei_impulse_t impulse_891362_1 = {
     .project_name = "charlie-2",
     .impulse_id = 1,
     .impulse_name = "Impulse #1",
-    .deploy_version = 2,
+    .deploy_version = 8,
 
     .nn_input_frame_size = 3960,
     .raw_sample_count = 16000,
