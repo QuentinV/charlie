@@ -48,13 +48,15 @@ export async function ask(text: string) {
                 return response;
             }
         }
+    } catch (e) {}
 
-        if (process.env.BRAIN === 'SMART') {
+    if (process.env.BRAIN === 'SMART') {
+        try {
             // Fallback to LLM for complex tasks or misunderstanding
             console.log(`Fallback to LLM`);
             return askDirect(text);
-        }
-    } catch (e) {}
+        } catch (e) {}
+    }
 
     return 'Désolé je ne comprends pas !';
 }
