@@ -109,3 +109,11 @@ Similar to Alexa or google echo devices, the idea is to build small device with 
 The ESP32-S3 is perfect for this. Low energy consumption with WIFI capability. Also support Camera for facial recognition capabilities.
 
 [Description](esp32-s3/README.md)
+
+# Default provider api
+
+## MQTT `default_custom`
+
+State is published to `device/${deviceId}/state`
+
+State can be received by sending message to `device/state` `{ id, power, state }`
