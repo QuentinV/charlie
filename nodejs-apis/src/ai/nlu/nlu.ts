@@ -1,6 +1,6 @@
 import fs from 'fs';
 import yaml from 'js-yaml';
-import { compareTwoStrings } from 'string-similarity';
+import { compareTwoStrings, normalize, normalizeAndSplit } from './utils';
 
 interface IntentConfig {
     starts: string[];
@@ -29,19 +29,6 @@ interface Intent {
     slots?: { [key: string]: string };
 }
 
-function normalize(str: string) {
-    return (
-        str
-            .toLowerCase()
-            // Handle accent
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            // replace(/(\p{L})\1{2,}/gu, "$1") // collapse 3+ repeated letters
-            .replace(/[.,;:!?]/g, '')
-            .trim()
-    );
-}
-
 function matchAndRemoveFuzzyPrefix(
     text: string,
     intent: string,
@@ -55,7 +42,7 @@ function matchAndRemoveFuzzyPrefix(
     }
 
     const candidate = textWords.slice(0, intentWords.length).join(' ');
-    const score = compareTwoStrings(normalize(candidate), normalize(intent));
+    const score = compareTwoStrings(candidate, intent);
     if (score < threshold) {
         return;
     }
@@ -81,28 +68,13 @@ function extractIntent(text: string): { name: string; freeText?: string } {
     }
 }
 
-const synFillingWords = [
-    'le',
-    'la',
-    'les',
-    'un',
-    'une',
-    'des',
-    'du',
-    'de',
-    'dans',
-];
-
 function extractSynonyms(
     text: string,
     synonymKey: string,
     threeshold: number = 0.75
 ) {
     const normalizedText = normalize(text).replace(/l'/g, '');
-
-    const textWords = normalizedText
-        .split(/\s+/)
-        .filter((s) => !synFillingWords.includes(s));
+    const textWords = normalizeAndSplit(normalizedText);
 
     const synonyms = config.synonyms[synonymKey];
     for (let i = 0; i < synonyms.length; ++i) {
@@ -111,11 +83,7 @@ function extractSynonyms(
         if (textWords.length >= synWords.length) {
             for (let j = 0; j < textWords.length; ++j) {
                 const w1 = textWords.slice(j, synWords.length).join(' ');
-
-                if (
-                    compareTwoStrings(normalize(w1), normalize(syn)) >
-                    threeshold
-                ) {
+                if (compareTwoStrings(w1, syn) > threeshold) {
                     return {
                         name: synonymKey,
                         text: w1,

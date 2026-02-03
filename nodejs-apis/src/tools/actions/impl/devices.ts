@@ -2,6 +2,7 @@ import { Device, PowerType, Room, Tools } from '../../../types';
 import { cs } from '../../../core/db';
 import Fuse from 'fuse.js';
 import { changeDeviceState } from '../../../devices';
+import { normalizeAndSplit } from './../../../ai/nlu/utils';
 
 interface DeviceRequest {
     freeText: string;
@@ -66,11 +67,12 @@ async function findDevice(req: DeviceRequest): Promise<Device | undefined> {
         return null;
     }
 
+    const normalizedText = normalizeAndSplit(req.freeText).join(' ');
     console.log(
         'looking for device with type',
         req.slots?.deviceType,
-        ' and free text ',
-        req.freeText
+        ' and normalized free text ',
+        normalizedText
     );
 
     // Run fuse on all devices by type if available to search by free text and hope to match possible name of device
@@ -82,11 +84,13 @@ async function findDevice(req: DeviceRequest): Promise<Device | undefined> {
         threshold: 0.3,
     });
 
-    console.log('found', fuse.search(req.freeText)[0]?.item);
-    const res = fuse.search(req.freeText)[0]?.item as Device;
+    const res = fuse.search(normalizedText)[0]?.item as Device;
+    console.log('found', res);
     if (!res && req.slots?.room) {
         return fuse.search(req.slots.room)[0]?.item as Device;
     }
+
+    return res;
 }
 
 async function changeDevice(
