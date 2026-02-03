@@ -52,23 +52,41 @@ async function findDevice(req: DeviceRequest): Promise<Device | undefined> {
         console.log('filter by device type', req.slots.deviceType);
     }
 
-    const devices = await cs.devices.find(filter).toArray();
+    let devices = await cs.devices.find(filter).toArray();
     if (devices?.length) {
-        console.log('no device name provided so pick first one');
-        return devices?.[0] ?? null;
+        if (room && req.slots?.deviceType) {
+            console.log(
+                'room found and devicetype provided so pick first device'
+            );
+            return devices?.[0] ?? null;
+        }
     }
 
     if (!req.freeText) {
         return null;
     }
 
-    const fuse = new Fuse(devices, {
+    console.log(
+        'looking for device with type',
+        req.slots?.deviceType,
+        ' and free text ',
+        req.freeText
+    );
+
+    // Run fuse on all devices by type if available to search by free text and hope to match possible name of device
+    delete filter['_id'];
+    devices = await cs.devices.find(filter).toArray();
+
+    let fuse = new Fuse(devices, {
         keys: ['name'],
         threshold: 0.3,
     });
 
     console.log('found', fuse.search(req.freeText)[0]?.item);
-    return fuse.search(req.freeText)[0]?.item as Device;
+    const res = fuse.search(req.freeText)[0]?.item as Device;
+    if (!res && req.slots?.room) {
+        return fuse.search(req.slots.room)[0]?.item as Device;
+    }
 }
 
 async function changeDevice(

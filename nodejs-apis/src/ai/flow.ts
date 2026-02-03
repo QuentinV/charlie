@@ -40,6 +40,8 @@ export async function ask(text: string) {
             } else if (response !== null) {
                 return response;
             }
+        } else {
+            console.log(`Cannot find intent for ${text}`);
         }
     } catch (e) {}
 

@@ -40,16 +40,6 @@ services:
         restart: unless-stopped
         networks:
             - internal
-    rasa:
-        image: rasa/rasa:3.6.20-full
-        container_name: charlie-rasa
-        ports:
-            - '9305:5005'
-        volumes:
-            - ./rasa/fr:/app
-        command: run --enable-api --cors "*" --debug
-        networks:
-            - internal
     db:
         container_name: charlie-db
         image: mongo
