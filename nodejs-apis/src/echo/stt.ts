@@ -9,7 +9,7 @@ export function stt(buffer): Promise<string> {
         );
 
         ws.on('open', () => {
-            const ffmpeg = spawn(ffmpegPath, [
+            /*const ffmpeg = spawn(ffmpegPath, [
                 '-f',
                 's16le', // s32le
                 '-ar',
@@ -39,7 +39,10 @@ export function stt(buffer): Promise<string> {
 
             ffmpeg.on('close', async () => {
                 ws.send('__END__');
-            });
+            });*/
+
+            ws.send(Buffer.concat(buffer));
+            ws.send('__END__');
 
             ws.on('message', (msg) => {
                 const event = JSON.parse(msg.toString());
