@@ -12,8 +12,12 @@ const synFillingWords = [
     'dans',
 ];
 
-export function normalizeAndSplit(text: string) {
-    return text.split(/\s+/).filter((s) => !synFillingWords.includes(s));
+export function normalizeAndSplit(text: string, filterFillingsWords?: boolean) {
+    let res = text.split(/\s+/);
+    if (filterFillingsWords) {
+        res = res.filter((s) => !synFillingWords.includes(s));
+    }
+    return res;
 }
 
 export function normalize(str: string) {

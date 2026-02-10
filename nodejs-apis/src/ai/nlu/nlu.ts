@@ -10,6 +10,7 @@ interface IntentConfig {
 interface SlotConfig {
     type: string;
     keys: string[];
+    filterFillingsWords?: boolean;
 }
 
 type Synonyms = { [name: string]: string[] };
@@ -71,10 +72,11 @@ function extractIntent(text: string): { name: string; freeText?: string } {
 function extractSynonyms(
     text: string,
     synonymKey: string,
-    threeshold: number = 0.75
+    threeshold: number,
+    filterFillingsWords: boolean = true
 ) {
     const normalizedText = normalize(text).replace(/l'/g, '');
-    const textWords = normalizeAndSplit(normalizedText);
+    const textWords = normalizeAndSplit(normalizedText, filterFillingsWords);
 
     const synonyms = config.synonyms[synonymKey];
     for (let i = 0; i < synonyms.length; ++i) {
@@ -125,7 +127,12 @@ export function findIntent(
             if (slotConfig.type === 'synonym') {
                 for (let i = 0; i < slotConfig.keys.length; ++i) {
                     const synonymKey = slotConfig.keys[i];
-                    const synonym = extractSynonyms(remainingText, synonymKey);
+                    const synonym = extractSynonyms(
+                        remainingText,
+                        synonymKey,
+                        0.75,
+                        slotConfig.filterFillingsWords
+                    );
                     if (synonym) {
                         remainingText = synonym.remainingText;
                         prev[slotKey] = synonym.name;

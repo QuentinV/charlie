@@ -153,6 +153,16 @@ describe('findIntent', () => {
             freeText: 'les lumières',
             slots: {
                 deviceType: 'light',
+                plurial: 'plurial',
+            },
+        });
+
+        expect(await findIntent('allume toutes les lumières')).toStrictEqual({
+            name: 'turnOnDevice',
+            freeText: 'toutes les lumières',
+            slots: {
+                deviceType: 'light',
+                plurial: 'plurial',
             },
         });
 
@@ -203,6 +213,7 @@ describe('findIntent', () => {
             freeText: 'les lumières',
             slots: {
                 deviceType: 'light',
+                plurial: 'plurial',
             },
         });
 

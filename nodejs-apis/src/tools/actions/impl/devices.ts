@@ -9,6 +9,7 @@ interface DeviceRequest {
     slots?: {
         deviceType?: string;
         room?: string;
+        plurial?: 'plurial';
     };
 }
 
@@ -31,7 +32,7 @@ async function getRoom(q: string): Promise<Room | undefined> {
     return (fuse.search(q)[0]?.item as Room) ?? null;
 }
 
-async function findDevice(req: DeviceRequest): Promise<Device | undefined> {
+async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
     const room = await getRoom(req.slots?.room);
     if (!req.freeText && room === null) {
         console.log('no room found for ', room);
@@ -55,11 +56,15 @@ async function findDevice(req: DeviceRequest): Promise<Device | undefined> {
 
     let devices = await cs.devices.find(filter).toArray();
     if (devices?.length) {
+        if (req.slots?.plurial) {
+            console.log('pick all devices because plurial');
+            return devices;
+        }
         if (room && req.slots?.deviceType) {
             console.log(
                 'room found and devicetype provided so pick first device'
             );
-            return devices?.[0] ?? null;
+            return devices?.[0] ? [devices?.[0]] : null;
         }
     }
 
@@ -87,21 +92,29 @@ async function findDevice(req: DeviceRequest): Promise<Device | undefined> {
     const res = fuse.search(normalizedText)[0]?.item as Device;
     console.log('found', res);
     if (!res && req.slots?.room) {
-        return fuse.search(req.slots.room)[0]?.item as Device;
+        const d = fuse.search(req.slots.room)[0]?.item as Device;
+        return d ? [d] : null;
     }
 
-    return res;
+    return res ? [res] : null;
 }
 
 async function changeDevice(
     req: DeviceRequest,
     power: PowerType
 ): Promise<boolean | string> {
-    const device = await findDevice(req);
-    if (device) {
-        return !!changeDeviceState(device._id, {
-            power,
-        });
+    const devices = await findDevices(req);
+    if (devices) {
+        return (
+            await Promise.allSettled(
+                devices.map(
+                    (device) =>
+                        !!changeDeviceState(device._id, {
+                            power,
+                        })
+                )
+            )
+        ).reduce((prev, k: any) => prev && k.value, true);
     }
     return "Je ne trouves pas l'appareil demandé.";
 }

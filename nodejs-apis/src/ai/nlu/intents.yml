@@ -23,6 +23,7 @@ intents:
             - ça suffit
             - stoppe
         slots:
+            - plurial
             - deviceType
             - text
 
@@ -35,6 +36,7 @@ intents:
             - remonte
             - relève
         slots:
+            - plurial
             - deviceType
             - room
 
@@ -47,10 +49,16 @@ intents:
             - descends
             - abaisse
         slots:
+            - plurial
             - deviceType
             - room
 
 slots:
+    plurial:
+        type: 'synonym'
+        filterFillingsWords: false
+        keys:
+            - plurial
     deviceType:
         type: 'synonym'
         keys:
@@ -68,6 +76,13 @@ slots:
         type: 'string'
 
 synonyms:
+    plurial:
+        - toutes
+        - tout
+        - tous
+        - les
+        - des
+
     light:
         - lumière
         - lampe
