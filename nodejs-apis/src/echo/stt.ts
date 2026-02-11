@@ -1,8 +1,11 @@
 import { spawn } from 'child_process';
 import WebSocket from 'ws';
 import ffmpegPath from 'ffmpeg-static';
+import { saveWavWithRotation } from './logs';
 
 export function stt(buffer): Promise<string> {
+    saveWavWithRotation(Buffer.concat(buffer));
+
     return new Promise(async (res, rej) => {
         const ws = new WebSocket(
             `ws://${process.env.AI_AGENTS_HOST}/stt/stream`

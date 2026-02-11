@@ -31,8 +31,10 @@ export function setupEchoListen() {
                     const result = await ask(text);
                     console.log('result', result);
                     ws.send(result ? 'Ok! :-)' : ':-(');
-                    const resultAudio = await tts({ text: result });
-                    sendPCMInChunks(ws, Buffer.from(resultAudio));
+                    if (result) {
+                        const resultAudio = await tts({ text: result });
+                        sendPCMInChunks(ws, Buffer.from(resultAudio));
+                    }
                 } catch (e) {
                     console.log(e);
                 } finally {
