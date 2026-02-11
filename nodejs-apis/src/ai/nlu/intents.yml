@@ -53,6 +53,12 @@ intents:
             - deviceType
             - room
 
+    playMusic:
+        starts:
+            - joue la musique
+        slots:
+            - text
+
 slots:
     plurial:
         type: 'synonym'
@@ -74,6 +80,7 @@ slots:
         type: 'string'
     text:
         type: 'string'
+        filterFillingsWords: true
 
 synonyms:
     plurial:

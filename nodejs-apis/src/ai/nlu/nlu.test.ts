@@ -116,25 +116,25 @@ describe('findIntent', () => {
         expect(await findIntent('arrête la musique')).toStrictEqual({
             name: 'pauseDevice',
             freeText: 'la musique',
-            slots: { text: 'la musique' },
+            slots: { text: 'musique' },
         });
 
         expect(await findIntent('stop la musique')).toStrictEqual({
             name: 'pauseDevice',
             freeText: 'la musique',
-            slots: { text: 'la musique' },
+            slots: { text: 'musique' },
         });
 
         expect(await findIntent('stoppe la musique')).toStrictEqual({
             name: 'pauseDevice',
             freeText: 'la musique',
-            slots: { text: 'la musique' },
+            slots: { text: 'musique' },
         });
 
         expect(await findIntent('stop la mus')).toStrictEqual({
             name: 'pauseDevice',
-            freeText: 'la mus',
-            slots: { text: 'la mus' },
+            freeText: 'la mu\s',
+            slots: { text: 'mus' },
         });
     });
 
@@ -243,6 +243,18 @@ describe('findIntent', () => {
             slots: {
                 deviceType: 'shutter',
                 room: 'salon',
+            },
+        });
+    });
+
+    test('play music', async () => {
+        expect(
+            await findIntent('joue la musique par grand corps malade')
+        ).toStrictEqual({
+            name: 'playMusic',
+            freeText: 'par grand corps malade',
+            slots: {
+                text: 'grand corps malade',
             },
         });
     });

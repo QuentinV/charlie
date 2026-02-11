@@ -139,7 +139,9 @@ export function findIntent(
                     }
                 }
             } else if (remainingText) {
-                prev[slotKey] = remainingText;
+                prev[slotKey] = slotConfig.filterFillingsWords
+                    ? normalizeAndSplit(remainingText, true).join(' ')
+                    : remainingText;
             }
             return prev;
         },
