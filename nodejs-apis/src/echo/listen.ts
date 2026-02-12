@@ -26,7 +26,7 @@ export function setupEchoListen() {
             if (msg.toString() === 'END') {
                 try {
                     console.log('audio received');
-                    const text = await stt(audioBuffer);
+                    const text = await stt(audioBuffer, true);
                     console.log('spoken text', text);
                     const result = await ask(text);
                     console.log('result', result);
