@@ -2,7 +2,6 @@ import { WebSocketServer } from 'ws';
 import { stt } from './stt';
 import { tts } from '../ai/tts';
 import { ask } from '../ai/flow';
-import fs from 'fs';
 
 function sendPCMInChunks(ws, buffer, chunkSize = 4096) {
     for (let i = 0; i < buffer.length; i += chunkSize) {
@@ -17,28 +16,67 @@ export function setupEchoListen() {
     wss.on('connection', (ws, req) => {
         console.log('[ECHO] Device connected');
         let audioBuffer = [];
+        let audioBufferWakeword = [];
+        let status = '';
         ws.on('message', async (msg, isBinary) => {
             if (isBinary) {
-                audioBuffer.push(msg);
+                (status === 'wakeword'
+                    ? audioBufferWakeword
+                    : audioBuffer
+                ).push(msg);
                 return;
             }
 
-            if (msg.toString() === 'END') {
-                try {
-                    console.log('audio received');
-                    const text = await stt(audioBuffer, true);
-                    console.log('spoken text', text);
-                    const result = await ask(text);
-                    console.log('result', result);
-                    ws.send(result ? 'Ok! :-)' : ':-(');
-                    if (result) {
-                        const resultAudio = await tts({ text: result });
-                        sendPCMInChunks(ws, Buffer.from(resultAudio));
+            const m = msg.toString();
+            if (m === 'WAKEWORD_START') {
+                status = 'wakeword';
+                console.log('[ECHO] wake word start');
+                return;
+            }
+
+            if (m === 'WAKEWORD_END') {
+                status = 'wakeword_pending';
+                const res = await stt(audioBufferWakeword, { record: true });
+                audioBufferWakeword = [];
+                status = res !== 'charlie' ? 'cancel' : 'ok';
+                console.log(`[ECHO] wakeword received: ${res} => ${status}`);
+                return;
+            }
+
+            if (m === 'END') {
+                while (true) {
+                    if (status === 'cancel') {
+                        console.log(`[ECHO] end received cancel`);
+                        audioBuffer = [];
+                        return;
                     }
-                } catch (e) {
-                    console.log(e);
-                } finally {
-                    audioBuffer = [];
+
+                    if (status === 'wakeword_pending') {
+                        await new Promise((r) => setTimeout(r, 100));
+                        continue;
+                    }
+
+                    try {
+                        console.log('[ECHO] audio received');
+                        const text = await stt(audioBuffer, {
+                            record: true,
+                            trimEnd: true,
+                        });
+                        console.log('[ECHO] spoken text', text);
+                        const result = await ask(text);
+                        console.log('[ECHO] result', result);
+                        ws.send(result ? 'Ok! :-)' : ':-(');
+                        if (result) {
+                            const resultAudio = await tts({ text: result });
+                            sendPCMInChunks(ws, Buffer.from(resultAudio));
+                        }
+                    } catch (e) {
+                        console.log(e);
+                    } finally {
+                        audioBuffer = [];
+                    }
+
+                    return;
                 }
             }
         });

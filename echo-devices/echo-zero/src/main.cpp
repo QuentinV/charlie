@@ -328,6 +328,19 @@ void startMicCaptureSamples() {
   xTaskCreate(captureMicSamplesTask, "CaptureMicSamples", 1024 * 32, (void*)sample_buffer_size, 10, NULL);
 }
 
+
+void sendWakeWordWindow() {
+    webSocket.sendTXT("WAKEWORD_START");
+
+    // inference_window contains 16000 samples (1 sec @ 16 kHz)
+    webSocket.sendBIN(
+        (uint8_t*)inference_window,
+        inference.n_samples * sizeof(int16_t)
+    );
+
+    webSocket.sendTXT("WAKEWORD_END");
+}
+
 void sendMicAudioTask(void *arg) {
     int32_t samples32[BUFFER_SIZE]; 
     int16_t samples16[BUFFER_SIZE];
@@ -335,6 +348,9 @@ void sendMicAudioTask(void *arg) {
     size_t bytes_read = 0;
     silenceStart = 0;
     time_t startTime = time(NULL);
+
+    pixels.setPixelColor(0, pixels.Color(255, 255, 255));
+    pixels.show();
 
     for (;;) {
         time_t t = time(NULL);
@@ -423,9 +439,8 @@ void startMicUserRecord() {
 }
 
 void onWakeWordDetected() {
-  pixels.setPixelColor(0, pixels.Color(255, 255, 255));
-  pixels.show();
   continuous_record = false;
+  sendWakeWordWindow();
   startMicUserRecord();
 }
 

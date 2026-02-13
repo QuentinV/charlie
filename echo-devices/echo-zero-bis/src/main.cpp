@@ -365,6 +365,18 @@ void drawListeningScreen() {
     display.display();
 }
 
+void sendWakeWordWindow() {
+    webSocket.sendTXT("WAKEWORD_START");
+
+    // inference_window contains 16000 samples (1 sec @ 16 kHz)
+    webSocket.sendBIN(
+        (uint8_t*)inference_window,
+        inference.n_samples * sizeof(int16_t)
+    );
+
+    webSocket.sendTXT("WAKEWORD_END");
+}
+
 void sendMicAudioTask(void *arg) {
     drawListeningScreen();
 
@@ -465,6 +477,7 @@ void onWakeWordDetected() {
   pixels.setPixelColor(0, pixels.Color(255, 255, 255));
   pixels.show();
   continuous_record = false;
+  sendWakeWordWindow();
   startMicUserRecord();
 }
 

@@ -4,30 +4,19 @@ import WebSocket from 'ws';
 import ffmpegPath from 'ffmpeg-static';
 import { saveWavWithRotation } from './logs';
 
-function normalizePcmChunks(chunks, targetSize = 6400) {
-    const input = Buffer.concat(chunks);
-    const frames = [];
-
-    let offset = 0;
-    while (offset + targetSize <= input.length) {
-        frames.push(input.slice(offset, offset + targetSize));
-        offset += targetSize;
-    }
-
-    // Keep leftover for next batch (optional)
-    const leftover = input.slice(offset);
-
-    return { frames, leftover };
-}
-
 function trimEnd500ms(buffer) {
     const bytesToRemove = 16000 * 1.8; // 0.5s at 16kHz mono PCM16
     if (buffer.length <= bytesToRemove) return buffer;
     return buffer.slice(0, buffer.length - bytesToRemove);
 }
 
-export function stt(buffer: any[], record: boolean): Promise<string> {
-    if (record) {
+export interface SttOptions {
+    record?: boolean;
+    trimEnd?: boolean;
+}
+
+export function stt(buffer: any[], options?: SttOptions): Promise<string> {
+    if (options?.record) {
         saveWavWithRotation(Buffer.concat(buffer));
     }
 
@@ -36,7 +25,9 @@ export function stt(buffer: any[], record: boolean): Promise<string> {
         Buffer.concat(buffer),
     ]);
 
-    paddedBuffer = trimEnd500ms(paddedBuffer);
+    if (options.trimEnd) {
+        paddedBuffer = trimEnd500ms(paddedBuffer);
+    }
 
     return new Promise(async (res, rej) => {
         const ws = new WebSocket(
@@ -105,22 +96,6 @@ export function stt(buffer: any[], record: boolean): Promise<string> {
         });
     });
 }
-
-/*
-let leftover = Buffer.alloc(0);
-        function sendToSttServer(rawChunk) {
-            const { frames, leftover: newLeftover } = normalizePcmChunks(
-                [leftover, rawChunk],
-                6400
-            );
-
-            leftover = newLeftover;
-
-            for (const frame of frames) {
-                ws.send(frame);
-            }
-        }
-*/
 
 //   'volume=40.0,dynaudnorm=f=150:g=15,asetrate=15500,aresample=16000',
 //'volume=40.0,dynaudnorm=f=150:g=15,atempo=0.6,aresample=16000',
