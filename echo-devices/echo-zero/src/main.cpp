@@ -10,11 +10,12 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <WebSocketsClient.h>
+#include <Wire.h>
 
 #define DRD_TIMEOUT 3
 
 #define EIDSP_QUANTIZE_FILTERBANK   0
-#include <charlie_inferencing.h>
+#include <charlie-2_inferencing.h>
 
 #define WIFI_NAME "Charlie-Echo-Zero"
 #define WIFI_PASS "CharlieEchoZero123"
@@ -22,22 +23,21 @@
 #define WS_PORT 9303
 
 #define I2S_MIC_PORT I2S_NUM_0
-#define I2S_MIC_WS  GPIO_NUM_16
+#define I2S_MIC_WS  GPIO_NUM_17
 #define I2S_MIC_SD  GPIO_NUM_18
-#define I2S_MIC_SCK GPIO_NUM_17
-#define MIC_GAIN 3
+#define I2S_MIC_SCK GPIO_NUM_16
 
 #define I2S_SPK_PORT I2S_NUM_1
-#define I2S_SPK_LRC GPIO_NUM_7
-#define I2S_SPK_BCLK GPIO_NUM_6
-#define I2S_SPK_DIN GPIO_NUM_5
+#define I2S_SPK_LRC GPIO_NUM_4
+#define I2S_SPK_BCLK GPIO_NUM_5
+#define I2S_SPK_DIN GPIO_NUM_6
 
 #define BUFFER_SIZE 512
 
-#define MIC_THRESHOLD_SOUND 10000
-#define MIC_DURATION_SILENCE 2
+#define MIC_THRESHOLD_SOUND 500
+#define MIC_DURATION_SILENCE 1
 
-#define WAKE_UP_WORD_ACCURACY 0.7f
+#define WAKE_UP_WORD_ACCURACY 0.5f
 
  // Fixed‑point HPF coefficients (scaled by 256)
 #define HP_A0  256
@@ -45,9 +45,6 @@
 #define HP_A2  256
 #define HP_B1 -495
 #define HP_B2  240
-
-#define GATE_THRESHOLD 400 
-#define GATE_SOFT 50
 
 // preferences
 Preferences prefs;
@@ -71,19 +68,22 @@ typedef struct {
     uint8_t buf_ready;
     uint32_t buf_count;
     uint32_t n_samples;
+    SemaphoreHandle_t mutex;
 } inference_t;
+
+static int16_t inference_window[16000];
 
 inference_t inference;
 const uint32_t sample_buffer_size = 2048;
 signed short sampleBuffer[sample_buffer_size];
-bool debug_nn = false; // Set this to true to see e.g. features generated from the raw signal
 bool continuous_record = true;
 
 // Task handles
 TaskHandle_t wakeUpWordHandle;
+TaskHandle_t screenHandle;
 TaskHandle_t taskWebSocketHandle;
 
-bool test = true;
+bool debug_nn = false; // Set this to true to see e.g. features generated from the raw signal
 
 bool detectDoubleReset() {
   prefs.begin("drd", false);
@@ -145,8 +145,23 @@ void reset() {
 }
 
 void playAudio(uint8_t* data, size_t len) {
-  size_t bytes_written;
-  i2s_write(I2S_SPK_PORT, data, len, &bytes_written, portMAX_DELAY);
+    int16_t* samples = (int16_t*)data;
+    size_t sample_count = len / 2;
+
+    float volume = 0.5f;  // clean, safe, non-distorting
+
+    for (size_t i = 0; i < sample_count; i++) {
+        float s = samples[i] * volume;
+
+        // clamp
+        if (s > 32767) s = 32767;
+        if (s < -32768) s = -32768;
+
+        samples[i] = (int16_t)s;
+    }
+
+    size_t bytes_written;
+    i2s_write(I2S_SPK_PORT, data, len, &bytes_written, portMAX_DELAY);
 }
 
 void onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
@@ -160,8 +175,6 @@ void onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     case WStype_BIN:
         playAudio(payload, length);
         break;
-    default:
-        break;
   }
 }
 
@@ -169,7 +182,7 @@ int setupMicI2S(uint32_t sampling_rate) {
   // Start listening for audio: MONO @ 8/16KHz
   i2s_config_t i2s_config = {
       .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
-      .sample_rate = 16000,
+      .sample_rate = sampling_rate,
       .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
@@ -180,10 +193,11 @@ int setupMicI2S(uint32_t sampling_rate) {
       .tx_desc_auto_clear = false,
       .fixed_mclk = -1
   };
+
   i2s_pin_config_t pin_config = {
       .bck_io_num = I2S_MIC_SCK,
       .ws_io_num = I2S_MIC_WS,
-      .data_out_num = -1,
+      .data_out_num = I2S_PIN_NO_CHANGE,
       .data_in_num = I2S_MIC_SD
   };
   esp_err_t ret = 0;
@@ -198,6 +212,12 @@ int setupMicI2S(uint32_t sampling_rate) {
     ei_printf("Error in i2s_set_pin");
   }
 
+  
+  ret = i2s_set_clk(I2S_MIC_PORT, sampling_rate, I2S_BITS_PER_SAMPLE_32BIT, I2S_CHANNEL_MONO);
+  if (ret != ESP_OK) {
+    ei_printf("Error in i2s_set_clk");
+  }
+
   ret = i2s_zero_dma_buffer(I2S_MIC_PORT);
   if (ret != ESP_OK) {
     ei_printf("Error in initializing dma buffer with 0");
@@ -208,45 +228,26 @@ int setupMicI2S(uint32_t sampling_rate) {
   return int(ret);
 }
 
-void audio_inference_callback(uint32_t n_bytes) {
-    for(int i = 0; i < n_bytes>>1; i++) {
-        inference.buffer[inference.buf_count++] = sampleBuffer[i];
-
-        if(inference.buf_count >= inference.n_samples) {
-          inference.buf_count = 0;
-          inference.buf_ready = 1;
-        }
-    }
-}
-
 bool allocateInferenceBuffer(uint32_t n_samples) {
-  ei_sleep(100);
+    ei_sleep(100);
 
-  inference.buffer = (int16_t *)malloc(n_samples * sizeof(int16_t));
+    inference.buffer = (int16_t *)malloc(n_samples * sizeof(int16_t));
+    if (inference.buffer == NULL) {
+        return false;
+    }
 
-  if(inference.buffer == NULL) {
-      return false;
-  }
+    inference.buf_count = 0;
+    inference.n_samples = n_samples;
+    inference.buf_ready = 0;
 
-  inference.buf_count  = 0;
-  inference.n_samples  = n_samples;
-  inference.buf_ready  = 0;
+    // Create mutex
+    inference.mutex = xSemaphoreCreateMutex();
+    if (inference.mutex == NULL) {
+        free(inference.buffer);
+        return false;
+    }
 
-  return true;
-}
-
-bool microphone_inference_record(void) {
-  bool ret = true;
-  while (inference.buf_ready == 0) {
-      delay(10);
-  }
-  inference.buf_ready = 0;
-  return ret;
-}
-
-int microphone_audio_signal_get_data(size_t offset, size_t length, float *out_ptr) {
-    numpy::int16_to_float(&inference.buffer[offset], out_ptr, length);
-    return 0;
+    return true;
 }
 
 void setupSpeakerI2S() {
@@ -255,7 +256,7 @@ void setupSpeakerI2S() {
     .sample_rate = 22050,
     .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
-    .communication_format = I2S_COMM_FORMAT_I2S_MSB,
+    .communication_format = I2S_COMM_FORMAT_STAND_MSB,
     .intr_alloc_flags = 0,
     .dma_buf_count = 8,
     .dma_buf_len = 64,
@@ -274,71 +275,48 @@ void setupSpeakerI2S() {
   i2s_set_pin(I2S_SPK_PORT, &spk_pins);
 }
 
-void captureMicSamplesTask(void* arg) {
+void captureMicSamplesTask(void *arg) {
     continuous_record = true;
 
-    const int32_t bytes_to_read = (uint32_t)arg;
-    const int32_t samples_to_read = bytes_to_read / sizeof(int32_t);
+    const size_t chunk_bytes   = (size_t)arg;
+    const size_t chunk_samples = chunk_bytes / sizeof(int16_t);
 
-    int32_t rawBuffer[2048];
+    int32_t raw32[2048];
+    int16_t pcm16[2048];
     size_t bytes_read = 0;
-
-    // Filter state
-    int32_t hp_x1 = 0, hp_x2 = 0;
-    int32_t hp_y1 = 0, hp_y2 = 0;
-    int32_t prev_pre = 0;
-
-    //const int32_t GATE_THRESHOLD = 300;
-    //const int32_t GATE_SOFT = 40;
 
     while (continuous_record && !mute) {
 
         esp_err_t err = i2s_read(
             I2S_MIC_PORT,
-            rawBuffer,
-            bytes_to_read,
+            raw32,
+            chunk_samples * sizeof(int32_t),
             &bytes_read,
             portMAX_DELAY
         );
 
-        if (err != ESP_OK || bytes_read != bytes_to_read) {
-            continue;
+        if (err != ESP_OK || bytes_read == 0) continue;
+
+        size_t frames_read = bytes_read / sizeof(int32_t);
+
+        // Convert 32‑bit I2S to 16‑bit PCM
+        for (size_t i = 0; i < frames_read; i++) {
+            pcm16[i] = (int16_t)(raw32[i] >> 15);
         }
 
-        for (int i = 0; i < samples_to_read; i++) {
-            // 24‑bit → 16‑bit
-            int32_t x = rawBuffer[i] >> 8;
+        // Write into circular buffer
+        xSemaphoreTake(inference.mutex, portMAX_DELAY);
 
-            // Pre‑emphasis
-            int32_t pre = x - (prev_pre * 95 / 100);
-            prev_pre = x;
+        for (size_t i = 0; i < frames_read; i++) {
+            inference.buffer[inference.buf_count++] = pcm16[i];
 
-            // 2‑pole high‑pass filter
-            int32_t y = (HP_A0 * pre + HP_A1 * hp_x1 + HP_A2 * hp_x2
-                        - HP_B1 * hp_y1 - HP_B2 * hp_y2) >> 8;
-
-            hp_x2 = hp_x1;
-            hp_x1 = pre;
-            hp_y2 = hp_y1;
-            hp_y1 = y;
-
-            // Soft noise gate
-            int32_t abs_y = (y < 0 ? -y : y);
-            if (abs_y < GATE_THRESHOLD) {
-                y = (y * GATE_SOFT) / GATE_THRESHOLD;
+            if (inference.buf_count >= inference.n_samples) {
+                inference.buf_count = 0;
+                inference.buf_ready = 1;
             }
-
-            // Gain + clip
-            int64_t temp = (int64_t)y * MIC_GAIN;
-            if (temp > 32767) temp = 32767;
-            if (temp < -32768) temp = -32768;
-
-            sampleBuffer[i] = (int16_t)temp;
         }
 
-        if (!continuous_record || mute) break;
-
-        audio_inference_callback(samples_to_read * sizeof(int16_t));
+        xSemaphoreGive(inference.mutex);
     }
 
     vTaskDelete(NULL);
@@ -350,84 +328,98 @@ void startMicCaptureSamples() {
   xTaskCreate(captureMicSamplesTask, "CaptureMicSamples", 1024 * 32, (void*)sample_buffer_size, 10, NULL);
 }
 
+
+void sendWakeWordWindow() {
+    webSocket.sendTXT("WAKEWORD_START");
+
+    // inference_window contains 16000 samples (1 sec @ 16 kHz)
+    webSocket.sendBIN(
+        (uint8_t*)inference_window,
+        inference.n_samples * sizeof(int16_t)
+    );
+
+    webSocket.sendTXT("WAKEWORD_END");
+}
+
 void sendMicAudioTask(void *arg) {
-  int32_t samples32[BUFFER_SIZE];
-  int16_t samples16[BUFFER_SIZE];
+    int32_t samples32[BUFFER_SIZE]; 
+    int16_t samples16[BUFFER_SIZE];
 
-  int32_t hp_x1 = 0, hp_x2 = 0; 
-  int32_t hp_y1 = 0, hp_y2 = 0;
-  int32_t prev_sample = 0;
+    size_t bytes_read = 0;
+    silenceStart = 0;
+    time_t startTime = time(NULL);
 
-  size_t bytes_read = 0;
-  silenceStart = 0;
-  time_t startTime = time(NULL);
+    pixels.setPixelColor(0, pixels.Color(255, 255, 255));
+    pixels.show();
 
-  for (;;) {
-    time_t t = time(NULL);
+    for (;;) {
+        time_t t = time(NULL);
 
-    if (t - startTime > 20) {
-      webSocket.sendTXT("END");
-      break;
-    }
-
-    i2s_read(I2S_MIC_PORT, samples32, sizeof(samples32), &bytes_read, portMAX_DELAY);
-    
-    size_t samples_read = bytes_read / sizeof(int32_t);
-
-    for (int i = 0; i < samples_read; i++) {
-        // ===== 24‑bit → 16‑bit =====
-        int32_t x = samples32[i] >> 8;
-
-        // ===== Pre‑emphasis =====
-        int32_t pre = x - (prev_sample * 95 / 100);
-        prev_sample = x;
-
-        // ===== 2‑pole high‑pass filter (fixed‑point) =====
-        int32_t y = (HP_A0 * pre + HP_A1 * hp_x1 + HP_A2 * hp_x2
-                    - HP_B1 * hp_y1 - HP_B2 * hp_y2) >> 8;
-
-        hp_x2 = hp_x1;
-        hp_x1 = pre;
-        hp_y2 = hp_y1;
-        hp_y1 = y;
-
-        // ===== Soft noise gate =====
-        int32_t abs_y = (y < 0 ? -y : y);
-
-        if (abs_y < GATE_THRESHOLD) {
-            y = (y * GATE_SOFT) / GATE_THRESHOLD;
+        if (t - startTime > 20) {
+            webSocket.sendTXT("END");
+            break;
         }
 
-        samples16[i] = (int16_t)y;
+        esp_err_t err = i2s_read(
+            I2S_MIC_PORT,
+            samples32,
+            sizeof(samples32),
+            &bytes_read,
+            portMAX_DELAY
+        );
+
+        if (err != ESP_OK || bytes_read == 0) {
+            continue;
+        }
+
+        size_t frames_read = bytes_read / sizeof(int32_t);
+        
+        for (size_t i = 0; i < frames_read; i++) {
+            samples16[i] = (int16_t)(samples32[i] >> 15);
+        }
+
+        int32_t sum = 0;
+        for (size_t i = 0; i < frames_read; i++) {
+            sum += samples16[i];
+        }
+        int16_t mean = sum / frames_read;
+
+        for (size_t i = 0; i < frames_read; i++) {
+            samples16[i] -= mean;
+        }
+
+        for (size_t i = 0; i < frames_read; i++) {
+            samples16[i] = samples16[i] * 8;
+        }
+
+        // ===== RMS calculation =====
+        int64_t sumsq = 0;
+        for (size_t i = 0; i < frames_read; i++) {
+            int32_t s = samples16[i];
+            sumsq += (int64_t)s * s;
+        }
+
+        int rms = sqrt((double)sumsq / frames_read);
+        //Serial.printf("RMS %d \n", rms);
+
+        // ===== Silence detection =====
+        if (rms < MIC_THRESHOLD_SOUND) {
+            if (silenceStart == 0) {
+                silenceStart = t;
+            } else if (t - silenceStart > MIC_DURATION_SILENCE) {
+                webSocket.sendTXT("END");
+                break;
+            }
+        } else {
+            silenceStart = 0;
+        }
+
+        webSocket.sendBIN((uint8_t*)samples16, frames_read * sizeof(int16_t));
     }
 
-    // RMS calculation
-    int64_t sumsq = 0;
-    for (size_t i = 0; i < samples_read; i++) {
-        int32_t s = samples16[i];
-        sumsq += (int64_t)s * s;
-    }
-    int rms = sqrt((double)sumsq / samples_read);
+    startMicCaptureSamples();
 
-    //Serial.println(rms);
-
-    if (rms < MIC_THRESHOLD_SOUND) {   
-      if (silenceStart == 0 ) {
-        silenceStart = t;
-      } else if (t - silenceStart > MIC_DURATION_SILENCE ) {
-        webSocket.sendTXT("END");       
-        break;
-      }
-    } else {
-      silenceStart = 0;
-    }
-
-    webSocket.sendBIN((uint8_t*)samples16, samples_read * sizeof(int16_t));
-  }
-
-  startMicCaptureSamples();
-  
-  vTaskDelete(NULL);
+    vTaskDelete(NULL);
 }
 
 void memoryPrintTask(void *pvParameters) {
@@ -447,40 +439,71 @@ void startMicUserRecord() {
 }
 
 void onWakeWordDetected() {
-  pixels.setPixelColor(0, pixels.Color(255, 255, 255));
-  pixels.show();
   continuous_record = false;
+  sendWakeWordWindow();
   startMicUserRecord();
 }
 
+int ei_get_sliding_window_data(size_t offset, size_t length, float *out_ptr) {
+    for (size_t i = 0; i < length; i++) {
+        out_ptr[i] = (float)inference_window[offset + i];
+    }
+    return 0;
+}
+
 void wakeUpWordTask(void *arg) {
-  startMicCaptureSamples();
-  for (;;) {
-    if (mute || !continuous_record) {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        continue;
-    }
-    bool m = microphone_inference_record();
-    if (!m) {
-        ei_printf("ERR: Failed to record audio...\n");
-        return;
-    }
+    startMicCaptureSamples();
 
-    signal_t signal;
-    signal.total_length = EI_CLASSIFIER_RAW_SAMPLE_COUNT;
-    signal.get_data = &microphone_audio_signal_get_data;
-    ei_impulse_result_t result = { 0 };
+    const size_t window = inference.n_samples;   // 16000
+    const size_t hop    = 3200;                  // 200 ms @ 16 kHz
+  
+    while (true) {
+        if (mute || !continuous_record) {
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
 
-    EI_IMPULSE_ERROR r = run_classifier(&signal, &result, debug_nn);
-    if (r != EI_IMPULSE_OK) {
-        ei_printf("ERR: Failed to run classifier (%d)\n", r);
-        return;
+        if (inference.buf_ready) {       
+            xSemaphoreTake(inference.mutex, portMAX_DELAY);
+
+            // Compute start index for sliding window
+            size_t start = (inference.buf_count + window - hop) % window;
+
+            // Copy 1‑second window into inference_window[]
+            for (size_t i = 0; i < window; i++) {
+                size_t idx = (start + i) % window;
+                inference_window[i] = inference.buffer[idx];
+            }
+
+            xSemaphoreGive(inference.mutex);
+
+            // Apply gain
+            float gain = 4.0f;
+            for (size_t i = 0; i < window; i++) {
+                inference_window[i] = (int16_t)((float)inference_window[i] * gain);
+            }
+
+            // DC removal
+            int64_t sum = 0;
+            for (size_t i = 0; i < window; i++) sum += inference_window[i];
+            int32_t mean = sum / window;
+            for (size_t i = 0; i < window; i++) inference_window[i] -= mean;
+
+            // Build EI signal
+            signal_t signal;
+            signal.total_length = window;
+            signal.get_data = &ei_get_sliding_window_data;
+
+            ei_impulse_result_t result;
+            run_classifier(&signal, &result, false);
+
+            if ( result.classification[0].value > WAKE_UP_WORD_ACCURACY) {
+                onWakeWordDetected();
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(200)); // classify 5× per second
     }
-    
-    if ( result.classification[0].value > WAKE_UP_WORD_ACCURACY) {
-        onWakeWordDetected();
-    }
-  }
 }
 
 void wsTask(void *arg) {
@@ -521,6 +544,11 @@ void setup() {
       ei_printf("Failed to start I2S!");
   }
   
+  setenv("TZ", "CETCEST,M3.5.0,M10.5.0/3", 1);
+  tzset();
+
+  configTime(3600, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
+
   xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
   xTaskCreatePinnedToCore(wsTask, "TaskWebSocket", 1024 * 8, NULL, 1, &taskWebSocketHandle, 1);
 }

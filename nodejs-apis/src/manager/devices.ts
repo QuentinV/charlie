@@ -16,10 +16,13 @@ const routes: RestApis = {
             const apis = await getProvidersApis();
 
             const res = await Promise.allSettled(
-                list.map(async (p) => ({
-                    provider: p.name,
-                    data: await apis[p.codesource]?.discover?.(p),
-                }))
+                list.map(async (p) => {
+                    await apis[p.codesource]?.init?.(p);
+                    return {
+                        provider: p.name,
+                        data: await apis[p.codesource]?.discover?.(p),
+                    };
+                })
             );
             return res.map((s: any) => s.value);
         },

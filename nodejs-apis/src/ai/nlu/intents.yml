@@ -1,0 +1,141 @@
+intents:
+    greet:
+        starts:
+            - bonsoir
+            - bonjour
+            - salut
+            - coucou
+            - hello
+            - hey
+            - yo
+            - hé
+
+    pauseDevice:
+        starts:
+            - mets en pause
+            - pause
+            - arrête tout
+            - arrête
+            - stop
+            - laisse tomber
+            - oublie
+            - non c'est bon
+            - ça suffit
+            - stoppe
+        slots:
+            - plurial
+            - deviceType
+            - text
+
+    turnOnDevice:
+        starts:
+            - allume
+            - mets en marche
+            - active
+            - ouvre
+            - remonte
+            - relève
+        slots:
+            - plurial
+            - deviceType
+            - room
+
+    turnOffDevice:
+        starts:
+            - éteins
+            - coupe
+            - désactive
+            - ferme
+            - descends
+            - abaisse
+        slots:
+            - plurial
+            - deviceType
+            - room
+
+    playMusic:
+        starts:
+            - joue la musique
+        slots:
+            - text
+
+slots:
+    plurial:
+        type: 'synonym'
+        filterFillingsWords: false
+        keys:
+            - plurial
+    deviceType:
+        type: 'synonym'
+        keys:
+            - light
+            - shutter
+            - heater
+            - thermostat
+            - ac
+            - speaker
+            - tv
+            - switch
+    room:
+        type: 'string'
+    text:
+        type: 'string'
+        filterFillingsWords: true
+
+synonyms:
+    plurial:
+        - toutes
+        - tout
+        - tous
+        - les
+        - des
+
+    light:
+        - lumière
+        - lampe
+        - ampoule
+        - plafonier
+        - spot led
+        - spot
+        - bandeau led
+        - strip led
+        - ruban led
+        - led strip
+        - nanoleaf
+        - nanoleafs
+        - neon
+        - guirlande
+    shutter:
+        - volet
+        - store
+        - rideau
+    heater:
+        - chauffage
+        - radiateur
+    thermostat:
+        - termostat
+        - thermostate
+    ac:
+        - clim
+        - climatiseur
+        - climatisation
+        - ventilo
+        - ventillateur
+    speaker:
+        - haut parleur
+        - home cinéma
+        - barre de son
+        - speaker
+        - enceinte
+        - soundbar
+    tv:
+        - televiseur
+        - télévision
+        - télé
+        - tv
+    switch:
+        - multiprise
+        - multi prise
+        - prise
+        - interrupteur
+        - switch

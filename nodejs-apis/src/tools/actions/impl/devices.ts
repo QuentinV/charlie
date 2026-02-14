@@ -1,18 +1,16 @@
 import { Device, PowerType, Room, Tools } from '../../../types';
-import { t } from '../langs';
 import { cs } from '../../../core/db';
 import Fuse from 'fuse.js';
 import { changeDeviceState } from '../../../devices';
+import { normalizeAndSplit } from './../../../ai/nlu/utils';
 
 interface DeviceRequest {
-    device?: string;
-    room?: string;
-    device_name?: string;
-    tail?: string;
-}
-
-interface DeviceValueRequest extends DeviceRequest {
-    value: string;
+    freeText: string;
+    slots?: {
+        deviceType?: string;
+        room?: string;
+        plurial?: 'plurial';
+    };
 }
 
 async function getRoom(q: string): Promise<Room | undefined> {
@@ -34,15 +32,10 @@ async function getRoom(q: string): Promise<Room | undefined> {
     return (fuse.search(q)[0]?.item as Room) ?? null;
 }
 
-async function findDevice({
-    device: deviceType,
-    room: roomSearch,
-    device_name,
-    tail,
-}: DeviceRequest): Promise<Device | undefined> {
-    const room = await getRoom(roomSearch);
-    if (!tail && room === null) {
-        console.log('no room found for ', roomSearch);
+async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
+    const room = await getRoom(req.slots?.room);
+    if (!req.freeText && room === null) {
+        console.log('no room found for ', room);
         return null;
     }
 
@@ -50,84 +43,91 @@ async function findDevice({
     if (room) {
         console.log(JSON.stringify(room));
         if (!room?.devices?.length) {
-            console.log('the room', roomSearch, 'has no devices');
+            console.log('the room', room, 'has no devices');
             return null;
         }
         filter['_id'] = { $in: room.devices };
     }
 
-    if (deviceType) {
-        filter.type = deviceType;
-        console.log('filter by device type', deviceType);
+    if (req.slots?.deviceType) {
+        filter.type = req.slots.deviceType;
+        console.log('filter by device type', req.slots.deviceType);
     }
 
-    const devices = await cs.devices.find(filter).toArray();
-    if (!devices?.length) {
+    let devices = await cs.devices.find(filter).toArray();
+    if (devices?.length) {
+        if (req.slots?.plurial) {
+            console.log('pick all devices because plurial');
+            return devices;
+        }
+        if (room && req.slots?.deviceType) {
+            console.log(
+                'room found and devicetype provided so pick first device'
+            );
+            return devices?.[0] ? [devices?.[0]] : null;
+        }
+    }
+
+    if (!req.freeText) {
         return null;
     }
 
-    if (!device_name) device_name = tail;
+    const normalizedText = normalizeAndSplit(req.freeText).join(' ');
+    console.log(
+        'looking for device with type',
+        req.slots?.deviceType,
+        ' and normalized free text ',
+        normalizedText
+    );
 
-    if (!device_name) {
-        console.log('no device name provided so pick first one');
-        return devices?.[0] ?? null;
-    }
+    // Run fuse on all devices by type if available to search by free text and hope to match possible name of device
+    delete filter['_id'];
+    devices = await cs.devices.find(filter).toArray();
 
-    const fuse = new Fuse(devices, {
+    let fuse = new Fuse(devices, {
         keys: ['name'],
         threshold: 0.3,
     });
 
-    console.log('found', fuse.search(device_name)[0]?.item);
-    return fuse.search(device_name)[0]?.item as Device;
+    const res = fuse.search(normalizedText)[0]?.item as Device;
+    console.log('found', res);
+    if (!res && req.slots?.room) {
+        const d = fuse.search(req.slots.room)[0]?.item as Device;
+        return d ? [d] : null;
+    }
+
+    return res ? [res] : null;
 }
 
 async function changeDevice(
     req: DeviceRequest,
     power: PowerType
-): Promise<boolean> {
-    const device = await findDevice(req);
-    if (device) {
-        return !!changeDeviceState(device._id, {
-            power,
-        });
+): Promise<boolean | string> {
+    const devices = await findDevices(req);
+    if (devices) {
+        return (
+            await Promise.allSettled(
+                devices.map(
+                    (device) =>
+                        !!changeDeviceState(device._id, {
+                            power,
+                        })
+                )
+            )
+        ).reduce((prev, k: any) => prev && k.value, true);
     }
-    return null;
+    return "Je ne trouves pas l'appareil demandé.";
 }
 
 export const tools: Tools = {
-    turn_on_device: {
+    turnOnDevice: {
         exec: async (req: DeviceRequest) => changeDevice(req, 'on'),
     },
-    turn_off_device: {
+    turnOffDevice: {
         exec: async (req: DeviceRequest) => changeDevice(req, 'off'),
     },
-    //set_device_value: {
-    //    exec: async () => '',
-    //},
-    //increase_device_value: {
-    //    exec: async () => '',
-    //},
-    //decrease_device_value: {
-    //    exec: async () => '',
-    //},
-    //query_device_state: {
-    //    exec: async () => '',
-    //},
-    open_device: {
-        exec: async (req: DeviceRequest) => changeDevice(req, 'on'),
-    },
-    close_device: {
-        exec: async (req: DeviceRequest) => changeDevice(req, 'off'),
-    },
-    pause_device: {
+    pauseDevice: {
         exec: async (req: DeviceRequest) => changeDevice(req, 'pause'),
-    },
-    turn_on_group: {
-        exec: async () => '',
-    },
-    turn_off_group: {
-        exec: async () => '',
     },
 };
 

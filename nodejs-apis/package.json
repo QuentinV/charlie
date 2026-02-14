@@ -5,10 +5,10 @@
   "license": "MIT",
   "scripts": {
     "start": "tsx src/index.ts",
+    "test": "jest",
     "dev": "nodemon --watch src --ext ts --exec tsx src/index.ts",
     "d": "tsx src/core/ipscan.ts",
     "generate-webpush-keys": "tsx src/generate-webpush-keys.ts",
-    "rasa": "tsx src/ai/nlu.ts",
     "echo-test": "tsx src/echo/audio_test.ts"
   },
   "repository": {
@@ -23,6 +23,9 @@
     "@types/cors": "^2.8.19",
     "@types/dnssd": "^0.4.5",
     "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/string-similarity": "^4.0.2",
     "@types/swagger-ui-express": "^4.1.8",
     "@wpdas/wave-header": "^1.0.1",
     "aedes": "^0.51.3",
@@ -37,6 +40,8 @@
     "ffmpeg-static": "^5.2.0",
     "fuse.js": "^7.1.0",
     "https": "^1.0.0",
+    "jest": "^30.2.0",
+    "js-yaml": "^4.1.1",
     "mdns-server": "^1.0.11",
     "mongodb": "^6.19.0",
     "mqtt": "^5.14.1",
@@ -47,7 +52,9 @@
     "node-tradfri-client": "^3.2.0",
     "nodemailer": "^7.0.11",
     "nodemon": "^3.1.10",
+    "string-similarity": "^4.0.4",
     "swagger-ui-express": "^5.0.1",
+    "ts-jest": "^29.4.6",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "uuid": "^13.0.0",
@@ -55,5 +62,6 @@
     "ws": "^8.18.3",
     "zod": "^3.24.1",
     "zod-to-json-schema": "^3.24.6"
-  }
+  },
+  "dependencies": {}
 }

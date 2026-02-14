@@ -1,7 +1,7 @@
-import { callRasa } from './nlu';
 import { getActions } from '../tools/actions';
 import { askDirect } from './llm';
 import { Tools } from '../types';
+import { findIntent } from './nlu/nlu';
 
 const positiveAnswers = [
     `Très bien, c'est fait.`,
@@ -23,23 +23,16 @@ export async function ask(text: string) {
         const actions: Tools = await getActions();
 
         // First NLU for quick win
-        const res = await callRasa(text);
+        const res = findIntent(text);
 
-        // nlu_fallback
-
-        console.log(`Intent = ${res?.intent?.name}`);
-        if (res?.intent?.name && actions[res.intent.name]) {
-            const entities = res.entities;
-            const params = entities.reduce((prev, e) => {
-                prev[e.entity] = e.value;
-                return prev;
-            }, {});
+        console.log(`Intent = ${res?.name}`);
+        if (res?.name && actions[res.name]) {
             console.log(
-                `Intent = ${res.intent.name} with params = ${JSON.stringify(params)}`
+                `Intent = ${res.name} with params = ${JSON.stringify(res.slots)}`
             );
             //console.log(JSON.stringify(res));
 
-            const response = await actions[res.intent.name].exec(params);
+            const response = await actions[res.name].exec(res);
             if (response === true) {
                 return positiveAnswers[Math.random() * positiveAnswers.length];
             } else if (response === false) {
@@ -47,6 +40,8 @@ export async function ask(text: string) {
             } else if (response !== null) {
                 return response;
             }
+        } else {
+            console.log(`Cannot find intent for ${text}`);
         }
     } catch (e) {}
 

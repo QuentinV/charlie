@@ -2,6 +2,7 @@ import { cs } from '../../core/db';
 
 export default {
     'device/state': async (data: string) => {
+        //console.log('receiving', data);
         const { id, power, level } = JSON.parse(data);
         if (!id) return;
 

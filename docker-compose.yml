@@ -11,6 +11,7 @@ services:
             - ./nodejs-apis/tsconfig.json:/app/tsconfig.json
             - ~/media/musics:/musics
             - ${XDG_RUNTIME_DIR}/pulse/native:/tmp/pulse/native
+            - ./nodejs-apis/recordings:/app/recordings
         ports:
             - '9300:9300' # http server
             - '9303:9303' # audio udp
@@ -38,16 +39,6 @@ services:
             - VOSK_MODEL_KEY=${VOSK_MODEL_KEY}
             - VOSK_SAMPLE_RATE=${VOSK_SAMPLE_RATE}
         restart: unless-stopped
-        networks:
-            - internal
-    rasa:
-        image: rasa/rasa:3.6.20-full
-        container_name: charlie-rasa
-        ports:
-            - '9305:5005'
-        volumes:
-            - ./rasa/fr:/app
-        command: run --enable-api --cors "*" --debug
         networks:
             - internal
     db:
