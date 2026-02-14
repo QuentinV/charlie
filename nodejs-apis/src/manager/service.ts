@@ -1,7 +1,7 @@
 import { cs } from '../core/db';
 import { Room } from '../types';
 
-export async function manageDeviceRoom(deviceId: string, room: Room) {
+export async function manageDeviceRoom(deviceId: string, room?: Room) {
     const oldRoom = await cs.rooms.findOne({ devices: deviceId });
     if (oldRoom) {
         await cs.rooms.updateOne(

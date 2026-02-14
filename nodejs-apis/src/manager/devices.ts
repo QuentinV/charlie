@@ -88,7 +88,7 @@ const routes: RestApis = {
                     externalId,
                     provider,
                 });
-                id = device?.id;
+                id = device?._id;
             }
 
             if (!id) {
@@ -109,12 +109,11 @@ const routes: RestApis = {
                 { upsert: true }
             );
 
+            let room = null;
             if (body?.room) {
-                const room = await cs.rooms.findOne({ name: body.room });
-                if (room) {
-                    await manageDeviceRoom(id, room);
-                }
+                room = await cs.rooms.findOne({ name: body.room });
             }
+            await manageDeviceRoom(id, room);
 
             return { uuid };
         },
