@@ -2,19 +2,14 @@ import { cs } from '../core/db';
 import { NotFoundError } from '../errors';
 import { RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
+import { manageDeviceRoom } from './service';
 
 const routes: RestApis = {
     'rooms/:id/devices/:did': {
         put: async ({ params }) => {
             const room = await cs.rooms.findOne({ _id: params.id });
             if (!room) throw new NotFoundError();
-            const devices = new Set(room.devices);
-            devices.add(params.did);
-            await cs.rooms.updateOne(
-                { _id: params.id },
-                { $set: { devices: [...devices] } },
-                { upsert: true }
-            );
+            await manageDeviceRoom(params.did, room);
         },
         delete: async ({ params }) => {
             const room = await cs.rooms.findOne({ _id: params.id });

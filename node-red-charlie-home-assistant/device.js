@@ -9,12 +9,7 @@ module.exports = function (RED) {
         let client = null;
 
         (async () => {
-            if (
-                !config.deviceId ||
-                !config.name ||
-                !config.externalId ||
-                !config.deviceType
-            )
+            if (!config.name || !config.externalId || !config.deviceType)
                 return;
 
             await isReady();
@@ -26,18 +21,18 @@ module.exports = function (RED) {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    _id: config.deviceId,
                     name: config.name,
                     externalId: config.externalId,
                     provider: conf.provider.id,
                     type: config.deviceType,
+                    room: config.roomId,
                 }),
             });
 
             client = mqtt.connect(mqttHost());
 
             client.on('connect', () => {
-                client.subscribe(`device/${config.deviceId}/state`);
+                client.subscribe(`device/${config.externalId}/state`);
             });
 
             client.on('message', (topic, payload) => {
@@ -51,7 +46,7 @@ module.exports = function (RED) {
 
                 const outputs = [null, null, null];
                 outputs[oi] = {
-                    topic: config.deviceId,
+                    topic: config.externalId,
                     payload: { state: res.power, level: res.level },
                 };
 
@@ -75,7 +70,7 @@ module.exports = function (RED) {
                     client.publish(
                         `device/state`,
                         JSON.stringify({
-                            id: config.deviceId,
+                            externalId: config.externalId,
                             power: payload.state,
                             level: payload.level ?? 100,
                         }),

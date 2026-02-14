@@ -1,6 +1,6 @@
 {
   "name": "@nightspark77/node-red-charlie-home-assistant",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Create and control your own device with Charlie within nodered",
   "license": "ISC",
   "keywords": [

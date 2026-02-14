@@ -8,6 +8,7 @@ import {
 } from '../devices';
 import { Device, RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
+import { manageDeviceRoom } from './service';
 
 const routes: RestApis = {
     'devices/discover': {
@@ -79,13 +80,26 @@ const routes: RestApis = {
             return cs.devices.find(filter).toArray();
         },
         post: async ({ body }) => {
-            const { _id, name, externalId, provider, type }: Device = body;
-            const uuid = _id || uuidV4();
-            await cs.devices.updateOne(
-                { _id: uuid },
+            const { name, externalId, provider, type }: Device = body;
+            let id = body?._id;
+
+            if (externalId && provider) {
+                const device = await cs.devices.findOne({
+                    externalId,
+                    provider,
+                });
+                id = device?.id;
+            }
+
+            if (!id) {
+                id = uuidV4();
+            }
+
+            const uuid = await cs.devices.updateOne(
+                { _id: id },
                 {
                     $set: {
-                        _id: uuid,
+                        _id: id,
                         name,
                         externalId,
                         provider,
@@ -94,6 +108,14 @@ const routes: RestApis = {
                 },
                 { upsert: true }
             );
+
+            if (body?.room) {
+                const room = await cs.rooms.findOne({ name: body.room });
+                if (room) {
+                    await manageDeviceRoom(id, room);
+                }
+            }
+
             return { uuid };
         },
     },
