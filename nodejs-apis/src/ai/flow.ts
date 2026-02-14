@@ -2,6 +2,7 @@ import { getActions } from '../tools/actions';
 import { askDirect } from './llm';
 import { Tools } from '../types';
 import { findIntent } from './nlu/nlu';
+import { log } from '../manager/services/activities';
 
 const positiveAnswers = [
     `Très bien, c'est fait.`,
@@ -25,13 +26,8 @@ export async function ask(text: string) {
         // First NLU for quick win
         const res = findIntent(text);
 
-        console.log(`Intent = ${res?.name}`);
+        log('nlu', 'Find intent', { context: { text }, data: res });
         if (res?.name && actions[res.name]) {
-            console.log(
-                `Intent = ${res.name} with params = ${JSON.stringify(res.slots)}`
-            );
-            //console.log(JSON.stringify(res));
-
             const response = await actions[res.name].exec(res);
             if (response === true) {
                 return positiveAnswers[Math.random() * positiveAnswers.length];
@@ -41,14 +37,14 @@ export async function ask(text: string) {
                 return response;
             }
         } else {
-            console.log(`Cannot find intent for ${text}`);
+            log('nlu', `Cannot find intent for ${text}`);
         }
     } catch (e) {}
 
     if (process.env.BRAIN === 'SMART') {
         try {
             // Fallback to LLM for complex tasks or misunderstanding
-            console.log(`Fallback to LLM`);
+            log('nlu', `Fallback to LLM`);
             return askDirect(text);
         } catch (e) {}
     }

@@ -3,6 +3,7 @@ import { cs } from '../../../core/db';
 import Fuse from 'fuse.js';
 import { changeDeviceState } from '../../../devices';
 import { normalizeAndSplit } from './../../../ai/nlu/utils';
+import { log } from '../../../manager/services/activities';
 
 interface DeviceRequest {
     freeText: string;
@@ -18,7 +19,7 @@ async function getRoom(q: string): Promise<Room | undefined> {
         return;
     }
 
-    console.log('looking for room', q);
+    log('devices-actions', `looking for room = ${q}`);
     const rooms = await cs.rooms.find({}).toArray();
     if (!rooms?.length) {
         return null;
@@ -35,15 +36,14 @@ async function getRoom(q: string): Promise<Room | undefined> {
 async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
     const room = await getRoom(req.slots?.room);
     if (!req.freeText && room === null) {
-        console.log('no room found for ', room);
+        log('devices-actions', `no room found for ${req.slots?.room}`);
         return null;
     }
 
     const filter: any = {};
     if (room) {
-        console.log(JSON.stringify(room));
         if (!room?.devices?.length) {
-            console.log('the room', room, 'has no devices');
+            log('devices-actions', `Room ${room.name} has no devices`);
             return null;
         }
         filter['_id'] = { $in: room.devices };
@@ -51,17 +51,21 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
 
     if (req.slots?.deviceType) {
         filter.type = req.slots.deviceType;
-        console.log('filter by device type', req.slots.deviceType);
+        log(
+            'devices-actions',
+            `filter by device type = ${req.slots.deviceType}`
+        );
     }
 
     let devices = await cs.devices.find(filter).toArray();
     if (devices?.length) {
         if (req.slots?.plurial) {
-            console.log('pick all devices because plurial');
+            log('devices-actions', 'pick all devices because plurial');
             return devices;
         }
         if (room && req.slots?.deviceType) {
-            console.log(
+            log(
+                'devices-actions',
                 'room found and devicetype provided so pick first device'
             );
             return devices?.[0] ? [devices?.[0]] : null;
@@ -73,11 +77,9 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
     }
 
     const normalizedText = normalizeAndSplit(req.freeText).join(' ');
-    console.log(
-        'looking for device with type',
-        req.slots?.deviceType,
-        ' and normalized free text ',
-        normalizedText
+    log(
+        'devices-actions',
+        `looking for device with type = ${req.slots?.deviceType} and normalized free text = ${normalizedText}`
     );
 
     // Run fuse on all devices by type if available to search by free text and hope to match possible name of device
@@ -90,7 +92,7 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
     });
 
     const res = fuse.search(normalizedText)[0]?.item as Device;
-    console.log('found', res);
+    log('devices-actions', 'found', { data: { device: res } });
     if (!res && req.slots?.room) {
         const d = fuse.search(req.slots.room)[0]?.item as Device;
         return d ? [d] : null;

@@ -123,3 +123,13 @@ export interface ProvidersApis {
     restApi?: RestApis;
     tools?: Tools;
 }
+
+// --- Activities
+export interface Activity {
+    _id?: string;
+    context?: object;
+    data?: any;
+    message?: string;
+    type?: string;
+    from?: string;
+}

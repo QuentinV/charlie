@@ -18,6 +18,7 @@ import clim from './providers/clim_mitshubishi';
 import customGarden from './providers/custom_garden';
 import tuya from './providers/tuya';
 import default_custom from './providers/default_custom';
+import { log } from '../manager/services/activities';
 
 // Register all possible providers here
 const providerApis: { [name: string]: ProvidersApis } = {
@@ -109,7 +110,7 @@ async function call(
 export async function getProviderFunctions(
     deviceId: string
 ): Promise<ProviderFunctionDef[]> {
-    console.log('getProviderFunctions', deviceId);
+    log('devices', 'getProviderFunctions', { context: { deviceId } });
     return call(deviceId, ({ device, api, provider }) => {
         if (!api.getFunctions) throw new NotFoundError();
         return api.getFunctions({ device, provider });
@@ -117,7 +118,7 @@ export async function getProviderFunctions(
 }
 
 export async function changeDeviceState(deviceId: string, params: DeviceState) {
-    console.log('changeDeviceState', deviceId, params);
+    log('devices', 'changeDeviceState', { context: { deviceId, params } });
     const res = await call(deviceId, async ({ device, api, provider }) =>
         api.changeDeviceState({ device, provider }, params)
     );
@@ -148,7 +149,9 @@ export async function callDeviceFunction(
     functionname: string,
     params: object
 ): Promise<any> {
-    console.log('callDeviceFunction', deviceId, functionname, params);
+    log('devices', 'callDeviceFunction', {
+        context: { deviceId, functionname, params },
+    });
     return call(deviceId, ({ device, api, provider }) => {
         if (!api.callFunction) throw new NotFoundError();
         return api.callFunction(

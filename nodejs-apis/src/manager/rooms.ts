@@ -2,7 +2,7 @@ import { cs } from '../core/db';
 import { NotFoundError } from '../errors';
 import { RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
-import { manageDeviceRoom } from './service';
+import { manageDeviceRoom } from './services/rooms';
 
 const routes: RestApis = {
     'rooms/:id/devices/:did': {

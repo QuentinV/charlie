@@ -2,6 +2,7 @@ import { WebSocketServer } from 'ws';
 import { stt } from './stt';
 import { tts } from '../ai/tts';
 import { ask } from '../ai/flow';
+import { log } from '../manager/services/activities';
 
 function sendPCMInChunks(ws, buffer, chunkSize = 4096) {
     for (let i = 0; i < buffer.length; i += chunkSize) {
@@ -14,7 +15,7 @@ export function setupEchoListen() {
     const wss = new WebSocketServer({ port: 9303, path: '/ws/echo' });
 
     wss.on('connection', (ws, req) => {
-        console.log('[ECHO] Device connected');
+        log('ECHO', 'Device connected');
         let audioBuffer = [];
         let audioBufferWakeword = [];
         let status = '';
@@ -30,7 +31,7 @@ export function setupEchoListen() {
             const m = msg.toString();
             if (m === 'WAKEWORD_START') {
                 status = 'wakeword';
-                console.log('[ECHO] wake word start');
+                log('ECHO', 'wake word start');
                 return;
             }
 
@@ -39,14 +40,14 @@ export function setupEchoListen() {
                 const res = await stt(audioBufferWakeword, { record: true });
                 audioBufferWakeword = [];
                 status = res !== 'charlie' ? 'cancel' : 'ok';
-                console.log(`[ECHO] wakeword received: ${res} => ${status}`);
+                log('ECHO', `wakeword received: ${res} => ${status}`);
                 return;
             }
 
             if (m === 'END') {
                 while (true) {
                     if (status === 'cancel') {
-                        console.log(`[ECHO] end received cancel`);
+                        log('ECHO', `end received cancel`);
                         audioBuffer = [];
                         return;
                     }
@@ -57,14 +58,14 @@ export function setupEchoListen() {
                     }
 
                     try {
-                        console.log('[ECHO] audio received');
+                        log('ECHO', 'audio received');
                         const text = await stt(audioBuffer, {
                             record: true,
                             trimEnd: true,
                         });
-                        console.log('[ECHO] spoken text', text);
+                        log('ECHO', `spoken text = ${text}`);
                         const result = await ask(text);
-                        console.log('[ECHO] result', result);
+                        log('ECHO', `result = ${result}`);
                         ws.send(result ? 'Ok! :-)' : ':-(');
                         if (result) {
                             const resultAudio = await tts({ text: result });

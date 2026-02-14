@@ -7,6 +7,7 @@ import {
     getProviderFunctions,
 } from '../../../devices';
 import { NotFoundError } from '../../../errors';
+import { log } from '../../../manager/services/activities';
 
 interface DeviceChangeStateToolParams extends DeviceState {
     deviceId: string;
@@ -29,11 +30,10 @@ export default async () => {
                 //    room: z.enum([r0, ...rrest, 'unknown']),
             },
             exec: async ({ type, room }) => {
-                console.log('fetch device list', type, room);
+                log('tools-devices', `fetch device list ${type} / ${room}`);
                 const res = `${(await cs.devices.find({ type }).toArray())
                     .map((d: Device) => `- id: ${d._id} / name: ${d.name}`)
                     .join('\n')}`;
-                console.log('result', res);
                 return `Identify if user means one specific or a group of devices and use the name to select relevant devices from the list: ${res}`;
             },
         },
@@ -67,7 +67,6 @@ export default async () => {
                         state,
                     })
                 );
-                console.log('result', res);
                 return JSON.stringify(res);
             },
         },
@@ -77,7 +76,10 @@ export default async () => {
                 deviceId: z.string(),
             },
             exec: async ({ deviceId }) => {
-                console.log('fetch-device-additional-functions', deviceId);
+                log(
+                    'tools-devices',
+                    `fetch-device-additional-functions ${deviceId}`
+                );
                 if (!deviceId) throw new NotFoundError(deviceId);
                 const functions = await getProviderFunctions(deviceId);
                 if (functions) {
@@ -112,11 +114,9 @@ export default async () => {
                 params: z.any(),
             },
             exec: async ({ deviceId, functionname, params }) => {
-                console.log(
-                    'call-device-additional-function',
-                    functionname,
-                    params
-                );
+                log('tools-devices', 'call-device-additional-function', {
+                    context: { functionname, params },
+                });
                 if (!deviceId) throw new NotFoundError(deviceId);
                 try {
                     const res = await callDeviceFunction(

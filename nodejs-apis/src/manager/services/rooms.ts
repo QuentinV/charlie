@@ -1,5 +1,5 @@
-import { cs } from '../core/db';
-import { Room } from '../types';
+import { cs } from '../../core/db';
+import { Room } from '../../types';
 
 export async function manageDeviceRoom(deviceId: string, room?: Room) {
     const oldRoom = await cs.rooms.findOne({ devices: deviceId });
