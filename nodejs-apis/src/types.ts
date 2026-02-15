@@ -132,4 +132,5 @@ export interface Activity {
     message?: string;
     type?: string;
     from?: string;
+    modified?: Date;
 }
