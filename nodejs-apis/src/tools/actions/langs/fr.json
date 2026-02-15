@@ -9,5 +9,7 @@
     "temperature": {},
     "timer": {},
     "volume": {},
-    "weather": {}
+    "weather": {
+        "answer": "A %{town} en %{country} il fait actuellement %{temp} degrée. Avec %{rain}mm de pluie et %{windspeed} km/s de vent."
+    }
 }

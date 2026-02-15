@@ -9,7 +9,6 @@ import {
 import { Device, RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
 import { manageDeviceRoom } from './services/rooms';
-import { Room } from './../types';
 
 const routes: RestApis = {
     'devices/discover': {
