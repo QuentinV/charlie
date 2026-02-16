@@ -28,9 +28,9 @@
 #define I2S_MIC_SCK GPIO_NUM_16
 
 #define I2S_SPK_PORT I2S_NUM_1
-#define I2S_SPK_LRC GPIO_NUM_4
-#define I2S_SPK_BCLK GPIO_NUM_5
-#define I2S_SPK_DIN GPIO_NUM_6
+#define I2S_SPK_LRC GPIO_NUM_7
+#define I2S_SPK_BCLK GPIO_NUM_6
+#define I2S_SPK_DIN GPIO_NUM_5
 
 #define BUFFER_SIZE 512
 
@@ -80,8 +80,8 @@ bool continuous_record = true;
 
 // Task handles
 TaskHandle_t wakeUpWordHandle;
-TaskHandle_t screenHandle;
 TaskHandle_t taskWebSocketHandle;
+TaskHandle_t memoryPrintHandle;
 
 bool debug_nn = false; // Set this to true to see e.g. features generated from the raw signal
 
@@ -549,8 +549,9 @@ void setup() {
 
   configTime(3600, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
 
-  xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
-  xTaskCreatePinnedToCore(wsTask, "TaskWebSocket", 1024 * 8, NULL, 1, &taskWebSocketHandle, 1);
+  xTaskCreate( wakeUpWordTask, "WakeUpWord", 1024 * 6, NULL, 1, &wakeUpWordHandle );
+  xTaskCreatePinnedToCore(wsTask, "TaskWebSocket", 1024 * 10, NULL, 1, &taskWebSocketHandle, 1);
+  //xTaskCreate( memoryPrintTask, "MemoryPrint", 2000, NULL, 1, &memoryPrintHandle );
 }
 
 void loop() {
