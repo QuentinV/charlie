@@ -83,7 +83,7 @@ const routes: RestApis = {
             const { name, externalId, provider, type }: Device = body;
             let id = body?._id;
 
-            if (externalId && provider) {
+            if (!id && externalId && provider) {
                 const device = await cs.devices.findOne({
                     externalId,
                     provider,
@@ -95,7 +95,7 @@ const routes: RestApis = {
                 id = uuidV4();
             }
 
-            const uuid = await cs.devices.updateOne(
+            await cs.devices.updateOne(
                 { _id: id },
                 {
                     $set: {
@@ -115,7 +115,7 @@ const routes: RestApis = {
             }
             await manageDeviceRoom(id, room);
 
-            return { uuid };
+            return { uuid: id };
         },
     },
 };

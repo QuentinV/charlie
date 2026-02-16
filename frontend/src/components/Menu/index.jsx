@@ -15,19 +15,24 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router-dom';
-
-const navItems = [
-    { label: 'Home', route: '/' },
-    { label: 'Routines', route: '/routines' },
-    { label: 'Discover', route: '/discover' },
-    { label: 'AI', route: '/ai' },
-];
+import { useUnit } from 'effector-react';
+import { settingsStore } from '../../state/settings';
 
 export const Menu = () => {
     const theme = useTheme();
     const [drawerOpen, setDrawerOpen] = React.useState(false);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
+    const devicesDiscovery = useUnit(settingsStore.$devicesDiscovery);
+    const enableAddRoutine = useUnit(settingsStore.$enableAddRoutine);
+    const showAiAsk = useUnit(settingsStore.$showAiAsk);
+
+    const navItems = [{ label: 'Home', route: '/' }];
+    enableAddRoutine &&
+        navItems.push({ label: 'Routines', route: '/routines' });
+    devicesDiscovery &&
+        navItems.push({ label: 'Discover', route: '/discover' });
+    showAiAsk && navItems.push({ label: 'AI', route: '/ai' });
 
     return (
         <>

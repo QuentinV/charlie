@@ -17,6 +17,7 @@ import { useUnit } from 'effector-react';
 export default function App() {
     const showMusicPlayer = useUnit(settingsStore.$showMusicPlayer);
     const showAiAsk = useUnit(settingsStore.$showAiAsk);
+    const devicesDiscovery = useUnit(settingsStore.$devicesDiscovery);
     return (
         <ThemeProvider theme={theme}>
             <Router>
@@ -45,10 +46,12 @@ export default function App() {
                         <Box sx={{ height: '100%' }}>
                             <Routes>
                                 <Route path="/" element={<HomePage />} />
-                                <Route
-                                    path="/discovery"
-                                    element={<DevicesDiscoveryPage />}
-                                />
+                                {devicesDiscovery && (
+                                    <Route
+                                        path="/discovery"
+                                        element={<DevicesDiscoveryPage />}
+                                    />
+                                )}
                                 <Route
                                     path="/room/:id"
                                     element={<RoomPage />}
