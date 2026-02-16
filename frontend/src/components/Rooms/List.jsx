@@ -21,6 +21,7 @@ export const RoomsList = () => {
             });
 
             rooms.push({
+                name: 'Maison',
                 devices: Object.entries(devices ?? {})
                     .filter(
                         ([d]) =>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { theme } from './theme';
 import { HomePage } from './pages/Home';
 import { NotFoundPage } from './pages/NotFound';
@@ -11,8 +11,12 @@ import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
 import { AiPage } from './pages/AiPage';
 import Musics from './components/Musics';
+import { settingsStore } from './state/settings';
+import { useUnit } from 'effector-react';
 
 export default function App() {
+    const showMusicPlayer = useUnit(settingsStore.$showMusicPlayer);
+    const showAiAsk = useUnit(settingsStore.$showAiAsk);
     return (
         <ThemeProvider theme={theme}>
             <Router>
@@ -58,19 +62,21 @@ export default function App() {
                             </Routes>
                         </Box>
                     </Box>
-                    <Box
-                        sx={{
-                            flexGrow: 0,
-                            marginTop: 'auto',
-                            height: '50px',
-                            color: 'white',
-                            display: 'flex',
-                            width: '100%',
-                        }}
-                    >
-                        <Footer />
-                    </Box>
-                    <Musics />
+                    {showAiAsk && (
+                        <Box
+                            sx={{
+                                flexGrow: 0,
+                                marginTop: 'auto',
+                                height: '50px',
+                                color: 'white',
+                                display: 'flex',
+                                width: '100%',
+                            }}
+                        >
+                            <Footer />
+                        </Box>
+                    )}
+                    {showMusicPlayer && <Musics />}
                 </Box>
             </Router>
         </ThemeProvider>
