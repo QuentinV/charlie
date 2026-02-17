@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 
 const apihost = process?.env?.API_HOST ?? 'http://localhost:9300';
 console.log(apihost);
@@ -12,6 +13,10 @@ export default defineConfig({
     server: {
         host: true,
         port: 3000,
+        https: {
+            key: fs.readFileSync('../certs/private.pem'),
+            cert: fs.readFileSync('../certs/public.pem'),
+        },
         proxy: {
             '/api': {
                 target: apihost,

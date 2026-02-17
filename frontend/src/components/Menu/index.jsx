@@ -17,6 +17,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router-dom';
 import { useUnit } from 'effector-react';
 import { settingsStore } from '../../state/settings';
+import { NfcJsonReader } from '../NfcJsonReader';
 
 export const Menu = () => {
     const theme = useTheme();
@@ -48,23 +49,25 @@ export const Menu = () => {
                             <MenuIcon />
                         </IconButton>
                     )}
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            flexGrow: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            cursor: 'pointer',
-                        }}
-                        onClick={() => navigate('/')}
-                    >
-                        <img
-                            src="/dark_icon.png"
-                            width="30"
-                            style={{ marginRight: '10px' }}
-                        />
-                        Charlie
-                    </Typography>
+                    <NfcJsonReader>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                flexGrow: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                cursor: 'pointer',
+                            }}
+                            onClick={() => navigate('/')}
+                        >
+                            <img
+                                src="/dark_icon.png"
+                                width="30"
+                                style={{ marginRight: '10px' }}
+                            />
+                            Charlie
+                        </Typography>
+                    </NfcJsonReader>
                     {!isMobile &&
                         navItems.map((item, i) => (
                             <Button

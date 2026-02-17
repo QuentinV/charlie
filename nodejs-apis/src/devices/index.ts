@@ -130,7 +130,9 @@ export async function changeDeviceState(deviceId: string, params: DeviceState) {
     return res;
 }
 
-export async function getDeviceState(deviceId: string) {
+export async function getDeviceState(
+    deviceId: string
+): Promise<DeviceState | undefined> {
     return call(deviceId, async ({ device, api, provider }) => {
         if (api.getDeviceState) {
             const state = await api.getDeviceState({ device, provider });
@@ -141,6 +143,15 @@ export async function getDeviceState(deviceId: string) {
             return state;
         }
         return device.state;
+    });
+}
+
+export async function toggleDeviceState(
+    deviceId: string
+): Promise<boolean | DeviceState | undefined> {
+    const state = await getDeviceState(deviceId);
+    return changeDeviceState(deviceId, {
+        power: state?.power === 'on' ? 'off' : 'on',
     });
 }
 

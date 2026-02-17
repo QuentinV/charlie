@@ -5,6 +5,7 @@ import {
     getDeviceState,
     getProviderFunctions,
     getProvidersApis,
+    toggleDeviceState,
 } from '../devices';
 import { Device, RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
@@ -43,6 +44,16 @@ const routes: RestApis = {
                     Object.keys(body).length ? body : undefined
                 ),
             description: 'Call a function of a device',
+        },
+    },
+    'devices/:id/state/toggle': {
+        put: {
+            handler: async ({ params }) => {
+                const res = await toggleDeviceState(params.id);
+                if (typeof res === 'object') return { state: res };
+                return { res };
+            },
+            description: 'Toggle state of a device',
         },
     },
     'devices/:id/state': {
