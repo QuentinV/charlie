@@ -58,6 +58,7 @@ export const DeviceTypes = {
     shutter: 'shutter',
     sprinkler: 'sprinkler',
     tv: 'tv',
+    sensor: 'sensor',
     unknown: 'unknown',
 };
 
@@ -134,3 +135,6 @@ export interface Activity {
     from?: string;
     modified?: Date;
 }
+
+// --- Settings
+export interface Settings {}
