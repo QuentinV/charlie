@@ -65,6 +65,7 @@ services:
             - ./frontend/.env:/app/.env
             - ./frontend/vite.config.js:/app/vite.config.js
             - ./frontend/public:/app/public
+            - ./certs:/certs
         ports:
             - '9305:3000'
         command: 'yarn start --host'
