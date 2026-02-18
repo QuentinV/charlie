@@ -1,4 +1,5 @@
 import { cs } from '../core/db';
+import { getMacAddress } from '../core/ipscan';
 import { availableProvidersCodeSources } from '../devices';
 import { RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
@@ -25,6 +26,12 @@ const routes: RestApis = {
                 multidevices,
             } = body;
             const uuid = _id || uuidV4();
+
+            let macAddress = mac;
+            if (!macAddress && host?.startsWith('192.168.')) {
+                macAddress = await getMacAddress(host);
+            }
+
             await cs.providers.updateOne(
                 { _id: uuid },
                 {
@@ -33,7 +40,7 @@ const routes: RestApis = {
                         name,
                         host,
                         user,
-                        mac,
+                        mac: macAddress,
                         password,
                         codesource,
                         multidevices,

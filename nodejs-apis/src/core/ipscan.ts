@@ -45,7 +45,7 @@ async function maclookup(mac): Promise<MacVendorInfo | undefined> {
     }
 }
 
-async function getMacAddress(ip: string): Promise<string> {
+export async function getMacAddress(ip: string): Promise<string> {
     return new Promise((res, rej) => {
         exec(
             isWindows ? `arp -a ${ip}` : `arp -n ${ip}`,
@@ -209,5 +209,5 @@ async function discoverAll() {
 }
 
 (async () => {
-    console.log(await discoverAll());
+    console.log(await getMacAddress('192.168.1.40'));
 })();
