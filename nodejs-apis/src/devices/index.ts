@@ -10,6 +10,7 @@ import {
     RestApis,
     Tools,
 } from '../types';
+import { log } from '../manager/services/activities';
 
 import ikea from './providers/ikea';
 import sony_bravia_tv from './providers/sony_bravia_tv';
@@ -18,7 +19,7 @@ import clim from './providers/clim_mitshubishi';
 import customGarden from './providers/custom_garden';
 import tuya from './providers/tuya';
 import default_custom from './providers/default_custom';
-import { log } from '../manager/services/activities';
+import shelly from './providers/shelly';
 
 // Register all possible providers here
 const providerApis: { [name: string]: ProvidersApis } = {
@@ -29,6 +30,7 @@ const providerApis: { [name: string]: ProvidersApis } = {
     clim,
     customGarden,
     tuya,
+    shelly,
 };
 
 export const availableProvidersCodeSources = Object.keys(providerApis);
