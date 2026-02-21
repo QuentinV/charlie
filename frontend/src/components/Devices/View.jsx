@@ -13,6 +13,8 @@ import {
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { api } from '../../api/charlie';
+import { DeviceToggle } from './Toggle';
+import { DeviceType } from './constants';
 
 let timeout = null;
 
@@ -54,19 +56,6 @@ export const ViewDevice = ({ deviceId }) => {
         api(`rooms/${roomId}/devices/${deviceId}`, { method: 'PUT' });
     };
 
-    const toggleState = async (power) => {
-        const res = (
-            await api(`devices/${deviceId}/state`, {
-                method: 'PUT',
-                body: JSON.stringify({ power }),
-            })
-        )?.res;
-
-        if (res) {
-            setData({ ...data, state: { power } });
-        }
-    };
-
     if (!data) return null;
     const { _id, name, externalId, provider, type, state } = data;
 
@@ -78,13 +67,17 @@ export const ViewDevice = ({ deviceId }) => {
                         {name}
                     </Typography>
 
-                    <Switch
-                        checked={state?.power === 'on'}
-                        onChange={() =>
-                            toggleState(state?.power === 'on' ? 'off' : 'on')
-                        }
-                        color="primary"
-                    />
+                    <div>
+                        <DeviceToggle
+                            deviceId={deviceId}
+                            power={state?.power}
+                            type={type}
+                            onStateChange={(newState) =>
+                                newState &&
+                                setData({ ...data, state: newState })
+                            }
+                        />
+                    </div>
                 </Grid>
 
                 <Grid container direction="column" spacing={1}>
@@ -143,15 +136,9 @@ export const ViewDevice = ({ deviceId }) => {
                                     debouncedUpdate(d);
                                 }}
                             >
-                                <MenuItem value="light">Light</MenuItem>
-                                <MenuItem value="switch">Switch</MenuItem>
-                                <MenuItem value="shutter">Shutter</MenuItem>
-                                <MenuItem value="sensor">Sensor</MenuItem>
-                                <MenuItem value="sprinkler">Sprinkler</MenuItem>
-                                <MenuItem value="thermostat">
-                                    Thermostat
-                                </MenuItem>
-                                <MenuItem value="other">Other</MenuItem>
+                                {Object.keys(DeviceType).map((t) => (
+                                    <MenuItem value={`${t}`}>{t}</MenuItem>
+                                ))}
                             </Select>
                         </FormControl>
                     </Grid>
