@@ -8,33 +8,10 @@ import {
     Chip,
     ListItemIcon,
 } from '@mui/material';
-import HistoryIcon from '@mui/icons-material/History';
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
-import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
-import TvIcon from '@mui/icons-material/Tv';
-import PowerIcon from '@mui/icons-material/Power';
-import OutletIcon from '@mui/icons-material/Outlet';
-import SwitchLeftIcon from '@mui/icons-material/SwitchLeft';
-import GarageIcon from '@mui/icons-material/Garage';
-import ShowerIcon from '@mui/icons-material/Shower';
-import WaterDropIcon from '@mui/icons-material/WaterDrop';
-import AcUnitIcon from '@mui/icons-material/AcUnit';
-import FenceIcon from '@mui/icons-material/Fence';
-import DoorbellIcon from '@mui/icons-material/Doorbell';
 import FullScreenDialog from '../FullScreenDialog';
 import { ViewDevice } from './View';
 import { api } from '../../api/charlie';
-
-const iconFromType = (type) => {
-    switch (type ?? '') {
-        case 'tv':
-            return <TvIcon />;
-        case 'light':
-            return <LightbulbIcon />;
-        default:
-            return <PowerIcon />;
-    }
-};
+import { DeviceIcon } from '../DeviceIcon';
 
 export const DevicesList = ({ devices }) => {
     const [selected, setSelected] = useState(null);
@@ -84,7 +61,7 @@ export const DevicesList = ({ devices }) => {
                             }
                         >
                             <ListItemIcon>
-                                {iconFromType(device.type)}
+                                <DeviceIcon type={device.type} />
                             </ListItemIcon>
                             <ListItemText
                                 primary={device.name}
