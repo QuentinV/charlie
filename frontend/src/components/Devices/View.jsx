@@ -1,6 +1,7 @@
 import {
     Card,
     CardContent,
+    Divider,
     FormControl,
     Grid,
     InputLabel,
@@ -98,6 +99,24 @@ export const ViewDevice = ({ deviceId }) => {
 
                     <Grid>
                         <TextField
+                            label="External ID"
+                            value={externalId}
+                            fullWidth
+                            onChange={(event) => {
+                                const d = {
+                                    ...data,
+                                    externalId: event.target.value,
+                                };
+                                setData(d);
+                                debouncedUpdate(d);
+                            }}
+                        />
+                    </Grid>
+
+                    <Divider sx={{ my: '5px' }} />
+
+                    <Grid>
+                        <TextField
                             label="Name"
                             value={name}
                             onChange={(event) => {
@@ -111,7 +130,7 @@ export const ViewDevice = ({ deviceId }) => {
 
                     <Grid>
                         <FormControl fullWidth>
-                            <InputLabel>Type</InputLabel>
+                            <InputLabel id="device=type">Type</InputLabel>
                             <Select
                                 value={type}
                                 label="Type"
@@ -137,9 +156,13 @@ export const ViewDevice = ({ deviceId }) => {
                         </FormControl>
                     </Grid>
 
+                    <Divider sx={{ my: '5px' }} />
+
                     <Grid>
                         <FormControl fullWidth>
-                            <InputLabel>Provider</InputLabel>
+                            <InputLabel id="device-provider">
+                                Provider
+                            </InputLabel>
                             <Select
                                 value={provider}
                                 label="Provider"
@@ -159,25 +182,11 @@ export const ViewDevice = ({ deviceId }) => {
                         </FormControl>
                     </Grid>
 
-                    <Grid>
-                        <TextField
-                            label="External ID"
-                            value={externalId}
-                            fullWidth
-                            onChange={(event) => {
-                                const d = {
-                                    ...data,
-                                    externalId: event.target.value,
-                                };
-                                setData(d);
-                                debouncedUpdate(d);
-                            }}
-                        />
-                    </Grid>
+                    <Divider sx={{ my: '5px' }} />
 
                     <Grid>
                         <FormControl fullWidth>
-                            <InputLabel>Room</InputLabel>
+                            <InputLabel id="device-room">Room</InputLabel>
                             <Select
                                 value={roomId}
                                 label="Room"
@@ -186,6 +195,7 @@ export const ViewDevice = ({ deviceId }) => {
                                     changeRoom(event.target.value);
                                 }}
                             >
+                                <MenuItem value="">Aucun</MenuItem>
                                 {rooms?.map((r) => (
                                     <MenuItem value={r._id}>{r.name}</MenuItem>
                                 ))}
