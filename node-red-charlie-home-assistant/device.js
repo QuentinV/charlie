@@ -25,7 +25,6 @@ module.exports = function (RED) {
                     externalId: config.externalId,
                     provider: conf.provider.id,
                     type: config.deviceType,
-                    room: config.roomId,
                 }),
             });
 

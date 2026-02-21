@@ -120,12 +120,6 @@ const routes: RestApis = {
                 { upsert: true }
             );
 
-            let room = null;
-            if (body?.room) {
-                room = await cs.rooms.findOne({ name: body.room });
-            }
-            await manageDeviceRoom(id, room);
-
             return { uuid: id };
         },
     },
