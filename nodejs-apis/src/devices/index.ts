@@ -20,6 +20,7 @@ import customGarden from './providers/custom_garden';
 import tuya from './providers/tuya';
 import default_custom from './providers/default_custom';
 import shelly from './providers/shelly';
+import custom_button from './providers/custom_button';
 
 // Register all possible providers here
 const providerApis: { [name: string]: ProvidersApis } = {
@@ -31,6 +32,7 @@ const providerApis: { [name: string]: ProvidersApis } = {
     customGarden,
     tuya,
     shelly,
+    custom_button,
 };
 
 export const availableProvidersCodeSources = Object.keys(providerApis);
@@ -122,7 +124,7 @@ export async function getProviderFunctions(
 export async function changeDeviceState(deviceId: string, params: DeviceState) {
     log('devices', 'changeDeviceState', { context: { deviceId, params } });
     const res = await call(deviceId, async ({ device, api, provider }) =>
-        api.changeDeviceState({ device, provider }, params)
+        api.changeDeviceState?.({ device, provider }, params)
     );
     if (res === true) {
         return getDeviceState(deviceId);
@@ -151,9 +153,17 @@ export async function getDeviceState(
 export async function toggleDeviceState(
     deviceId: string
 ): Promise<boolean | DeviceState | undefined> {
-    const state = await getDeviceState(deviceId);
-    return changeDeviceState(deviceId, {
-        power: state?.power === 'on' ? 'off' : 'on',
+    return call(deviceId, async ({ device, api, provider }) => {
+        if (api.toggleDeviceState) {
+            return api.toggleDeviceState({ device, provider });
+        }
+        if (api.getDeviceState) {
+            const state = await getDeviceState(deviceId);
+            return changeDeviceState(deviceId, {
+                power: state?.power === 'on' ? 'off' : 'on',
+            });
+        }
+        return false;
     });
 }
 

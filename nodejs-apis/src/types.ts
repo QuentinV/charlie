@@ -59,6 +59,7 @@ export const DeviceTypes = {
     sprinkler: 'sprinkler',
     tv: 'tv',
     sensor: 'sensor',
+    button: 'button',
     unknown: 'unknown',
 };
 
@@ -104,11 +105,12 @@ export interface ProviderApiMetaInfo {
 export interface ProviderApi {
     init?: (provider: Provider) => Promise<boolean>;
     discover?: (provider: Provider) => Promise<object[]>;
-    changeDeviceState: (
+    changeDeviceState?: (
         meta: ProviderApiMetaInfo,
         params: DeviceState
     ) => Promise<DeviceState | boolean>;
     getDeviceState?: (meta: ProviderApiMetaInfo) => Promise<DeviceState>;
+    toggleDeviceState?: (meta: ProviderApiMetaInfo) => Promise<boolean>;
     getFunctions?: (
         meta: ProviderApiMetaInfo
     ) => Promise<ProviderFunctionDef[]>;
