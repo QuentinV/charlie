@@ -157,7 +157,7 @@ export async function toggleDeviceState(
         if (api.toggleDeviceState) {
             return api.toggleDeviceState({ device, provider });
         }
-        if (api.getDeviceState) {
+        if (api.changeDeviceState) {
             const state = await getDeviceState(deviceId);
             return changeDeviceState(deviceId, {
                 power: state?.power === 'on' ? 'off' : 'on',
