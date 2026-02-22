@@ -29,7 +29,11 @@ const routes: RestApis = {
 
             let macAddress = mac;
             if (!macAddress && host?.startsWith('192.168.')) {
-                macAddress = await getMacAddress(host);
+                try {
+                    macAddress = await getMacAddress(host);
+                } catch (e) {
+                    console.log(e);
+                }
             }
 
             await cs.providers.updateOne(
