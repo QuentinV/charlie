@@ -64,6 +64,56 @@ export async function getMacAddress(ip: string): Promise<string> {
     });
 }
 
+export async function getIpsFromMacs(
+    macs: string[]
+): Promise<{ [key: string]: string } | null> {
+    await Promise.allSettled(
+        [...Array(254)].map(
+            (v, i) =>
+                new Promise((res, rej) =>
+                    exec(`ping -c 1 -W 1 192.168.1.${i}`, (err) => {
+                        console.log(`192.168.1.${i}`);
+                        err ? rej() : res(undefined);
+                    })
+                )
+        )
+    );
+
+    return new Promise((resolve, reject) => {
+        const normalizedMacs = macs.map((mac) =>
+            mac.toLowerCase().replace(/:/g, '-')
+        );
+        console.log(normalizedMacs);
+
+        const found = {};
+        const cmd = isWindows ? 'arp -a' : 'arp -n';
+
+        exec(cmd, (err, stdout) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            const lines = stdout.split('\n');
+            //console.log('lines', lines);
+            for (const line of lines) {
+                const macMatch = line.match(/\b\w{1,2}(?:-\w{1,2}){5}\b/);
+                if (!macMatch) continue;
+                const mac = macMatch[0];
+                console.log('MAC', mac, normalizedMacs.includes(mac));
+                if (normalizedMacs.includes(mac)) {
+                    const ipMatch = line.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/);
+                    if (ipMatch) {
+                        found[mac] = ipMatch[0];
+                    }
+                }
+            }
+
+            resolve(Object.keys(found).length ? found : null);
+        });
+    });
+}
+
 const latencyRegex = /(time|temps)[=<]?(\d+\.?\d*)\s*ms/;
 
 interface PingResponse {
@@ -207,7 +257,3 @@ async function discoverAll() {
         }, 20000);
     });
 }
-
-(async () => {
-    console.log(await getMacAddress('192.168.1.40'));
-})();
