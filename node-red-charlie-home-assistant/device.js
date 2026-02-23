@@ -82,6 +82,8 @@ module.exports = function (RED) {
                 }
             }
         });
+
+        node.on('close', () => client?.end(true));
     }
 
     RED.nodes.registerType('charlie-device', MyNode);
