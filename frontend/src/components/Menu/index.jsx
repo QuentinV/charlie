@@ -34,6 +34,7 @@ export const Menu = () => {
     devicesDiscovery &&
         navItems.push({ label: 'Discover', route: '/discover' });
     showAiAsk && navItems.push({ label: 'AI', route: '/ai' });
+    navItems.push({ label: 'Activities', route: '/activities' });
 
     return (
         <>

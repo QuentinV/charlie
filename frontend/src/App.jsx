@@ -13,6 +13,7 @@ import { AiPage } from './pages/AiPage';
 import Musics from './components/Musics';
 import { settingsStore } from './state/settings';
 import { useUnit } from 'effector-react';
+import { ActivitiesPage } from './pages/Activities';
 
 export default function App() {
     const showMusicPlayer = useUnit(settingsStore.$showMusicPlayer);
@@ -61,6 +62,10 @@ export default function App() {
                                     element={<RoutinesPage />}
                                 />
                                 <Route path="/ai" element={<AiPage />} />
+                                <Route
+                                    path="/activities"
+                                    element={<ActivitiesPage />}
+                                />
                                 <Route path="*" element={<NotFoundPage />} />
                             </Routes>
                         </Box>
