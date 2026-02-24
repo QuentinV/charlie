@@ -2,7 +2,7 @@ import { WebSocketServer } from 'ws';
 import { stt } from './stt';
 import { tts } from '../ai/tts';
 import { ask } from '../ai/flow';
-import { log } from '../manager/services/activities';
+import { logEcho } from './logs';
 
 function sendPCMInChunks(ws, buffer, chunkSize = 4096) {
     for (let i = 0; i < buffer.length; i += chunkSize) {
@@ -15,7 +15,18 @@ export function setupEchoListen() {
     const wss = new WebSocketServer({ port: 9303, path: '/ws/echo' });
 
     wss.on('connection', (ws, req) => {
-        log('ECHO', 'Device connected');
+        const ip = req.socket.remoteAddress;
+        const log = (message: string) => logEcho(ip, message);
+        log('Device connected');
+
+        ws.on('ping', () => {
+            log('ping');
+        });
+
+        ws.on('pong', () => {
+            log('pong');
+        });
+
         let audioBuffer = [];
         let audioBufferWakeword = [];
         let status = '';
@@ -33,7 +44,7 @@ export function setupEchoListen() {
                 status = 'wakeword';
                 audioBufferWakeword = [];
                 audioBuffer = [];
-                log('ECHO', 'wake word start');
+                log('wake word start');
                 return;
             }
 
@@ -41,14 +52,14 @@ export function setupEchoListen() {
                 status = 'wakeword_pending';
                 const res = await stt(audioBufferWakeword, { record: true });
                 status = res !== 'charlie' ? 'cancel' : 'ok';
-                log('ECHO', `wakeword received: ${res} => ${status}`);
+                log(`wakeword received: ${res} => ${status}`);
                 return;
             }
 
             if (m === 'END') {
                 while (true) {
                     if (status === 'cancel') {
-                        log('ECHO', `end received cancel`);
+                        log(`end received cancel`);
                         audioBuffer = [];
                         return;
                     }
@@ -59,14 +70,14 @@ export function setupEchoListen() {
                     }
 
                     try {
-                        log('ECHO', 'audio received');
+                        log('audio received');
                         const text = await stt(audioBuffer, {
                             record: true,
                             trimEnd: true,
                         });
-                        log('ECHO', `spoken text = ${text}`);
+                        log(`spoken text = ${text}`);
                         const result = await ask(text);
-                        log('ECHO', `result = ${result}`);
+                        log(`result = ${result}`);
                         ws.send(result ? 'Ok! :-)' : ':-(');
                         if (result) {
                             const resultAudio = await tts({ text: result });
@@ -74,6 +85,7 @@ export function setupEchoListen() {
                         }
                     } catch (e) {
                         console.log(e);
+                        log(JSON.stringify(e));
                     } finally {
                         audioBuffer = [];
                     }

@@ -75,6 +75,7 @@ export default function LogViewer() {
                 >
                     <option value="">Type: All</option>
                     <option value="log">log</option>
+                    <option value="echo">echo</option>
                 </select>
                 <select
                     value={filters.from}
