@@ -91,3 +91,7 @@
 .load-more:hover {
     background: #534923;
 }
+
+.from {
+    word-break: break-all;
+}
