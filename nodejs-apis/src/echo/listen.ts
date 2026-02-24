@@ -30,6 +30,10 @@ export function setupEchoListen() {
         let audioBuffer = [];
         let audioBufferWakeword = [];
         let status = '';
+        ws.on('error', (err) => {
+            log('WebSocket error:' + err.message);
+        });
+
         ws.on('message', async (msg, isBinary) => {
             if (isBinary) {
                 (status === 'wakeword'
