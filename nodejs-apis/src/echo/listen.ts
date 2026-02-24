@@ -31,6 +31,8 @@ export function setupEchoListen() {
             const m = msg.toString();
             if (m === 'WAKEWORD_START') {
                 status = 'wakeword';
+                audioBufferWakeword = [];
+                audioBuffer = [];
                 log('ECHO', 'wake word start');
                 return;
             }
@@ -38,7 +40,6 @@ export function setupEchoListen() {
             if (m === 'WAKEWORD_END') {
                 status = 'wakeword_pending';
                 const res = await stt(audioBufferWakeword, { record: true });
-                audioBufferWakeword = [];
                 status = res !== 'charlie' ? 'cancel' : 'ok';
                 log('ECHO', `wakeword received: ${res} => ${status}`);
                 return;

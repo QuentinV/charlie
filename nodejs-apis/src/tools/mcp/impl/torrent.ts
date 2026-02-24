@@ -21,6 +21,7 @@ async function delugeLogin() {
 
 async function delugeAddMagnet(magnetUrl: string) {
     const cookie = await delugeLogin();
+    console.log('delugeAddMagnet', magnetUrl);
     const res = await fetch(DELUGE_URL, {
         method: 'POST',
         headers: {
