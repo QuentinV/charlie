@@ -40,6 +40,11 @@ export function setupEchoListen() {
             }
 
             const m = msg.toString();
+            if (m === 'start-mic-capture') {
+                log('start mic capture');
+                return;
+            }
+
             if (m === 'WAKEWORD_START') {
                 status = 'wakeword';
                 audioBufferWakeword = [];
