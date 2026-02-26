@@ -35,6 +35,7 @@ export const Menu = () => {
         navItems.push({ label: 'Discover', route: '/discover' });
     showAiAsk && navItems.push({ label: 'AI', route: '/ai' });
     navItems.push({ label: 'Activities', route: '/activities' });
+    navItems.push({ label: 'Echos', route: '/echos' });
 
     return (
         <>

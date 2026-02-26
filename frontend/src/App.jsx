@@ -14,6 +14,7 @@ import Musics from './components/Musics';
 import { settingsStore } from './state/settings';
 import { useUnit } from 'effector-react';
 import { ActivitiesPage } from './pages/Activities';
+import { EchoPage } from './pages/Echo';
 
 export default function App() {
     const showMusicPlayer = useUnit(settingsStore.$showMusicPlayer);
@@ -65,7 +66,8 @@ export default function App() {
                                 <Route
                                     path="/activities"
                                     element={<ActivitiesPage />}
-                                />
+                                />{' '}
+                                <Route path="/echos" element={<EchoPage />} />
                                 <Route path="*" element={<NotFoundPage />} />
                             </Routes>
                         </Box>
