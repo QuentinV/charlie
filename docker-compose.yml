@@ -12,6 +12,7 @@ services:
             - ~/media/musics:/musics
             - ${XDG_RUNTIME_DIR}/pulse/native:/tmp/pulse/native
             - ./nodejs-apis/recordings:/app/recordings
+            - ./echo-devices:/echo-devices
         ports:
             - '9300:9300' # http server
             - '9303:9303' # audio udp

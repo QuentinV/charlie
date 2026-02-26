@@ -11,12 +11,15 @@
 #include "freertos/task.h"
 #include <WebSocketsClient.h>
 #include <Wire.h>
+#include <HTTPClient.h>
+#include <HTTPUpdate.h>
 
 #define DRD_TIMEOUT 3
 
 #define EIDSP_QUANTIZE_FILTERBANK   0
 #include <charlie-2_inferencing.h>
 
+#define ECHO_DEVICE_TYPE "echo-zero"
 #define WIFI_NAME "Charlie-Echo-Zero"
 #define WIFI_PASS "CharlieEchoZero123"
 
@@ -113,6 +116,25 @@ bool detectDoubleReset() {
   return (now - last) < DRD_TIMEOUT;
 }
 
+void runOTA() {
+    WiFiClient client;
+    t_httpUpdate_return ret = httpUpdate.update( client, "http://" + serverip + "/api/echo/" + ECHO_DEVICE_TYPE + "/latest/firmware.bin" );
+
+    switch (ret) {
+        case HTTP_UPDATE_FAILED:
+            webSocket.sendTXT(("OTA_FAILED: ") + httpUpdate.getLastErrorString());
+            break;
+
+        case HTTP_UPDATE_NO_UPDATES:
+            webSocket.sendTXT("No update available");
+            break;
+
+        case HTTP_UPDATE_OK:
+            webSocket.sendTXT("Update OK, rebooting...");
+            break;
+    }
+}
+
 void setupWiFi() {
   prefs.begin("config", false);
   serverip = prefs.getString("serverIp", "");
@@ -182,6 +204,14 @@ void onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     case WStype_CONNECTED:
         isWsConnected = true;
         break;
+    case WStype_TEXT:
+        {
+            String msg = String((char*)payload);
+            if (msg == "OTA") {
+                runOTA();
+            }
+            break;    
+        }
     case WStype_BIN:
         playAudio(payload, length);
         break;
