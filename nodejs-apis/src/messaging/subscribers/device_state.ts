@@ -11,5 +11,9 @@ export default {
             { externalId },
             { $set: { state: { power, level } } }
         );
+
+        cs.devices
+            .find({ externalId })
+            .then(({ _id, ...res }) => cs.states.insert(res));
     },
 };
