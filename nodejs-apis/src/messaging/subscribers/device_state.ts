@@ -15,7 +15,7 @@ export default {
         const device = await cs.devices.findOne({ externalId });
         if (device) {
             const { _id, ...res } = device;
-            cs.states.insertOne(res);
+            cs.states.insertOne({ timestamp: Date.now(), ...res });
         }
     },
 };
