@@ -12,8 +12,8 @@ export default defineConfig({
     plugins: [
         react(),
         VitePWA({
-            registerType: 'autoUpdate',
-            injectRegister: 'auto'
+            strategies: 'injectManifest',
+            injectRegister: 'auto',
         }),
     ],
     server: {
