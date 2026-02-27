@@ -1,4 +1,5 @@
 import {
+    Box,
     Card,
     CardContent,
     Divider,
@@ -15,6 +16,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../../api/charlie';
 import { DeviceToggle } from './Toggle';
 import { DeviceType } from './constants';
+import HistoricalDeviceChart from '../DeviceStateChart';
 
 let timeout = null;
 
@@ -60,156 +62,149 @@ export const ViewDevice = ({ deviceId }) => {
     const { _id, name, externalId, provider, type, state } = data;
 
     return (
-        <Card sx={{ maxWidth: 600 }}>
-            <CardContent>
-                <Grid container spacing={2}>
-                    <Typography variant="h6" gutterBottom>
-                        {name}
-                    </Typography>
+        <Box>
+            <Card>
+                <CardContent>
+                    <Grid container spacing={2}>
+                        <Typography variant="h6" gutterBottom>
+                            {name}
+                        </Typography>
 
-                    <div>
-                        <DeviceToggle
-                            deviceId={deviceId}
-                            power={state?.power}
-                            type={type}
-                            onStateChange={(newState) =>
-                                newState &&
-                                setData({ ...data, state: newState })
-                            }
-                        />
-                    </div>
-                </Grid>
-
-                <Grid container direction="column" spacing={1}>
-                    <Grid>
-                        <TextField
-                            label="ID"
-                            value={_id}
-                            fullWidth
-                            InputProps={{ readOnly: true }}
-                        />
+                        <div>
+                            <DeviceToggle
+                                deviceId={deviceId}
+                                power={state?.power}
+                                type={type}
+                                onStateChange={(newState) =>
+                                    newState &&
+                                    setData({ ...data, state: newState })
+                                }
+                            />
+                        </div>
                     </Grid>
 
-                    <Grid>
-                        <TextField
-                            label="External ID"
-                            value={externalId}
-                            fullWidth
-                            onChange={(event) => {
-                                const d = {
-                                    ...data,
-                                    externalId: event.target.value,
-                                };
-                                setData(d);
-                                debouncedUpdate(d);
-                            }}
-                        />
-                    </Grid>
+                    <Grid container direction="column" spacing={1}>
+                        <Grid>
+                            <TextField
+                                label="ID"
+                                value={_id}
+                                fullWidth
+                                InputProps={{ readOnly: true }}
+                            />
+                        </Grid>
 
-                    <Divider sx={{ my: '5px' }} />
-
-                    <Grid>
-                        <TextField
-                            label="Name"
-                            value={name}
-                            onChange={(event) => {
-                                const d = { ...data, name: event.target.value };
-                                setData(d);
-                                debouncedUpdate(d);
-                            }}
-                            fullWidth
-                        />
-                    </Grid>
-
-                    <Grid>
-                        <FormControl fullWidth>
-                            <InputLabel id="device=type">Type</InputLabel>
-                            <Select
-                                value={type}
-                                label="Type"
+                        <Grid>
+                            <TextField
+                                label="External ID"
+                                value={externalId}
+                                fullWidth
                                 onChange={(event) => {
                                     const d = {
                                         ...data,
-                                        type: event.target.value,
+                                        externalId: event.target.value,
                                     };
                                     setData(d);
                                     debouncedUpdate(d);
                                 }}
-                            >
-                                {Object.keys(DeviceType).map((t) => (
-                                    <MenuItem value={`${t}`}>{t}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
+                            />
+                        </Grid>
 
-                    <Divider sx={{ my: '5px' }} />
+                        <Divider sx={{ my: '5px' }} />
 
-                    <Grid>
-                        <FormControl fullWidth>
-                            <InputLabel id="device-provider">
-                                Provider
-                            </InputLabel>
-                            <Select
-                                value={provider}
-                                label="Provider"
+                        <Grid>
+                            <TextField
+                                label="Name"
+                                value={name}
                                 onChange={(event) => {
                                     const d = {
                                         ...data,
-                                        provider: event.target.value,
+                                        name: event.target.value,
                                     };
                                     setData(d);
                                     debouncedUpdate(d);
                                 }}
-                            >
-                                {providers?.map((p) => (
-                                    <MenuItem value={p._id}>{p.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
+                                fullWidth
+                            />
+                        </Grid>
 
-                    <Divider sx={{ my: '5px' }} />
+                        <Grid>
+                            <FormControl fullWidth>
+                                <InputLabel id="device=type">Type</InputLabel>
+                                <Select
+                                    value={type}
+                                    label="Type"
+                                    onChange={(event) => {
+                                        const d = {
+                                            ...data,
+                                            type: event.target.value,
+                                        };
+                                        setData(d);
+                                        debouncedUpdate(d);
+                                    }}
+                                >
+                                    {Object.keys(DeviceType).map((t) => (
+                                        <MenuItem value={`${t}`}>{t}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
 
-                    <Grid>
-                        <FormControl fullWidth>
-                            <InputLabel id="device-room">Room</InputLabel>
-                            <Select
-                                value={roomId}
-                                label="Room"
-                                onChange={(event) => {
-                                    setRoomId(event.target.value);
-                                    changeRoom(event.target.value);
-                                }}
-                            >
-                                <MenuItem value="">Aucun</MenuItem>
-                                {rooms?.map((r) => (
-                                    <MenuItem value={r._id}>{r.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <Divider sx={{ my: '5px' }} />
+
+                        <Grid>
+                            <FormControl fullWidth>
+                                <InputLabel id="device-provider">
+                                    Provider
+                                </InputLabel>
+                                <Select
+                                    value={provider}
+                                    label="Provider"
+                                    onChange={(event) => {
+                                        const d = {
+                                            ...data,
+                                            provider: event.target.value,
+                                        };
+                                        setData(d);
+                                        debouncedUpdate(d);
+                                    }}
+                                >
+                                    {providers?.map((p) => (
+                                        <MenuItem value={p._id}>
+                                            {p.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                        <Divider sx={{ my: '5px' }} />
+
+                        <Grid>
+                            <FormControl fullWidth>
+                                <InputLabel id="device-room">Room</InputLabel>
+                                <Select
+                                    value={roomId}
+                                    label="Room"
+                                    onChange={(event) => {
+                                        setRoomId(event.target.value);
+                                        changeRoom(event.target.value);
+                                    }}
+                                >
+                                    <MenuItem value="">Aucun</MenuItem>
+                                    {rooms?.map((r) => (
+                                        <MenuItem value={r._id}>
+                                            {r.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
                     </Grid>
-                </Grid>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+            <Card>
+                <HistoricalDeviceChart deviceId={_id} />
+            </Card>
+        </Box>
     );
 };
-
-/*
-  <Divider sx={{ my: 3 }} />
- <Typography variant="h6" gutterBottom>
-                    Raw State
-                </Typography>
-  <Table size="small">
-                    <TableBody>
-                        {Object.entries(form.rawState).map(([key, value]) => (
-                            <TableRow key={key}>
-                                <TableCell sx={{ fontWeight: 600 }}>
-                                    {key}
-                                </TableCell>
-                                <TableCell>{String(value)}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-*/

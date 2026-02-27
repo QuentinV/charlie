@@ -71,6 +71,112 @@ const routes: RestApis = {
                 'Change state of a device (Turn on/off lights, open blinds, play tv..)',
         },
     },
+    'devices/:id/states': {
+        get: {
+            handler: async ({ params, query }) => {
+                const start = Number(query.start);
+                const end = Number(query.end);
+                try {
+                    return {
+                        data: await cs.states
+                            .aggregate([
+                                {
+                                    $match: {
+                                        deviceId: params.id,
+                                        timestamp: { $gte: start, $lte: end },
+                                    },
+                                },
+                                {
+                                    $addFields: {
+                                        minute: {
+                                            $dateTrunc: {
+                                                date: { $toDate: '$timestamp' },
+                                                unit: 'minute',
+                                                timezone: 'Europe/Paris',
+                                            },
+                                        },
+                                        powerPriority: {
+                                            $switch: {
+                                                branches: [
+                                                    {
+                                                        case: {
+                                                            $eq: [
+                                                                '$state.power',
+                                                                'on',
+                                                            ],
+                                                        },
+                                                        then: 3,
+                                                    },
+                                                    {
+                                                        case: {
+                                                            $eq: [
+                                                                '$state.power',
+                                                                'pause',
+                                                            ],
+                                                        },
+                                                        then: 2,
+                                                    },
+                                                ],
+                                                default: 1,
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    $group: {
+                                        _id: '$minute',
+                                        bestPower: { $max: '$powerPriority' },
+                                        avgLevel: { $avg: '$state.level' },
+                                    },
+                                },
+                                {
+                                    $addFields: {
+                                        power: {
+                                            $switch: {
+                                                branches: [
+                                                    {
+                                                        case: {
+                                                            $eq: [
+                                                                '$bestPower',
+                                                                3,
+                                                            ],
+                                                        },
+                                                        then: 'on',
+                                                    },
+                                                    {
+                                                        case: {
+                                                            $eq: [
+                                                                '$bestPower',
+                                                                2,
+                                                            ],
+                                                        },
+                                                        then: 'pause',
+                                                    },
+                                                ],
+                                                default: 'off',
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    $project: {
+                                        _id: 0,
+                                        timestamp: '$_id',
+                                        power: '$power',
+                                        level: '$avgLevel',
+                                    },
+                                },
+                                { $sort: { timestamp: 1 } },
+                            ])
+                            .toArray(),
+                    };
+                } catch (e) {
+                    console.log(e);
+                }
+            },
+            description: 'Historical data of states',
+        },
+    },
     'devices/:id': {
         get: async ({ params }) => cs.devices.findOne({ _id: params.id }),
         delete: async ({ params }) => cs.devices.deleteOne({ _id: params.id }),
