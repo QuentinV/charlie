@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import fs from 'fs';
+import { VitePWA } from 'vite-plugin-pwa';
 
 const apihost = process?.env?.API_HOST ?? 'http://localhost:9300';
 console.log(apihost);
@@ -9,7 +9,13 @@ console.log(apihost);
 export default defineConfig({
     root: '',
     base: '/',
-    plugins: [react()],
+    plugins: [
+        react(),
+        VitePWA({
+            registerType: 'autoUpdate',
+            injectRegister: 'auto'
+        }),
+    ],
     server: {
         host: true,
         port: 3000,
