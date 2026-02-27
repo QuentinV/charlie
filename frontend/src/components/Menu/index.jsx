@@ -18,6 +18,8 @@ import { useNavigate } from 'react-router-dom';
 import { useUnit } from 'effector-react';
 import { settingsStore } from '../../state/settings';
 import { NfcJsonReader } from '../NfcJsonReader';
+import { $pwaPrompt, setPwaPrompt } from '../../state/standalone';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 export const Menu = () => {
     const theme = useTheme();
@@ -27,6 +29,7 @@ export const Menu = () => {
     const devicesDiscovery = useUnit(settingsStore.$devicesDiscovery);
     const enableAddRoutine = useUnit(settingsStore.$enableAddRoutine);
     const showAiAsk = useUnit(settingsStore.$showAiAsk);
+    const pwaPrompt = useUnit($pwaPrompt);
 
     const navItems = [{ label: 'Home', route: '/' }];
     enableAddRoutine &&
@@ -69,6 +72,16 @@ export const Menu = () => {
                             />
                             Charlie
                         </Typography>
+                        {!!pwaPrompt && (
+                            <CloudDownloadIcon
+                                onClick={() => {
+                                    pwaPrompt.prompt();
+                                    pwaPrompt.userChoice.then(() =>
+                                        setPwaPrompt(null)
+                                    );
+                                }}
+                            />
+                        )}
                     </NfcJsonReader>
                     {!isMobile &&
                         navItems.map((item, i) => (

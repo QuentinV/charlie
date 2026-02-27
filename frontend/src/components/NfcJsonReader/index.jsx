@@ -111,6 +111,9 @@ export const NfcJsonReader = ({ children }) => {
             style={{
                 userSelect: 'none',
                 touchAction: 'none',
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'center',
             }}
             onTouchStart={handlePressStart}
             onTouchEnd={handlePressEnd}
