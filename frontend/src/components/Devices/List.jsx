@@ -32,6 +32,7 @@ export const DevicesList = ({ devices }) => {
                                     deviceId={device._id}
                                     power={device.state?.power}
                                     type={device.type}
+                                    level={device.state?.level}
                                     onStateChange={(newState) => {
                                         device.state = newState;
                                         setDevicesState([...devices]);

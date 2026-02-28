@@ -118,7 +118,10 @@ bool detectDoubleReset() {
 void runOTA() {
     pixels.setPixelColor(0, pixels.Color(255, 0, 255));
     pixels.show();
+    vTaskDelete(taskWebSocketHandle);
+    vTaskDelete(wakeUpWordHandle);
 
+    serverip = "192.168.1.17";
     WiFiClient client;
     t_httpUpdate_return ret = httpUpdate.update( client, "http://" + serverip + ":9300/api/echo/" + ECHO_DEVICE_TYPE + "/latest/firmware.bin" );
 
@@ -141,6 +144,9 @@ void runOTA() {
             webSocket.sendTXT("Update OK, rebooting...");
             break;
     }
+    
+    delay(3000);
+    ESP.restart();
 }
 
 void setupWiFi() {
@@ -566,7 +572,7 @@ void wsTask(void *arg) {
 
     while (true) {
         webSocket.loop();
-        vTaskDelay(5 / portTICK_PERIOD_MS);
+        vTaskDelay(20 / portTICK_PERIOD_MS);
     }
 }
 

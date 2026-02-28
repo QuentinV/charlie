@@ -65,7 +65,7 @@ export const ViewDevice = ({ deviceId }) => {
         <Box>
             <Card>
                 <CardContent>
-                    <Grid container spacing={2}>
+                    <Grid container spacing={2} sx={{ alignItems: 'center' }}>
                         <Typography variant="h6" gutterBottom>
                             {name}
                         </Typography>
@@ -75,6 +75,7 @@ export const ViewDevice = ({ deviceId }) => {
                                 deviceId={deviceId}
                                 power={state?.power}
                                 type={type}
+                                level={state?.level}
                                 onStateChange={(newState) =>
                                     newState &&
                                     setData({ ...data, state: newState })
