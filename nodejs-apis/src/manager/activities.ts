@@ -19,7 +19,7 @@ const routes: RestApis = {
 
                 const aggregate: any = [
                     { $match: { $and: [filters] } },
-                    { $sort: { _id: -1 } },
+                    { $sort: { modified: -1 } },
                     { $skip },
                     { $limit },
                 ];
