@@ -57,7 +57,6 @@ String serverip;
 // Objects
 Adafruit_NeoPixel pixels(1, GPIO_NUM_48, NEO_GRB + NEO_KHZ800);
 
-QueueHandle_t wsSendQueue;
 WebSocketsClient webSocket;
 
 // States
@@ -117,19 +116,28 @@ bool detectDoubleReset() {
 }
 
 void runOTA() {
+    pixels.setPixelColor(0, pixels.Color(255, 0, 255));
+    pixels.show();
+
     WiFiClient client;
-    t_httpUpdate_return ret = httpUpdate.update( client, "http://" + serverip + "/api/echo/" + ECHO_DEVICE_TYPE + "/latest/firmware.bin" );
+    t_httpUpdate_return ret = httpUpdate.update( client, "http://" + serverip + ":9300/api/echo/" + ECHO_DEVICE_TYPE + "/latest/firmware.bin" );
 
     switch (ret) {
         case HTTP_UPDATE_FAILED:
+            pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+            pixels.show();
             webSocket.sendTXT(("OTA_FAILED: ") + httpUpdate.getLastErrorString());
             break;
 
         case HTTP_UPDATE_NO_UPDATES:
+            pixels.setPixelColor(0, pixels.Color(0, 0, 0));
+            pixels.show();
             webSocket.sendTXT("No update available");
             break;
 
         case HTTP_UPDATE_OK:
+            pixels.setPixelColor(0, pixels.Color(0, 0, 255));
+            pixels.show();
             webSocket.sendTXT("Update OK, rebooting...");
             break;
     }
@@ -444,8 +452,8 @@ void sendMicAudio() {
             if (silenceStart == 0) {
                 silenceStart = t;
             } else if (t - silenceStart > MIC_DURATION_SILENCE) {
-                if (webSocket.isConnected())
-                    webSocket.sendTXT("END");
+                //if (webSocket.isConnected())
+                //    webSocket.sendTXT("END");
                 break;
             }
         } else {
@@ -455,6 +463,8 @@ void sendMicAudio() {
         if (webSocket.isConnected())
             webSocket.sendBIN((uint8_t*)send_samples16, frames_read * sizeof(int16_t));
     }
+
+    sendWakeWordWindow();
 
     continuous_record = true;
 
@@ -480,7 +490,6 @@ void memoryPrintTask(void *pvParameters) {
 void onWakeWordDetected() {
   continuous_record = false;
   inference.buf_ready = 0;
-  sendWakeWordWindow();
   sendMicAudio();
 }
 

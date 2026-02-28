@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Button,
     Select,
@@ -7,61 +7,29 @@ import {
     InputLabel,
     Typography,
 } from '@mui/material';
-import { ESPLoader } from 'esptool-js';
+import { api } from '../../api/charlie';
 
 export const FlashEchoDevice = () => {
-    const [echoType, setEchoType] = useState('echo-main');
-    const [status, setStatus] = useState('');
+    const [ips, setIps] = useState([]);
+    const [selected, setSelected] = useState('');
 
-    const handleFlash = async () => {
-        try {
-            setStatus('Requesting serial port...');
-            if (!('serial' in navigator)) {
-                setStatus('WebSerial is not supported in this browser.');
-                return;
-            }
-            const port = await navigator.serial.requestPort();
-            await port.open({ baudRate: 115200 });
-
-            setStatus('Connecting to ESP32...');
-            const esploader = new ESPLoader(port, 115200);
-            await esploader.connect();
-
-            const firmwareUrl = `/api/echo/${echoType}/latest/firmware.bin`;
-            setStatus(`Downloading firmware from ${firmwareUrl}...`);
-
-            const firmware = await fetch(firmwareUrl).then((r) =>
-                r.arrayBuffer()
-            );
-
-            setStatus('Flashing firmware...');
-            await esploader.flash([
-                { data: new Uint8Array(firmware), address: 0x10000 },
-            ]);
-
-            setStatus('Resetting device...');
-            await esploader.reset();
-
-            setStatus('Flash complete!');
-        } catch (err) {
-            console.error(err);
-            setStatus('Error: ' + err.message);
-        }
-    };
+    useEffect(() => {
+        api('echo').then(setIps);
+    }, [setIps]);
 
     return (
         <div style={{ maxWidth: 400 }}>
             <FormControl fullWidth margin="normal">
-                <InputLabel id="echo-type-label">Echo version/type</InputLabel>
+                <InputLabel id="echo-label">Echo</InputLabel>
                 <Select
-                    labelId="echo-type-label"
-                    value={echoType}
-                    label="Echo Type"
-                    onChange={(e) => setEchoType(e.target.value)}
+                    labelId="echo"
+                    value={selected}
+                    label="Echo"
+                    onChange={(e) => setSelected(e.target.value)}
                 >
-                    <MenuItem value="echo-main">main</MenuItem>
-                    <MenuItem value="echo-zero">zero</MenuItem>
-                    <MenuItem value="echo-zero-bis">zero bis (screen)</MenuItem>
+                    {ips.map((ip) => (
+                        <MenuItem value={ip}>{ip}</MenuItem>
+                    ))}
                 </Select>
             </FormControl>
 
@@ -69,7 +37,12 @@ export const FlashEchoDevice = () => {
                 variant="contained"
                 color="primary"
                 fullWidth
-                onClick={handleFlash}
+                onClick={() => {
+                    api('echo/ota', {
+                        method: 'POST',
+                        body: JSON.stringify({ ip: selected }),
+                    });
+                }}
                 sx={{ mt: 2 }}
             >
                 Flash my echo device

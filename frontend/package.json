@@ -28,7 +28,6 @@
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
-    "esptool-js": "^0.5.7",
     "gaussian-splat-renderer-for-lam": "^0.0.8",
     "globals": "^16.4.0",
     "install": "^0.13.0",
