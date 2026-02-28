@@ -2,6 +2,7 @@ import subscribers from './subscribers';
 import Aedes from 'aedes';
 import net from 'net';
 import mqtt from 'mqtt';
+import { log } from '../manager/services/activities';
 
 export let mqttClient = null;
 
@@ -24,7 +25,7 @@ export function setupMqttServer() {
     });
 
     mqttClient.on('message', async (topic, message) => {
-        console.log(`[MQTT] Received on ${topic}: ${message.toString()}`);
+        log('MQTT', `Received on ${topic}: ${message.toString()}`);
         if (subscribers[topic]) {
             try {
                 subscribers[topic]?.(message.toString());

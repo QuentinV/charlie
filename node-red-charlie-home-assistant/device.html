@@ -5,9 +5,9 @@
         color: '#fff',
         defaults: {
             name: { value: '', required: true },
-            deviceId: { value: '', required: true },
             deviceType: { value: 'light', required: true },
             externalId: { value: '', required: true },
+            roomId: { value: '', required: false },
             outputs: { value: 2 },
         },
         inputs: 1,
@@ -32,17 +32,12 @@
 <script type="text/x-red" data-template-name="charlie-device">
     <form id="dialog-form" class="form-horizontal" autocomplete="off">
         <div class="form-row">
-            <label for="node-input-deviceId">Id</label>
-            <input id="node-input-deviceId" />
-        </div>
-
-        <div class="form-row">
             <label for="node-input-name">Name</label>
             <input id="node-input-name" />
         </div>
 
         <div class="form-row">
-            <label for="node-input-externalId">External id</label>
+            <label for="node-input-externalId">Unique ID</label>
             <input id="node-input-externalId" />
         </div>
 
@@ -121,9 +116,8 @@
 
         <h3>Properties</h3>
         <ul>
-            <li><b>ID</b> – Unique identifier for this device within Charlie.</li>
             <li><b>Name</b> – Display name shown in the Node‑RED editor.</li>
-            <li><b>External ID</b> – Identifier used by the Charlie backend.</li>
+            <li><b>Unique ID</b> – Identifier used by the Charlie backend.</li>
             <li><b>Type</b> – Device category:
                 <ul>
                     <li><b>Lum</b> – Light</li>

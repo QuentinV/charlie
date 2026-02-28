@@ -11,6 +11,8 @@ const synFillingWords = [
     'de',
     'dans',
     'par',
+    'à',
+    'en',
 ];
 
 export function normalizeAndSplit(text: string, filterFillingsWords?: boolean) {

@@ -1,6 +1,7 @@
 import tools from '.';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { log } from '../../manager/services/activities';
 
 export async function buildMcpServer(app: any) {
     const server = new McpServer(
@@ -28,11 +29,9 @@ export async function buildMcpServer(app: any) {
                 },
                 async (params: any) => {
                     try {
-                        console.log(
-                            `[MCP Tools] calling ${k} with ${JSON.stringify(
-                                params
-                            )}`
-                        );
+                        log('MCP Tools', `calling ${k}`, {
+                            context: { name: k, params },
+                        });
                         const res = await c.exec(params);
                         if (res === true || res === false) {
                             return {

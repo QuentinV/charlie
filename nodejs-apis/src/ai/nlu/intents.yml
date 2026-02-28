@@ -10,6 +10,18 @@ intents:
             - yo
             - hé
 
+    weather:
+        starts:
+            - c'est quoi la météo
+            - quel temps fait‑il
+            - quel temps il fait
+            - quelle est la météo
+            - il fait quel temps
+            - donne-moi la météo
+            - comment est le temps
+        slots:
+            - text
+
     pauseDevice:
         starts:
             - mets en pause
@@ -65,6 +77,7 @@ slots:
         filterFillingsWords: false
         keys:
             - plurial
+
     deviceType:
         type: 'synonym'
         keys:
@@ -78,6 +91,7 @@ slots:
             - switch
     room:
         type: 'string'
+
     text:
         type: 'string'
         filterFillingsWords: true

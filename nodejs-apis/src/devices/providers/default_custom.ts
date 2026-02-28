@@ -3,10 +3,14 @@ import { ProvidersApis } from '../../types';
 
 const apis: ProvidersApis = {
     api: {
-        changeDeviceState: async ({ device: { _id } }, state) => {
-            mqttClient.publish(`device/${_id}/state`, JSON.stringify(state), {
-                qos: 0,
-            });
+        changeDeviceState: async ({ device: { externalId } }, state) => {
+            mqttClient.publish(
+                `device/${externalId}/state`,
+                JSON.stringify(state),
+                {
+                    qos: 0,
+                }
+            );
             return state;
         },
     },

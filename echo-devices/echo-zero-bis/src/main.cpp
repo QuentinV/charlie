@@ -18,6 +18,8 @@
 #define EIDSP_QUANTIZE_FILTERBANK   0
 #include <charlie-2_inferencing.h>
 
+
+#define ECHO_DEVICE_TYPE "echo-zero-bis"
 #define WIFI_NAME "Charlie-Echo-Zero"
 #define WIFI_PASS "CharlieEchoZero123"
 
@@ -85,6 +87,15 @@ inference_t inference;
 const uint32_t sample_buffer_size = 2048;
 signed short sampleBuffer[sample_buffer_size];
 bool continuous_record = true;
+
+int32_t capture_raw32[2048];
+int16_t capture_pcm16[2048];
+size_t capture_bytes_read;
+esp_err_t capture_err;
+
+int32_t send_samples32[BUFFER_SIZE];
+int16_t send_samples16[BUFFER_SIZE];
+esp_err_t send_err;
 
 // Task handles
 TaskHandle_t wakeUpWordHandle;
@@ -304,39 +315,41 @@ void setupSpeakerI2S() {
 }
 
 void captureMicSamplesTask(void *arg) {
-    continuous_record = true;
-
     const size_t chunk_bytes   = (size_t)arg;
     const size_t chunk_samples = chunk_bytes / sizeof(int16_t);
 
-    int32_t raw32[2048];
-    int16_t pcm16[2048];
-    size_t bytes_read = 0;
+    //memset(capture_raw32, 0, sizeof(capture_raw32));
+    //memset(capture_pcm16, 0, sizeof(capture_pcm16));
+    capture_bytes_read = 0;
 
-    while (continuous_record && !mute) {
+    while (true) {
+          if (mute || !continuous_record) {
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
 
-        esp_err_t err = i2s_read(
+        capture_err = i2s_read(
             I2S_MIC_PORT,
-            raw32,
+            capture_raw32,
             chunk_samples * sizeof(int32_t),
-            &bytes_read,
+            &capture_bytes_read,
             portMAX_DELAY
         );
 
-        if (err != ESP_OK || bytes_read == 0) continue;
+        if (capture_err != ESP_OK || capture_bytes_read == 0) continue;
 
-        size_t frames_read = bytes_read / sizeof(int32_t);
+        size_t frames_read = capture_bytes_read / sizeof(int32_t);
 
         // Convert 32‑bit I2S to 16‑bit PCM
         for (size_t i = 0; i < frames_read; i++) {
-            pcm16[i] = (int16_t)(raw32[i] >> 15);
+            capture_pcm16[i] = (int16_t)(capture_raw32[i] >> 15);
         }
 
         // Write into circular buffer
         xSemaphoreTake(inference.mutex, portMAX_DELAY);
 
         for (size_t i = 0; i < frames_read; i++) {
-            inference.buffer[inference.buf_count++] = pcm16[i];
+            inference.buffer[inference.buf_count++] = capture_pcm16[i];
 
             if (inference.buf_count >= inference.n_samples) {
                 inference.buf_count = 0;
@@ -346,14 +359,21 @@ void captureMicSamplesTask(void *arg) {
 
         xSemaphoreGive(inference.mutex);
     }
-
-    vTaskDelete(NULL);
 }
 
-void startMicCaptureSamples() {
-  pixels.setPixelColor(0, pixels.Color(0, 0, 0));
-  pixels.show();
-  xTaskCreate(captureMicSamplesTask, "CaptureMicSamples", 1024 * 32, (void*)sample_buffer_size, 10, NULL);
+void sendWakeWordWindow() {
+    if (webSocket.isConnected())
+        webSocket.sendTXT("WAKEWORD_START");
+
+    // inference_window contains 16000 samples (1 sec @ 16 kHz)
+    if (webSocket.isConnected())
+        webSocket.sendBIN(
+            (uint8_t*)inference_window,
+            inference.n_samples * sizeof(int16_t)
+        );
+
+    if (webSocket.isConnected())
+        webSocket.sendTXT("WAKEWORD_END");
 }
 
 void drawListeningScreen() {
@@ -365,72 +385,64 @@ void drawListeningScreen() {
     display.display();
 }
 
-void sendWakeWordWindow() {
-    webSocket.sendTXT("WAKEWORD_START");
-
-    // inference_window contains 16000 samples (1 sec @ 16 kHz)
-    webSocket.sendBIN(
-        (uint8_t*)inference_window,
-        inference.n_samples * sizeof(int16_t)
-    );
-
-    webSocket.sendTXT("WAKEWORD_END");
-}
-
-void sendMicAudioTask(void *arg) {
+void sendMicAudio() {
     drawListeningScreen();
-
-    int32_t samples32[BUFFER_SIZE]; 
-    int16_t samples16[BUFFER_SIZE];
 
     size_t bytes_read = 0;
     silenceStart = 0;
     time_t startTime = time(NULL);
 
+    //memset(send_samples32, 0, sizeof(send_samples32));
+    //memset(send_samples16, 0, sizeof(send_samples16));
+
+    pixels.setPixelColor(0, pixels.Color(255, 255, 255));
+    pixels.show();
+
     for (;;) {
         time_t t = time(NULL);
 
         if (t - startTime > 20) {
-            webSocket.sendTXT("END");
+            if (webSocket.isConnected())
+                webSocket.sendTXT("END");
             break;
         }
 
-        esp_err_t err = i2s_read(
+        send_err = i2s_read(
             I2S_MIC_PORT,
-            samples32,
-            sizeof(samples32),
+            send_samples32,
+            sizeof(send_samples32),
             &bytes_read,
             portMAX_DELAY
         );
 
-        if (err != ESP_OK || bytes_read == 0) {
+        if (send_err != ESP_OK || bytes_read == 0) {
             continue;
         }
 
         size_t frames_read = bytes_read / sizeof(int32_t);
         
         for (size_t i = 0; i < frames_read; i++) {
-            samples16[i] = (int16_t)(samples32[i] >> 15);
+            send_samples16[i] = (int16_t)(send_samples32[i] >> 15);
         }
 
         int32_t sum = 0;
         for (size_t i = 0; i < frames_read; i++) {
-            sum += samples16[i];
+            sum += send_samples16[i];
         }
         int16_t mean = sum / frames_read;
 
         for (size_t i = 0; i < frames_read; i++) {
-            samples16[i] -= mean;
+            send_samples16[i] -= mean;
         }
 
         for (size_t i = 0; i < frames_read; i++) {
-            samples16[i] = samples16[i] * 8;
+            send_samples16[i] = send_samples16[i] * 8;
         }
 
         // ===== RMS calculation =====
         int64_t sumsq = 0;
         for (size_t i = 0; i < frames_read; i++) {
-            int32_t s = samples16[i];
+            int32_t s = send_samples16[i];
             sumsq += (int64_t)s * s;
         }
 
@@ -442,19 +454,27 @@ void sendMicAudioTask(void *arg) {
             if (silenceStart == 0) {
                 silenceStart = t;
             } else if (t - silenceStart > MIC_DURATION_SILENCE) {
-                webSocket.sendTXT("END");
+                //if (webSocket.isConnected())
+                //    webSocket.sendTXT("END");
                 break;
             }
         } else {
             silenceStart = 0;
         }
 
-        webSocket.sendBIN((uint8_t*)samples16, frames_read * sizeof(int16_t));
+        if (webSocket.isConnected())
+            webSocket.sendBIN((uint8_t*)send_samples16, frames_read * sizeof(int16_t));
     }
 
-    startMicCaptureSamples();
+    sendWakeWordWindow();
 
-    vTaskDelete(NULL);
+    continuous_record = true;
+
+    pixels.setPixelColor(0, pixels.Color(0, 0, 0));
+    pixels.show();
+
+    if (webSocket.isConnected())
+        webSocket.sendTXT("start-mic-capture");
 }
 
 void memoryPrintTask(void *pvParameters) {
@@ -469,16 +489,10 @@ void memoryPrintTask(void *pvParameters) {
   }
 }
 
-void startMicUserRecord() {
-  xTaskCreate(sendMicAudioTask, "SendMicAudioTask", 1024 * 8, NULL, 10, NULL);
-}
-
 void onWakeWordDetected() {
-  pixels.setPixelColor(0, pixels.Color(255, 255, 255));
-  pixels.show();
   continuous_record = false;
-  sendWakeWordWindow();
-  startMicUserRecord();
+  inference.buf_ready = 0;
+  sendMicAudio();
 }
 
 int ei_get_sliding_window_data(size_t offset, size_t length, float *out_ptr) {
@@ -488,8 +502,12 @@ int ei_get_sliding_window_data(size_t offset, size_t length, float *out_ptr) {
     return 0;
 }
 
+
 void wakeUpWordTask(void *arg) {
-    startMicCaptureSamples();
+    pixels.setPixelColor(0, pixels.Color(0, 0, 0));
+    pixels.show();
+
+    xTaskCreate(captureMicSamplesTask, "CaptureMicSamples", 8192, (void*)sample_buffer_size, 10, NULL);
 
     const size_t window = inference.n_samples;   // 16000
     const size_t hop    = 3200;                  // 200 ms @ 16 kHz
@@ -551,10 +569,9 @@ void wsTask(void *arg) {
 
     while (true) {
         webSocket.loop();
-        vTaskDelay(5 / portTICK_PERIOD_MS);
+        vTaskDelay(20 / portTICK_PERIOD_MS);
     }
 }
-
 
 void displayStatusOnScreenTask(void *arg) {
 
@@ -611,6 +628,10 @@ void setup() {
   pixels.begin();
   pixels.setBrightness(50);
 
+  pixels.setPixelColor(0, pixels.Color(0, 255, 0));
+  pixels.show();
+
+
   setupWiFi();
 
   Serial.println("WIFI configured");
@@ -629,11 +650,17 @@ void setup() {
   setenv("TZ", "CETCEST,M3.5.0,M10.5.0/3", 1);
   tzset();
 
+  pixels.setPixelColor(0, pixels.Color(0, 0, 255));
+  pixels.show();
+
   configTime(3600, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
 
-  xTaskCreate( wakeUpWordTask, "WakeUpWord", 4096, NULL, 1, &wakeUpWordHandle );
   xTaskCreate( displayStatusOnScreenTask, "ScreenDisplay", 4096, NULL, 1, &screenHandle );
-  xTaskCreatePinnedToCore(wsTask, "TaskWebSocket", 1024 * 8, NULL, 1, &taskWebSocketHandle, 1);
+  xTaskCreatePinnedToCore(wsTask, "TaskWebSocket", 4096, NULL, 1, &taskWebSocketHandle, 0);
+
+  delay(10000);
+
+  xTaskCreate( wakeUpWordTask, "WakeUpWord", 1024 * 16, NULL, 1, &wakeUpWordHandle );
 }
 
 void loop() {

@@ -12,6 +12,7 @@ services:
             - ~/media/musics:/musics
             - ${XDG_RUNTIME_DIR}/pulse/native:/tmp/pulse/native
             - ./nodejs-apis/recordings:/app/recordings
+            - ./echo-devices:/echo-devices
         ports:
             - '9300:9300' # http server
             - '9303:9303' # audio udp
@@ -52,6 +53,26 @@ services:
         environment:
             - MONGO_INITDB_ROOT_USERNAME=
             - MONGO_INITDB_ROOT_PASSWORD=
+        networks:
+            - internal
+    frontend:
+        build: ./frontend
+        container_name: charlie-frontend
+        environment:
+            - NODE_ENV=production
+            - API_HOST=http://api:9300
+        volumes:
+            - ./frontend/src:/app/src
+            - ./frontend/.env:/app/.env
+            - ./frontend/vite.config.js:/app/vite.config.js
+            - ./frontend/public:/app/public
+            - ./certs:/certs
+        ports:
+            - '9305:3000'
+        command: 'yarn start --host'
+        depends_on:
+            - api
+        restart: unless-stopped
         networks:
             - internal
 

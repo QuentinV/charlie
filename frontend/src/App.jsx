@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { theme } from './theme';
 import { HomePage } from './pages/Home';
 import { NotFoundPage } from './pages/NotFound';
@@ -11,8 +11,15 @@ import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
 import { AiPage } from './pages/AiPage';
 import Musics from './components/Musics';
+import { settingsStore } from './state/settings';
+import { useUnit } from 'effector-react';
+import { ActivitiesPage } from './pages/Activities';
+import { EchoPage } from './pages/Echo';
 
 export default function App() {
+    const showMusicPlayer = useUnit(settingsStore.$showMusicPlayer);
+    const showAiAsk = useUnit(settingsStore.$showAiAsk);
+    const devicesDiscovery = useUnit(settingsStore.$devicesDiscovery);
     return (
         <ThemeProvider theme={theme}>
             <Router>
@@ -41,10 +48,12 @@ export default function App() {
                         <Box sx={{ height: '100%' }}>
                             <Routes>
                                 <Route path="/" element={<HomePage />} />
-                                <Route
-                                    path="/discovery"
-                                    element={<DevicesDiscoveryPage />}
-                                />
+                                {devicesDiscovery && (
+                                    <Route
+                                        path="/discovery"
+                                        element={<DevicesDiscoveryPage />}
+                                    />
+                                )}
                                 <Route
                                     path="/room/:id"
                                     element={<RoomPage />}
@@ -54,23 +63,30 @@ export default function App() {
                                     element={<RoutinesPage />}
                                 />
                                 <Route path="/ai" element={<AiPage />} />
+                                <Route
+                                    path="/activities"
+                                    element={<ActivitiesPage />}
+                                />{' '}
+                                <Route path="/echos" element={<EchoPage />} />
                                 <Route path="*" element={<NotFoundPage />} />
                             </Routes>
                         </Box>
                     </Box>
-                    <Box
-                        sx={{
-                            flexGrow: 0,
-                            marginTop: 'auto',
-                            height: '50px',
-                            color: 'white',
-                            display: 'flex',
-                            width: '100%',
-                        }}
-                    >
-                        <Footer />
-                    </Box>
-                    <Musics />
+                    {showAiAsk && (
+                        <Box
+                            sx={{
+                                flexGrow: 0,
+                                marginTop: 'auto',
+                                height: '50px',
+                                color: 'white',
+                                display: 'flex',
+                                width: '100%',
+                            }}
+                        >
+                            <Footer />
+                        </Box>
+                    )}
+                    {showMusicPlayer && <Musics />}
                 </Box>
             </Router>
         </ThemeProvider>

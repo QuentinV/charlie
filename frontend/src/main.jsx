@@ -1,9 +1,19 @@
 import React from 'react';
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
+import { setPwaPrompt } from './state/standalone';
 
 createRoot(document.getElementById('root')).render(<App />);
+
+if (
+    !window?.navigator?.standalone &&
+    !window?.matchMedia('(display-mode: standalone)')?.matches
+) {
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        setPwaPrompt(e);
+    });
+}
 
 // Push notifications
 if (import.meta.env.VITE_WEBPUSH_VAPID_PUBLICKEY) {

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { pcmToWav } from './utils';
 import path from 'path';
+import { cs } from '../core/db';
 
 const RECORDINGS_DIR = 'recordings';
 
@@ -43,4 +44,15 @@ async function rotateOldRecordings(dir: string, maxFiles: number) {
     for (const f of toDelete) {
         fs.unlinkSync(f.fullPath);
     }
+}
+
+export async function logEcho(ip: string, message: string) {
+    console.log(`[echo ${ip}] ${message}`);
+    const a = {
+        message,
+        from: ip,
+        type: 'echo',
+        modified: new Date(),
+    };
+    await cs.activities.insertOne(a);
 }

@@ -58,6 +58,8 @@ export const DeviceTypes = {
     shutter: 'shutter',
     sprinkler: 'sprinkler',
     tv: 'tv',
+    sensor: 'sensor',
+    button: 'button',
     unknown: 'unknown',
 };
 
@@ -103,11 +105,12 @@ export interface ProviderApiMetaInfo {
 export interface ProviderApi {
     init?: (provider: Provider) => Promise<boolean>;
     discover?: (provider: Provider) => Promise<object[]>;
-    changeDeviceState: (
+    changeDeviceState?: (
         meta: ProviderApiMetaInfo,
         params: DeviceState
     ) => Promise<DeviceState | boolean>;
     getDeviceState?: (meta: ProviderApiMetaInfo) => Promise<DeviceState>;
+    toggleDeviceState?: (meta: ProviderApiMetaInfo) => Promise<boolean>;
     getFunctions?: (
         meta: ProviderApiMetaInfo
     ) => Promise<ProviderFunctionDef[]>;
@@ -123,3 +126,17 @@ export interface ProvidersApis {
     restApi?: RestApis;
     tools?: Tools;
 }
+
+// --- Activities
+export interface Activity {
+    _id?: string;
+    context?: object;
+    data?: any;
+    message?: string;
+    type?: string;
+    from?: string;
+    modified?: Date;
+}
+
+// --- Settings
+export interface Settings {}

@@ -5,9 +5,11 @@ import {
     getDeviceState,
     getProviderFunctions,
     getProvidersApis,
+    toggleDeviceState,
 } from '../devices';
 import { Device, RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
+import { manageDeviceRoom } from './services/rooms';
 
 const routes: RestApis = {
     'devices/discover': {
@@ -44,6 +46,16 @@ const routes: RestApis = {
             description: 'Call a function of a device',
         },
     },
+    'devices/:id/state/toggle': {
+        put: {
+            handler: async ({ params }) => {
+                const res = await toggleDeviceState(params.id);
+                if (typeof res === 'object') return { state: res };
+                return { res };
+            },
+            description: 'Toggle state of a device',
+        },
+    },
     'devices/:id/state': {
         get: {
             handler: async ({ params }) => ({
@@ -57,6 +69,112 @@ const routes: RestApis = {
             }),
             description:
                 'Change state of a device (Turn on/off lights, open blinds, play tv..)',
+        },
+    },
+    'devices/:id/states': {
+        get: {
+            handler: async ({ params, query }) => {
+                const start = Number(query.start);
+                const end = Number(query.end);
+                try {
+                    return {
+                        data: await cs.states
+                            .aggregate([
+                                {
+                                    $match: {
+                                        deviceId: params.id,
+                                        timestamp: { $gte: start, $lte: end },
+                                    },
+                                },
+                                {
+                                    $addFields: {
+                                        minute: {
+                                            $dateTrunc: {
+                                                date: { $toDate: '$timestamp' },
+                                                unit: 'minute',
+                                                timezone: 'Europe/Paris',
+                                            },
+                                        },
+                                        powerPriority: {
+                                            $switch: {
+                                                branches: [
+                                                    {
+                                                        case: {
+                                                            $eq: [
+                                                                '$state.power',
+                                                                'on',
+                                                            ],
+                                                        },
+                                                        then: 3,
+                                                    },
+                                                    {
+                                                        case: {
+                                                            $eq: [
+                                                                '$state.power',
+                                                                'pause',
+                                                            ],
+                                                        },
+                                                        then: 2,
+                                                    },
+                                                ],
+                                                default: 1,
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    $group: {
+                                        _id: '$minute',
+                                        bestPower: { $max: '$powerPriority' },
+                                        avgLevel: { $avg: '$state.level' },
+                                    },
+                                },
+                                {
+                                    $addFields: {
+                                        power: {
+                                            $switch: {
+                                                branches: [
+                                                    {
+                                                        case: {
+                                                            $eq: [
+                                                                '$bestPower',
+                                                                3,
+                                                            ],
+                                                        },
+                                                        then: 'on',
+                                                    },
+                                                    {
+                                                        case: {
+                                                            $eq: [
+                                                                '$bestPower',
+                                                                2,
+                                                            ],
+                                                        },
+                                                        then: 'pause',
+                                                    },
+                                                ],
+                                                default: 'off',
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    $project: {
+                                        _id: 0,
+                                        timestamp: '$_id',
+                                        power: '$power',
+                                        level: '$avgLevel',
+                                    },
+                                },
+                                { $sort: { timestamp: 1 } },
+                            ])
+                            .toArray(),
+                    };
+                } catch (e) {
+                    console.log(e);
+                }
+            },
+            description: 'Historical data of states',
         },
     },
     'devices/:id': {
@@ -79,13 +197,26 @@ const routes: RestApis = {
             return cs.devices.find(filter).toArray();
         },
         post: async ({ body }) => {
-            const { _id, name, externalId, provider, type }: Device = body;
-            const uuid = _id || uuidV4();
+            const { name, externalId, provider, type }: Device = body;
+            let id = body?._id;
+
+            if (!id && externalId && provider) {
+                const device = await cs.devices.findOne({
+                    externalId,
+                    provider,
+                });
+                id = device?._id;
+            }
+
+            if (!id) {
+                id = uuidV4();
+            }
+
             await cs.devices.updateOne(
-                { _id: uuid },
+                { _id: id },
                 {
                     $set: {
-                        _id: uuid,
+                        _id: id,
                         name,
                         externalId,
                         provider,
@@ -94,7 +225,8 @@ const routes: RestApis = {
                 },
                 { upsert: true }
             );
-            return { uuid };
+
+            return { uuid: id };
         },
     },
 };
