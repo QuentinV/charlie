@@ -1,6 +1,18 @@
 import { cs } from '../../core/db';
 import { log } from '../../manager/services/activities';
 
+const logState = async (externalId: string) => {
+    const device = await cs.devices.findOne({ externalId });
+    if (device) {
+        const { _id, ...res } = device;
+        cs.states.insertOne({
+            timestamp: Date.now(),
+            deviceId: _id,
+            ...res,
+        });
+    }
+};
+
 export default {
     'device/state': async (data: string) => {
         log('MQTT', `Received on device/state: ${data}`);
@@ -12,15 +24,7 @@ export default {
             { $set: { state: { power, level } } }
         );
 
-        const device = await cs.devices.findOne({ externalId });
-        if (device) {
-            const { _id, ...res } = device;
-            cs.states.insertOne({
-                timestamp: Date.now(),
-                deviceId: _id,
-                ...res,
-            });
-        }
+        await logState(externalId);
     },
     'shelly/events/rpc': async (data: string) => {
         const { src, method, params } = JSON.parse(data);
@@ -35,7 +39,9 @@ export default {
             $set['state.level'] = s.apower;
         }
 
-        if (Object.keys($set).length)
+        if (Object.keys($set).length) {
             await cs.devices.updateOne({ externalId: src }, { $set });
+            await logState(src);
+        }
     },
 };
