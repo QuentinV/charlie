@@ -14,15 +14,14 @@ import { manageDeviceRoom } from './services/rooms';
 const routes: RestApis = {
     'devices/discover': {
         get: async () => {
-            const list = await cs.providers.find().toArray();
             const apis = await getProvidersApis();
 
             const res = await Promise.allSettled(
-                list.map(async (p) => {
-                    await apis[p.codesource]?.init?.(p);
+                apis.map(async (a) => {
+                    await a.api?.init?.(a.provider);
                     return {
-                        provider: p.name,
-                        data: await apis[p.codesource]?.discover?.(p),
+                        provider: a.provider.name,
+                        data: await a.api?.discover?.(a.provider),
                     };
                 })
             );

@@ -43,17 +43,21 @@ export async function getProviderTools(id: string) {
 }
 
 type ProvidersDevicesApis = {
-    [name: string]: ProviderApi;
+    provider: Provider;
+    api: ProviderApi;
 };
 
-export async function getProvidersApis(): Promise<ProvidersDevicesApis> {
-    return (await cs.providers.find().toArray()).reduce(
-        (prev: ProvidersDevicesApis, p: Provider) => {
-            prev[p.name] = providerApis[p.codesource]?.api;
-            return prev;
-        },
-        {}
-    );
+export async function getProvidersApis(
+    filter?: (api?: ProvidersDevicesApis) => boolean
+): Promise<ProvidersDevicesApis[]> {
+    let apis = (await cs.providers.find().toArray()).map((p: Provider) => ({
+        api: providerApis[p.codesource]?.api,
+        provider: p,
+    }));
+    if (filter) {
+        apis = apis.filter(filter);
+    }
+    return apis;
 }
 
 export async function getProvidersTools(): Promise<Tools> {
