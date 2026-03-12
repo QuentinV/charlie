@@ -18,10 +18,10 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install --no-cache-dir --upgrade pip
 
-#RUN pip install --no-cache-dir \
-#    torch \
-#    torchaudio \
-#    --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir \
+    torch \
+    torchaudio \
+    --index-url https://download.pytorch.org/whl/cpu
 
 RUN pip install --no-cache-dir fastapi
 RUN pip install --no-cache-dir uvicorn
@@ -33,11 +33,11 @@ RUN pip install --no-cache-dir piper-tts
 RUN pip install --no-cache-dir vosk
 RUN pip install --no-cache-dir pyaudio
 RUN pip install --no-cache-dir webrtc-noise-gain
-#RUN pip install --no-cache-dir qwen-asr
-#RUN pip install --no-cache-dir funasr
-#RUN pip install --no-cache-dir modelscope
-#RUN pip install --no-cache-dir numpy
-#RUN pip install --no-cache-dir setuptools
+RUN pip install --no-cache-dir qwen-asr
+RUN pip install --no-cache-dir funasr
+RUN pip install --no-cache-dir modelscope
+RUN pip install --no-cache-dir numpy
+RUN pip install --no-cache-dir setuptools
 
 EXPOSE 8000
 

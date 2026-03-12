@@ -77,5 +77,8 @@ export function stt(buffer: any[], options?: SttOptions): Promise<string> {
         buff = trimEnd500ms(buff);
     }
 
-    return sendChunk(buff, options?.key ?? 'vosk');
+    return sendChunk(
+        buff,
+        options?.key ?? process.env.DEFAULT_STT_MODEL ?? 'vosk'
+    );
 }

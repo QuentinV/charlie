@@ -8,7 +8,7 @@ describe('stt', () => {
             'src/echo/__tests__/rec-2026-03-09T20-38-20-462Z.wav'
         );
         let pcmBuffer = wavToPcm(wavBuffer);
-        let text = await stt([pcmBuffer], { trimEnd: false });
+        let text = await stt([pcmBuffer], { trimEnd: false, key: 'qwen' });
         expect(text).toBe('Allume la lumière du salon.');
     });
 

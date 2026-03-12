@@ -15,14 +15,17 @@ router = APIRouter()
 
 logger = logging.getLogger("uvicorn")
 
-voskModelKey = os.getenv("VOSK_MODEL_KEY")
-voskZip = voskModelKey + ".zip"
-voskZipPath =  "/vosk/" + voskZip
-voskModelUrl = "https://alphacephei.com/vosk/models/" + voskZip
 voskFolder = "/vosk/main"
 voskSampleRate = 16000
 
+voskModel = None
+
 def download_and_extract_vosk():
+    voskModelKey = os.getenv("VOSK_MODEL_KEY")
+    voskZip = voskModelKey + ".zip"
+    voskZipPath =  "/vosk/" + voskZip
+    voskModelUrl = "https://alphacephei.com/vosk/models/" + voskZip
+
     if os.path.isdir(voskFolder):
         logger.info(f"Folder '{voskFolder}' already exists. Skipping download.")
         return
@@ -58,8 +61,10 @@ def download_and_extract_vosk():
     logger.info("Vosk model extraction complete.")
     os.remove(voskZipPath)
 
-download_and_extract_vosk()
-voskModel = Model(voskFolder)
+def load_model():
+    download_and_extract_vosk()
+    global voskModel
+    voskModel = Model(voskFolder)
 
 @router.websocket("/stt/vosk/stream")
 async def websocket_stt(ws: WebSocket):
