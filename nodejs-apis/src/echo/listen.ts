@@ -76,7 +76,7 @@ export function setupEchoListen() {
                     log('audio received');
                     const text = await stt(audioBuffer, {
                         record: true,
-                        trimEnd: true,
+                        trimEnd: process.env.DEFAULT_STT_MODEL === 'vosk',
                     });
                     log(`spoken text = ${text}`);
                     const result = await ask(text);

@@ -64,21 +64,25 @@ async function sendChunk(
 }
 
 export function stt(buffer: any[], options?: SttOptions): Promise<string> {
+    const model = options?.key ?? process.env.DEFAULT_STT_MODEL ?? 'vosk';
+
     if (options?.record) {
         saveWavWithRotation(Buffer.concat(buffer));
     }
 
-    let buff = Buffer.concat([
-        Buffer.alloc(16000 * 2 * 0.3),
-        Buffer.concat(buffer),
-    ]);
+    let buff = null;
+    if (model === 'vosk') {
+        buff = Buffer.concat([
+            Buffer.alloc(16000 * 2 * 0.3),
+            Buffer.concat(buffer),
+        ]);
+    } else {
+        buff = Buffer.concat(buffer);
+    }
 
     if (options.trimEnd) {
         buff = trimEnd500ms(buff);
     }
 
-    return sendChunk(
-        buff,
-        options?.key ?? process.env.DEFAULT_STT_MODEL ?? 'vosk'
-    );
+    return sendChunk(buff, model);
 }

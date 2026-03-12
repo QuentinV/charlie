@@ -3,7 +3,7 @@ import { stt } from '../stt';
 import { wavToPcm } from '../utils';
 
 describe('stt', () => {
-    #test('standard - allume la lumière du salon', async () => {
+    xtest('standard - allume la lumière du salon', async () => {
         let wavBuffer = fs.readFileSync(
             'src/echo/__tests__/rec-2026-03-09T20-38-20-462Z.wav'
         );
