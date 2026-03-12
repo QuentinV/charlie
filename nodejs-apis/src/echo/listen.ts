@@ -62,7 +62,9 @@ export function setupEchoListen() {
 
             if (m === 'WAKEWORD_END') {
                 status = 'wakeword_pending';
-                const res = await stt(audioBufferWakeword, { record: true });
+                const res = (await stt(audioBufferWakeword, { record: true }))
+                    ?.toLowerCase()
+                    ?.replace('.', '');
                 status = res !== 'charlie' ? 'cancel' : 'ok';
                 log(`wakeword received: ${res} => ${status}`);
                 if (status === 'cancel') {

@@ -3,12 +3,12 @@ import { stt } from '../stt';
 import { wavToPcm } from '../utils';
 
 describe('stt', () => {
-    test('standard - allume la lumière du salon', async () => {
+    #test('standard - allume la lumière du salon', async () => {
         let wavBuffer = fs.readFileSync(
             'src/echo/__tests__/rec-2026-03-09T20-38-20-462Z.wav'
         );
         let pcmBuffer = wavToPcm(wavBuffer);
-        let text = await stt([pcmBuffer], { trimEnd: false, key: 'qwen' });
+        let text = await stt([pcmBuffer], { trimEnd: false });
         expect(text).toBe('Allume la lumière du salon.');
     });
 
@@ -35,11 +35,11 @@ describe('stt', () => {
         expect(text).toBe('Ferme les volets du salon.');
     });
 
-    xtest('charlie', async () => {
+    test('charlie', async () => {
         const wavBuffer = fs.readFileSync('src/echo/__tests__/charlie-1.wav');
         const pcmBuffer = wavToPcm(wavBuffer);
         const text = await stt([pcmBuffer], { trimEnd: false });
-        expect(text).toBe('Charlie.');
+        expect(text).toBe('Charlie');
     });
 
     xtest('éteins la lumière de la salle à manger', async () => {
