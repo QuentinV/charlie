@@ -63,7 +63,7 @@ async function sendChunk(
     });
 }
 
-export function stt(
+export async function stt(
     buffer: any[],
     options?: SttOptions
 ): Promise<string | boolean> {

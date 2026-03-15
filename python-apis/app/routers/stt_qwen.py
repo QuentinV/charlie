@@ -61,7 +61,7 @@ def load_model():
 
 
 @router.websocket("/stt/qwen/stream")
-async def websocket_endpoint(websocket: WebSocket, mode: str = "simple"):
+async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     audio_buffer = []
     
@@ -104,6 +104,8 @@ async def websocket_endpoint(websocket: WebSocket, mode: str = "simple"):
                                 )
                                 
                                 text_out = getattr(results[0], 'text', "") if results else ""
+
+                                print(f"Text: {text_out}")
                                 
                                 await websocket.send_json({
                                     "type": "result",

@@ -12,8 +12,8 @@ describe('stt', () => {
         expect(text).toBe('Allume la lumière du salon.');
     });
 
-    xtest('full - allume la lumière du salon', async () => {
-        let wavBuffer = fs.readFileSync('src/echo/__tests__/fulll-1.wav');
+    test('full - allume la lumière du salon', async () => {
+        let wavBuffer = fs.readFileSync('src/echo/__tests__/full-2.wav');
         let pcmBuffer = wavToPcm(wavBuffer);
         let text = await stt([pcmBuffer], { trimEnd: false, key: 'qwen' });
         expect(text).toBe('Charlie allume la lumière du salon.');
