@@ -15,14 +15,14 @@ export interface SttOptions {
 }
 
 let wsCache = {};
-async function getWs(onResult: (text: string) => void, key: string) {
+async function getWs(onResult: (text: string | boolean) => void, key: string) {
     if (wsCache[key]) {
         wsCache[key].onResult = onResult;
         return wsCache[key];
     }
     return new Promise((res, rej) => {
         const ws = new WebSocket(
-            `ws://${process.env.AI_AGENTS_HOST}/stt/${key}/stream`
+            `ws://${process.env.AI_AGENTS_HOST}/stt/${key}/stream?mode=verify`
         );
 
         ws.on('open', () => {
@@ -33,7 +33,7 @@ async function getWs(onResult: (text: string) => void, key: string) {
             ws.on('message', (msg) => {
                 const event = JSON.parse(msg.toString());
                 if (event.type === 'result') {
-                    wsCache[key]?.onResult(event.data.text);
+                    wsCache[key]?.onResult(event.text);
                 }
             });
         });
@@ -52,10 +52,10 @@ async function getWs(onResult: (text: string) => void, key: string) {
 async function sendChunk(
     buffer: Buffer<ArrayBuffer>,
     key: string
-): Promise<string> {
+): Promise<string | false> {
     return new Promise(async (res, rej) => {
         const ws = await getWs((text) => {
-            res(text);
+            res(text as any);
         }, key);
 
         ws.send(buffer);
@@ -63,7 +63,10 @@ async function sendChunk(
     });
 }
 
-export function stt(buffer: any[], options?: SttOptions): Promise<string> {
+export function stt(
+    buffer: any[],
+    options?: SttOptions
+): Promise<string | boolean> {
     const model = options?.key ?? process.env.DEFAULT_STT_MODEL ?? 'vosk';
 
     if (options?.record) {

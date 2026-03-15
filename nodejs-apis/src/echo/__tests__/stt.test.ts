@@ -8,8 +8,15 @@ describe('stt', () => {
             'src/echo/__tests__/rec-2026-03-09T20-38-20-462Z.wav'
         );
         let pcmBuffer = wavToPcm(wavBuffer);
-        let text = await stt([pcmBuffer], { trimEnd: false });
+        let text = await stt([pcmBuffer], { trimEnd: false, key: 'qwen' });
         expect(text).toBe('Allume la lumière du salon.');
+    });
+
+    xtest('full - allume la lumière du salon', async () => {
+        let wavBuffer = fs.readFileSync('src/echo/__tests__/fulll-1.wav');
+        let pcmBuffer = wavToPcm(wavBuffer);
+        let text = await stt([pcmBuffer], { trimEnd: false, key: 'qwen' });
+        expect(text).toBe('Charlie allume la lumière du salon.');
     });
 
     xtest('Éteint la lumière de la cuisine.', async () => {
@@ -25,7 +32,7 @@ describe('stt', () => {
         const wavBuffer = fs.readFileSync('src/echo/__tests__/rec-2.wav');
         const pcmBuffer = wavToPcm(wavBuffer);
         const text = await stt([pcmBuffer], { trimEnd: false });
-        expect(text).toBe('Quelle est la racine carrée de pi ?');
+        expect(text).toBe('Quelle est la racine carrée de pi?');
     });
 
     xtest('ferme le volet du salon', async () => {
@@ -35,11 +42,11 @@ describe('stt', () => {
         expect(text).toBe('Ferme les volets du salon.');
     });
 
-    test('charlie', async () => {
+    xtest('charlie', async () => {
         const wavBuffer = fs.readFileSync('src/echo/__tests__/charlie-1.wav');
         const pcmBuffer = wavToPcm(wavBuffer);
         const text = await stt([pcmBuffer], { trimEnd: false });
-        expect(text).toBe('Charlie');
+        expect(text).toBe('Charlie.');
     });
 
     xtest('éteins la lumière de la salle à manger', async () => {

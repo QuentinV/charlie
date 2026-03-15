@@ -8,32 +8,60 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from qwen_asr import Qwen3ASRModel
 from modelscope import snapshot_download
 
+#help(Qwen3ASRModel.from_pretrained)
+
 router = APIRouter()
 language = os.getenv("QWEN_LANGUAGE")
 
 # Configuration
-LOCAL_MODEL_DIR = "/models/Qwen3-ASR-0.6B"
-MODEL_ID = "Qwen/Qwen3-ASR-0.6B"
+LOCAL_MODEL_ASR_DIR = "/models/Qwen3-ASR-0.6B"
+MODEL_ASR_ID = "Qwen/Qwen3-ASR-0.6B"
 
 model = None
+context="This is a conversation with an assistant named Charlie."
 
 def load_model():    
     # Ensure model exists
-    if not os.path.exists(LOCAL_MODEL_DIR) or not os.listdir(LOCAL_MODEL_DIR):
-        print(f"Model not found. Downloading {MODEL_ID}...")
-        snapshot_download(MODEL_ID, local_dir=LOCAL_MODEL_DIR)
+    if not os.path.exists(LOCAL_MODEL_ASR_DIR) or not os.listdir(LOCAL_MODEL_ASR_DIR):
+        print(f"Model ASR not found. Downloading {MODEL_ASR_ID}...")
+        snapshot_download(MODEL_ASR_ID, local_dir=LOCAL_MODEL_ASR_DIR)
 
     # Load Qwen3-ASR-0.6B on CPU
     # Use float32 for CPU if bfloat16 causes issues on older hardware
     global model
     model = Qwen3ASRModel.from_pretrained(
-        LOCAL_MODEL_DIR,
+        LOCAL_MODEL_ASR_DIR,
         device_map="cpu",
-        dtype=torch.float32 
+        #dtype=torch.float32 
+        dtype=torch.bfloat16, 
+        low_cpu_mem_usage=True,
+        max_new_tokens = 128
     )
 
+    print("🚀 Warming up engine...")
+    try:
+        with torch.no_grad():
+            dummy_audio = np.zeros(16000)
+
+            # Save to temp file to bypass strict library type-checks
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_wav:
+                wavfile.write(tmp_wav.name, 16000, dummy_audio)
+                tmp_path = tmp_wav.name
+            
+            model.transcribe(
+                audio=tmp_path, 
+                language=language,
+                context = context
+            )
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+    
+    print("✨ Engine Hot & Ready")
+
+
 @router.websocket("/stt/qwen/stream")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, mode: str = "simple"):
     await websocket.accept()
     audio_buffer = []
     
@@ -51,7 +79,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 if text_command == "__END__":
                     print("Received __END__ signal. Starting transcription...")
-                    
+
                     if not audio_buffer:
                         await websocket.send_json({"type": "result", data: { "text": "" }})
                         break
@@ -67,14 +95,20 @@ async def websocket_endpoint(websocket: WebSocket):
                             tmp_path = tmp_wav.name
 
                         try:
-                            # Transcribe
-                            results = model.transcribe(audio=tmp_path, language=language)
-                            text_out = getattr(results[0], 'text', "") if results else ""
-                            
-                            await websocket.send_json({
-                                "type": "result",
-                                "data": { "text": text_out }
-                            })                            
+                            with torch.no_grad():
+                                # Transcribe
+                                results = model.transcribe(
+                                    audio = tmp_path, 
+                                    language = language,
+                                    context = context
+                                )
+                                
+                                text_out = getattr(results[0], 'text', "") if results else ""
+                                
+                                await websocket.send_json({
+                                    "type": "result",
+                                    "text": text_out
+                                })                                                    
                         finally:
                             if os.path.exists(tmp_path):
                                 os.remove(tmp_path)
