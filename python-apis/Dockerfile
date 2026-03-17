@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     portaudio19-dev \
     python3-dev \
     gcc \
+    cmake \
     ffmpeg git \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
@@ -38,6 +39,8 @@ RUN pip install --no-cache-dir funasr
 RUN pip install --no-cache-dir modelscope
 RUN pip install --no-cache-dir numpy
 RUN pip install --no-cache-dir setuptools
+RUN pip install --no-cache-dir llama-cpp-python
+RUN pip install --no-cache-dir huggingface_hub
 
 EXPOSE 8000
 

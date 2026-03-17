@@ -42,6 +42,7 @@ services:
             - VOSK_MODEL_KEY=${VOSK_MODEL_KEY}
             - QWEN_LANGUAGE=${QWEN_LANGUAGE}
             - STT_MODEL=${STT_MODEL}
+            - LLM_MODEL=${LLM_MODEL}
         restart: unless-stopped
         networks:
             - internal
