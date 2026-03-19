@@ -419,20 +419,20 @@ void ESP32HomeAssistant::_displayStatusOnScreenTask(void *arg) {
         time_t t = time(NULL);
         struct tm *timeinfo = localtime(&t);
 
-        this->display.clearDisplay();
+        this->display->clearDisplay();
 
         // Middle centered
-        this->display.setTextSize(3);
+        this->display->setTextSize(3);
         char timestr[16];
         strftime(timestr, sizeof(timestr), "%H:%M", timeinfo);
         int16_t x, y;
         uint16_t w, h;
-        this->display.getTextBounds(timestr, 0, 0, &x, &y, &w, &h);
-        this->display.setCursor((SCREEN_WIDTH - w) / 2, (SCREEN_HEIGHT - h) / 2);
-        this->display.print(timestr);
-        this->display.display();
+        this->display->getTextBounds(timestr, 0, 0, &x, &y, &w, &h);
+        this->display->setCursor((SCREEN_WIDTH - w) / 2, (SCREEN_HEIGHT - h) / 2);
+        this->display->print(timestr);
+        this->display->display();
 
-        this->display.setTextSize(1);
+        this->display->setTextSize(1);
 
         // Compute milliseconds until next minute boundary
         int ms_left = ((59 - timeinfo->tm_sec) * 1000) + (1000 - (timeinfo->tm_sec * 1000 % 1000));
