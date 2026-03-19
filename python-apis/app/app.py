@@ -9,15 +9,16 @@ import json
 import requests
 import sys
 
-from routers import stt_vosk, tts, llm, stt_qwen, llm_qwen
+from routers import tts, llm, stt_qwen, llm_qwen
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
 
-sttModel = os.getenv("STT_MODEL")
 llmModel = os.getenv("LLM_MODEL")
+if llmModel == None:
+    llmModel = "mistreal"
 
-print(f"Running with LLM_MODEL = {llmModel} and STT_MODEL = {sttModel}")
+print(f"Running with LLM_MODEL = {llmModel}")
 
 if llmModel == "mistreal":
     app.include_router(llm.router)
@@ -25,10 +26,7 @@ elif llmModel == "qwen":
     llm_qwen.load_model()
     app.include_router(llm_qwen.router)
 
-if sttModel == "vosk":
-    stt_vosk.load_model()
-    app.include_router(stt_vosk.router)
-elif sttModel == "qwen":
+if os.getenv("LOAD_STT_MODEL") != "false":
     stt_qwen.load_model()
     app.include_router(stt_qwen.router)
 

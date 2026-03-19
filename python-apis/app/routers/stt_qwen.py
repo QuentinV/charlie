@@ -11,7 +11,11 @@ from modelscope import snapshot_download
 #help(Qwen3ASRModel.from_pretrained)
 
 router = APIRouter()
-language = os.getenv("QWEN_LANGUAGE")
+language = os.getenv("STT_LANGUAGE")
+if language == None:
+    language = "French"
+
+print(f"Running with STT_LANGUAGE = {language}")
 
 # Configuration
 LOCAL_MODEL_ASR_DIR = "/models/Qwen3-ASR-0.6B"

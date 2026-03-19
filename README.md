@@ -22,22 +22,10 @@ Agent id and mistral api key needs to be configured as env variable with `.env` 
 ```
 MISTRAL_API_KEY=
 SSE_HOST=host.docker.internal
-VOSK_MODEL_KEY=vosk-model-fr-0.22
-STT_MODEL=vosk
-```
-
-OR with `qwen` (way better result but requires better hardawe => ++CPU & at least 5GB ram available). But is multilingal !
-
-```
-MISTRAL_API_KEY=
-SSE_HOST=host.docker.internal
-STT_MODEL=qwen
-QWEN_LANGUAGE=French
+STT_LANGUAGE=French
 ```
 
 `SSE_HOST=host.docker.internal` is used for development when having nodejs running on host. This should be set to `api` for deployment with full docker-compose.
-
-`vosk`: https://alphacephei.com/vosk/models/vosk-model-fr-0.22.zip
 
 ## Run
 

@@ -33,15 +33,13 @@ services:
         volumes:
             - ./python-apis/app:/app
             - ./nodejs-apis:/mcp-server
-            - ./vosk:/vosk
             - ./python-apis/qwen_models:/models
         environment:
             - PYTHONUNBUFFERED=1
             - MISTRAL_API_KEY=${MISTRAL_API_KEY}
             - SSE_HOST=http://${SSE_HOST}:9300/sse
-            - VOSK_MODEL_KEY=${VOSK_MODEL_KEY}
-            - QWEN_LANGUAGE=${QWEN_LANGUAGE}
-            - STT_MODEL=${STT_MODEL}
+            - STT_LANGUAGE=${STT_LANGUAGE}
+            - LOAD_STT_MODEL=${LOAD_STT_MODEL}
             - LLM_MODEL=${LLM_MODEL}
         restart: unless-stopped
         networks:

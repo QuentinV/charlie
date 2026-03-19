@@ -6,8 +6,6 @@ RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
     build-essential \
-    portaudio19-dev \
-    python3-dev \
     gcc \
     cmake \
     ffmpeg git \
@@ -31,9 +29,6 @@ RUN pip install --no-cache-dir mcp
 RUN pip install --no-cache-dir griffe
 RUN pip install --no-cache-dir mistralai==1.12.4
 RUN pip install --no-cache-dir piper-tts
-RUN pip install --no-cache-dir vosk
-RUN pip install --no-cache-dir pyaudio
-RUN pip install --no-cache-dir webrtc-noise-gain
 RUN pip install --no-cache-dir qwen-asr
 RUN pip install --no-cache-dir funasr
 RUN pip install --no-cache-dir modelscope
