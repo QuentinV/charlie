@@ -12,7 +12,7 @@ from modelscope import snapshot_download
 
 router = APIRouter()
 language = os.getenv("STT_LANGUAGE")
-if language == None:
+if language == "":
     language = "French"
 
 print(f"Running with STT_LANGUAGE = {language}")

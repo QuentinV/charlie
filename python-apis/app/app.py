@@ -15,7 +15,7 @@ app = FastAPI()
 logger = logging.getLogger("uvicorn")
 
 llmModel = os.getenv("LLM_MODEL")
-if llmModel == None:
+if llmModel == "":
     llmModel = "mistreal"
 
 print(f"Running with LLM_MODEL = {llmModel}")
