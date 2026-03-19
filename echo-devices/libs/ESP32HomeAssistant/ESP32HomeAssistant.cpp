@@ -290,7 +290,7 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
         if (sendMode) {
             time_t t = time(NULL);
 
-            if (t - startTime > 2) {
+            if (t - startTime > 5) {
                 Serial.println("Max duration reached. Ending.");
 
                 if (this->webSocket.isConnected())
@@ -309,6 +309,7 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
             }
 
             int rms = sqrt((double)sumsq / frames_read);
+            //Serial.printf("rms = %d", rms);
 
             // ===== Silence detection =====
             if (rms < MIC_THRESHOLD_SOUND) {
@@ -356,7 +357,7 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                 run_classifier(&signal, &result, false);
 
                 //Serial.printf("Classification = %f", result.classification[0].value);
-                if ( result.classification[0].value > WAKE_UP_WORD_ACCURACY) {
+                if ( result.classification[0].value > this->_cfg.WAKE_UP_WORD_ACCURACY) {
                     this->setLed(255, 255, 255);
 
                     sendMode = true;
@@ -375,6 +376,9 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
 }
 
 void ESP32HomeAssistant::_wsTask(void *arg) {
+    if( this->_cfg.overwriteServerip ) {
+        this->serverip = this->_cfg.overwriteServerip;
+    }
     this->webSocket.begin(this->serverip, WS_PORT, "/ws/echo");
     this->webSocket.onEvent(onWebSocketEvent);
     this->webSocket.setReconnectInterval(3000);
@@ -484,7 +488,6 @@ void ESP32HomeAssistant::printMemoryUsage() {
 }
 
 void ESP32HomeAssistant::setLed(uint8_t r, uint8_t g, uint8_t b) {
-    if (!this->_pixels) return;
     this->_pixels->setPixelColor(0, this->_pixels->Color(r, g, b));
     this->_pixels->show();
 }
@@ -495,7 +498,7 @@ void ESP32HomeAssistant::begin() {
         _cfg.neoPixelCount, _cfg.neoPixelPin, NEO_GRB + NEO_KHZ800);
     this->_pixels->begin();
     this->_pixels->setBrightness(_cfg.neoPixelBright);
-
+    
     this->setLed(0, 255, 0); // green = booting
 
     this->_setupWiFi();       // blocks until connected (or reboots)

@@ -79,18 +79,28 @@ export function setupEchoListen() {
                             const result = await ask(valid);
                             log(`result = ${result}`);
 
-                            ws.send(
+                            const shortText =
                                 result === null
                                     ? 'Comprends pas'
                                     : result === false
                                       ? `Pas possible`
-                                      : 'Ok!'
-                            );
+                                      : 'Ok';
 
-                            if (typeof result === 'string') {
-                                const resultAudio = await tts({ text: result });
-                                sendPCMInChunks(ws, Buffer.from(resultAudio));
-                            }
+                            ws.send(shortText);
+
+                            const longText =
+                                typeof result === 'string'
+                                    ? result
+                                    : result === null
+                                      ? 'Je ne comprends pas.'
+                                      : result === false
+                                        ? `Cette action n'est pas disponible.`
+                                        : `C'est fait.`;
+
+                            const resultAudio = await tts({
+                                text: longText,
+                            });
+                            sendPCMInChunks(ws, Buffer.from(resultAudio));
                         }
                     }
                 } catch (e) {

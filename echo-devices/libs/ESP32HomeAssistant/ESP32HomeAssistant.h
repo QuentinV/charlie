@@ -16,7 +16,6 @@
 #include <Adafruit_SSD1306.h>
 
 #define WS_PORT 9303
-#define WAKE_UP_WORD_ACCURACY 0.8f
 
 #define DRD_TIMEOUT 3
 #define MIC_THRESHOLD_SOUND 500
@@ -40,9 +39,12 @@ struct HAConfig {
     const char* apPassword = "HomeAssistantEcho123";
 
     const char* deviceType = "echo-zero";
+    float WAKE_UP_WORD_ACCURACY = 0.8f;
+    String overwriteServerip;
+    
 
     // NeoPixel
-    uint8_t neoPixelPin    = GPIO_NUM_10;
+    uint8_t neoPixelPin    = GPIO_NUM_48;
     uint8_t neoPixelCount  = 1;
     uint8_t neoPixelBright = 50;
 

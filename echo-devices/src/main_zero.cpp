@@ -8,6 +8,7 @@ void setup() {
     HAConfig cfg;
     cfg.apName = "CharlieEcho";    
     cfg.apPassword = "CharlieEcho123";
+    cfg.WAKE_UP_WORD_ACCURACY = 0.65f;
     
     assistant = new ESP32HomeAssistant(cfg);
     assistant->begin();
