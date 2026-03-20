@@ -1,13 +1,10 @@
 import { cs } from '../core/db';
-import { initAll } from '../init';
 import cron from 'node-cron';
 import { Routine, TriggerKind } from '../types';
 import { log } from '../manager/services/activities';
 import { ask } from '../ai/flow';
 
-(async () => {
-    await initAll();
-
+export async function setupRoutines() {
     const routines = await cs.routines
         .find({ 'triggers.type': TriggerKind.CRON, active: true })
         .toArray();
@@ -38,7 +35,7 @@ import { ask } from '../ai/flow';
                 );
             });
     });
-})();
+}
 
 // '*/5 * * * *'
 // Structure: (minute) (hour) (day of month) (month) (day of week)
