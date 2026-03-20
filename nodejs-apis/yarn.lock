@@ -3653,6 +3653,11 @@ node-coap-client@^2.1.0:
     debug "^4.3.4"
     node-dtls-client "^1.1.1"
 
+node-cron@^4.2.1:
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/node-cron/-/node-cron-4.2.1.tgz#6979be4aee4702f06322d21220df8de252c8e265"
+  integrity sha512-lgimEHPE/QDgFlywTd8yTR61ptugX3Qer29efeyWw2rv259HtGBNn1vZVmp8lB9uo9wC0t/AT4iGqXxia+CJFg==
+
 node-dtls-client@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/node-dtls-client/-/node-dtls-client-1.1.1.tgz#6558a0bd8027ca5b4bb051d9c6f2b67ffce7e893"

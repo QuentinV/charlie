@@ -19,16 +19,22 @@ const positiveAnswers = [
 
 console.log(process.env.BRAIN);
 
+export interface AskOptions {
+    log?: boolean;
+}
+
 export async function ask(
-    text: string
+    text: string,
+    options?: AskOptions
 ): Promise<string | boolean | null | void> {
+    const isLog = options?.log ?? true;
     try {
         const actions: Tools = await getActions();
 
         // First NLU for quick win
         const res = findIntent(text);
 
-        log('nlu', 'Find intent', { context: { text }, data: res });
+        isLog && log('nlu', 'Find intent', { context: { text }, data: res });
         if (res?.name && actions[res.name]) {
             const response = await actions[res.name].exec(res);
             if (response === true) {
@@ -39,14 +45,14 @@ export async function ask(
                 return response;
             }
         } else {
-            log('nlu', `Cannot find intent for ${text}`);
+            isLog && log('nlu', `Cannot find intent for ${text}`);
         }
     } catch (e) {}
 
     if (process.env.BRAIN === 'SMART') {
         try {
             // Fallback to LLM for complex tasks or misunderstanding
-            log('nlu', `Fallback to LLM`);
+            isLog && log('nlu', `Fallback to LLM`);
             return askDirect(text);
         } catch (e) {}
     }

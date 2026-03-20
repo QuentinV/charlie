@@ -140,3 +140,21 @@ export interface Activity {
 
 // --- Settings
 export interface Settings {}
+
+// --- Routines
+export interface TimeTrigger {
+    expression: string;
+}
+
+export type TriggerType = TimeTrigger;
+export enum TriggerKind {
+    CRON = 'CRON',
+}
+
+export interface Routine {
+    _id?: string;
+    name: string;
+    triggers: { type: TriggerKind; obj: TriggerType }[];
+    actions: string[];
+    active: boolean;
+}
