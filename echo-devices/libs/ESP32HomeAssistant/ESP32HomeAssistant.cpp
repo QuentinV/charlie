@@ -61,6 +61,7 @@ void ESP32HomeAssistant::_runOTA() {
 }
 
 void ESP32HomeAssistant::_setupWiFi() {
+    Serial.println("Loading wifi");
     this->_prefs.begin("config", false);
     this->serverip = this->_prefs.getString("serverIp", "");
     Serial.println("Loaded serverIp: " + this->serverip);
@@ -376,9 +377,9 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
 }
 
 void ESP32HomeAssistant::_wsTask(void *arg) {
-    if( this->_cfg.overwriteServerip ) {
-        this->serverip = this->_cfg.overwriteServerip;
-    }
+    //if( this->_cfg.overwriteServerip ) {
+    //    this->serverip = this->_cfg.overwriteServerip;
+    //}
     this->webSocket.begin(this->serverip, WS_PORT, "/ws/echo");
     this->webSocket.onEvent(onWebSocketEvent);
     this->webSocket.setReconnectInterval(3000);
@@ -493,6 +494,8 @@ void ESP32HomeAssistant::setLed(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 void ESP32HomeAssistant::begin() {
+    delay(5000);
+
     // NeoPixel init
     this->_pixels = new Adafruit_NeoPixel(
         _cfg.neoPixelCount, _cfg.neoPixelPin, NEO_GRB + NEO_KHZ800);
