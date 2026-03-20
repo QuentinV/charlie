@@ -8,6 +8,10 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from qwen_asr import Qwen3ASRModel
 from modelscope import snapshot_download
 import time
+import gc
+
+gc.collect()
+torch.cuda.empty_cache()
 
 #help(Qwen3ASRModel.from_pretrained)
 

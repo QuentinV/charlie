@@ -47,7 +47,6 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: '8.0'
                     memory: 8G
     db:
         container_name: charlie-db
