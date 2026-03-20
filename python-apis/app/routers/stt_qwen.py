@@ -7,6 +7,7 @@ from scipy.io import wavfile
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from qwen_asr import Qwen3ASRModel
 from modelscope import snapshot_download
+import time
 
 #help(Qwen3ASRModel.from_pretrained)
 
@@ -85,22 +86,22 @@ async def websocket_endpoint(websocket: WebSocket):
                     print("Received __END__ signal. Starting transcription...")
 
                     if not audio_buffer:
-                        await websocket.send_json({"type": "result", data: { "text": "" }})
+                        await websocket.send_json({"type": "result", "data": { "text": "", "execution_time": 0 }})
                         break
+
+                    start_time = time.perf_counter()
 
                     # Process the collected audio
                     try:
                         full_audio = np.concatenate(audio_buffer)
                         audio_buffer = []
                         
-                        # Save to temp file to bypass strict library type-checks
                         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_wav:
                             wavfile.write(tmp_wav.name, 16000, full_audio)
                             tmp_path = tmp_wav.name
 
                         try:
                             with torch.no_grad():
-                                # Transcribe
                                 results = model.transcribe(
                                     audio = tmp_path, 
                                     language = language,
@@ -108,12 +109,17 @@ async def websocket_endpoint(websocket: WebSocket):
                                 )
                                 
                                 text_out = getattr(results[0], 'text', "") if results else ""
-
+                                
+                                # Calculate final duration
+                                execution_time = time.perf_counter() - start_time
+                                
                                 print(f"Text: {text_out}")
+                                print(f"Transcription took: {execution_time:.4f} seconds")
                                 
                                 await websocket.send_json({
                                     "type": "result",
-                                    "text": text_out
+                                    "text": text_out,
+                                    "execution_time": execution_time
                                 })                                                    
                         finally:
                             if os.path.exists(tmp_path):
