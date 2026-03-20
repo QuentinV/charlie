@@ -100,6 +100,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             wavfile.write(tmp_wav.name, 16000, full_audio)
                             tmp_path = tmp_wav.name
 
+                        print(f"Writting to temp file took: {time.perf_counter() - start_time:.4f} seconds")
+
                         try:
                             with torch.no_grad():
                                 results = model.transcribe(
