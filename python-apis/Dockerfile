@@ -5,6 +5,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
+    python3-dev \
     build-essential \
     gcc \
     cmake \
