@@ -67,7 +67,7 @@ export async function stt(
     buffer: any[],
     options?: SttOptions
 ): Promise<string | boolean> {
-    const model = options?.key ?? process.env.DEFAULT_STT_MODEL ?? 'vosk';
+    const model = options?.key ?? process.env.DEFAULT_STT_MODEL ?? 'qwen';
 
     if (options?.record) {
         saveWavWithRotation(Buffer.concat(buffer));
