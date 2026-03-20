@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir \
     --index-url https://download.pytorch.org/whl/cpu
 
 RUN pip install --no-cache-dir fastapi
-RUN pip install --no-cache-dir uvicorn
+RUN pip install --no-cache-dir uvicorn[standard]
 RUN pip install --no-cache-dir authlib 
 RUN pip install --no-cache-dir mcp
 RUN pip install --no-cache-dir griffe
