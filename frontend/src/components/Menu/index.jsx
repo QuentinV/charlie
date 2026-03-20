@@ -30,6 +30,7 @@ export const Menu = () => {
     const enableAddRoutine = useUnit(settingsStore.$enableAddRoutine);
     const showAiAsk = useUnit(settingsStore.$showAiAsk);
     const pwaPrompt = useUnit($pwaPrompt);
+    const echosMenu = useUnit(settingsStore.$echosMenu);
 
     const navItems = [{ label: 'Home', route: '/' }];
     enableAddRoutine &&
@@ -38,7 +39,7 @@ export const Menu = () => {
         navItems.push({ label: 'Discover', route: '/discover' });
     showAiAsk && navItems.push({ label: 'AI', route: '/ai' });
     navItems.push({ label: 'Activities', route: '/activities' });
-    navItems.push({ label: 'Echos', route: '/echos' });
+    echosMenu && navItems.push({ label: 'Echos', route: '/echos' });
 
     return (
         <>

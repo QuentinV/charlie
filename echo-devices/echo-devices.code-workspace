@@ -1,0 +1,14 @@
+{
+    "folders": [
+        {
+            "name": "echo-devices",
+            "path": "./",
+        },
+    ],
+    "settings": {
+        "files.associations": {
+            "new": "cpp",
+            "stdexcept": "cpp",
+        },
+    },
+}

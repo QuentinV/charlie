@@ -152,3 +152,4 @@ demo
 
 rasa_nlu.yml
 nodejs-apis/recordings
+python-apis/qwen_models

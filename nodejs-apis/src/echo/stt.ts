@@ -1,7 +1,5 @@
 import 'dotenv/config';
-import { spawn } from 'child_process';
 import WebSocket from 'ws';
-import ffmpegPath from 'ffmpeg-static';
 import { saveWavWithRotation } from './logs';
 
 function trimEnd500ms(buffer) {
@@ -13,79 +11,29 @@ function trimEnd500ms(buffer) {
 export interface SttOptions {
     record?: boolean;
     trimEnd?: boolean;
+    key?: string;
 }
 
-export function stt(buffer: any[], options?: SttOptions): Promise<string> {
-    if (options?.record) {
-        saveWavWithRotation(Buffer.concat(buffer));
+let wsCache = {};
+async function getWs(onResult: (text: string | boolean) => void, key: string) {
+    if (wsCache[key]) {
+        wsCache[key].onResult = onResult;
+        return wsCache[key];
     }
-
-    let paddedBuffer = Buffer.concat([
-        Buffer.alloc(16000 * 2 * 0.3),
-        Buffer.concat(buffer),
-    ]);
-
-    if (options.trimEnd) {
-        paddedBuffer = trimEnd500ms(paddedBuffer);
-    }
-
-    return new Promise(async (res, rej) => {
+    return new Promise((res, rej) => {
         const ws = new WebSocket(
-            `ws://${process.env.AI_AGENTS_HOST}/stt/stream`
+            `ws://${process.env.AI_AGENTS_HOST}/stt/${key}/stream?mode=verify`
         );
 
         ws.on('open', () => {
-            const ffmpeg = spawn(ffmpegPath, [
-                '-f',
-                's16le',
-                '-ar',
-                '16000',
-                '-ac',
-                '1',
-                '-i',
-                'pipe:0',
-                '-filter:a',
-                'volume=40.0,dynaudnorm=f=150:g=15',
-                '-f',
-                'wav',
-                'pipe:1',
-            ]);
-
-            ffmpeg.stdin.write(paddedBuffer);
-            ffmpeg.stdin.end();
-
-            let chunks = [];
-            ffmpeg.stdout.on('data', (chunk) => {
-                //console.log(chunk.length);
-                chunks.push(chunk);
-                ws.send(chunk);
-                //sendToSttServer(chunk);
-            });
-
-            ffmpeg.on('error', (e) => {
-                console.log('error', e);
-                rej();
-            });
-
-            ffmpeg.on('close', async () => {
-                saveWavWithRotation(Buffer.concat(chunks));
-                ws.send('__END__');
-            });
+            wsCache[key] = ws;
+            wsCache[key].onResult = onResult;
+            res(ws);
 
             ws.on('message', (msg) => {
                 const event = JSON.parse(msg.toString());
-
-                /*if (event.type === 'partialChunk') {
-                    console.log('Partial chunk:', event);
-                }
-
-                if (event.type === 'partialText') {
-                    console.log('Partial text:', event);
-                }*/
-
                 if (event.type === 'result') {
-                    ws.close();
-                    res(event.data.text);
+                    wsCache[key]?.onResult(event.text);
                 }
             });
         });
@@ -94,27 +42,50 @@ export function stt(buffer: any[], options?: SttOptions): Promise<string> {
             console.log('ws', e);
             rej();
         });
+
+        ws.on('close', () => {
+            delete wsCache[key];
+        });
     });
 }
 
-//   'volume=40.0,dynaudnorm=f=150:g=15,asetrate=15500,aresample=16000',
-//'volume=40.0,dynaudnorm=f=150:g=15,atempo=0.6,aresample=16000',
-//'afftdn=nf=-25,acompressor=threshold=-30dB:ratio=3:attack=5:release=50,aresample=16000:resampler=soxr',
-//'volume=40.0,dynaudnorm=f=150:g=15,aresample=16000:resampler=soxr',
-// "firequalizer=gain='if(gte(f,55),0,-INF)+if(lte(f,14500),0,-INF)',volume=volume=30dB,afftdn=nr=30:nf=-30:gs=7:tn=0,dynaudnorm=p=1/sqrt(2):m=100:s=12",
+async function sendChunk(
+    buffer: Buffer<ArrayBuffer>,
+    key: string
+): Promise<string | false> {
+    return new Promise(async (res, rej) => {
+        const ws = await getWs((text) => {
+            res(text as any);
+        }, key);
 
-// '-filter:a', 'highpass=f=200,volume=4.0,dynaudnorm=f=150:g=15,afftdn=nf=-25'
-// '-filter:a', 'compand=attacks=0:decays=0:points=-80/-900|-50/-20|0/-10:gain=20' // This simulates automatic gain control (AGC), making quiet sounds louder and loud sounds softer:
-//                 'volume=40.0,dynaudnorm=f=150:g=15',
+        ws.send(buffer);
+        ws.send('__END__');
+    });
+}
 
-/*
+export async function stt(
+    buffer: any[],
+    options?: SttOptions
+): Promise<string | boolean> {
+    const model = options?.key ?? process.env.DEFAULT_STT_MODEL ?? 'qwen';
 
-   //`afftdn=nf=-20, acompressor=threshold=-25dB:ratio=4:attack=5:release=50, loudnorm`,
-                //'-filter:a',
-                //'compand=attacks=0:decays=0:points=-80/-900|-50/-20|0/-10:gain=20',
+    if (options?.record) {
+        saveWavWithRotation(Buffer.concat(buffer));
+    }
 
-ffmpeg -f s16le -ar 16000 -ac 1 -i input.pcm \
--af "afftdn=nf=-20, acompressor=threshold=-25dB:ratio=4:attack=5:release=50, loudnorm" \
--f s16le -acodec pcm_s16le output.pcm
+    let buff = null;
+    if (model === 'vosk') {
+        buff = Buffer.concat([
+            Buffer.alloc(16000 * 2 * 0.3),
+            Buffer.concat(buffer),
+        ]);
+    } else {
+        buff = Buffer.concat(buffer);
+    }
 
-            */
+    if (options.trimEnd) {
+        buff = trimEnd500ms(buff);
+    }
+
+    return sendChunk(buff, model);
+}

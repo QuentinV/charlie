@@ -20,6 +20,7 @@ export default function App() {
     const showMusicPlayer = useUnit(settingsStore.$showMusicPlayer);
     const showAiAsk = useUnit(settingsStore.$showAiAsk);
     const devicesDiscovery = useUnit(settingsStore.$devicesDiscovery);
+    const echosMenu = useUnit(settingsStore.$echosMenu);
     return (
         <ThemeProvider theme={theme}>
             <Router>
@@ -66,8 +67,13 @@ export default function App() {
                                 <Route
                                     path="/activities"
                                     element={<ActivitiesPage />}
-                                />{' '}
-                                <Route path="/echos" element={<EchoPage />} />
+                                />
+                                {echosMenu && (
+                                    <Route
+                                        path="/echos"
+                                        element={<EchoPage />}
+                                    />
+                                )}
                                 <Route path="*" element={<NotFoundPage />} />
                             </Routes>
                         </Box>

@@ -59,6 +59,10 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
 
     let devices = await cs.devices.find(filter).toArray();
     if (devices?.length) {
+        if (req.slots?.deviceType === 'tv') {
+            return [devices[0]];
+        }
+
         if (req.slots?.plurial) {
             log('devices-actions', 'pick all devices because plurial');
             return devices;

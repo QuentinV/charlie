@@ -4,6 +4,8 @@ import { tts } from '../ai/tts';
 import { ask } from '../ai/flow';
 import { logEcho } from './logs';
 
+const VERIFY_TEXT = ['charlie, ', 'charlie ', 'charlie. '];
+
 export const connectedEchos = {};
 
 function sendPCMInChunks(ws, buffer, chunkSize = 4096) {
@@ -11,6 +13,16 @@ function sendPCMInChunks(ws, buffer, chunkSize = 4096) {
         const chunk = buffer.slice(i, i + chunkSize);
         ws.send(chunk, { binary: true });
     }
+}
+
+function verify(text: string) {
+    const t = text.toLowerCase();
+    for (let i = 0; i < VERIFY_TEXT.length; ++i) {
+        if (t.startsWith(VERIFY_TEXT[i])) {
+            return text.substring(VERIFY_TEXT[i].length);
+        }
+    }
+    return false;
 }
 
 export function setupEchoListen() {
@@ -27,8 +39,6 @@ export function setupEchoListen() {
         //});;
 
         let audioBuffer = [];
-        let audioBufferWakeword = [];
-        let status = '';
         ws.on('error', (err) => {
             log('WebSocket error:' + err.message);
             delete connectedEchos[ip];
@@ -40,49 +50,58 @@ export function setupEchoListen() {
 
         ws.on('message', async (msg, isBinary) => {
             if (isBinary) {
-                (status === 'wakeword'
-                    ? audioBufferWakeword
-                    : audioBuffer
-                ).push(msg);
+                audioBuffer.push(msg);
                 return;
             }
 
             const m = msg.toString();
-            if (m === 'start-mic-capture') {
-                log('start mic capture');
+            if (m === 'start') {
+                log('start rec');
+                audioBuffer = [];
                 return;
             }
 
-            if (m === 'WAKEWORD_START') {
-                status = 'wakeword';
-                audioBufferWakeword = [];
-                log('wake word start');
-                return;
-            }
-
-            if (m === 'WAKEWORD_END') {
-                status = 'wakeword_pending';
-                const res = await stt(audioBufferWakeword, { record: true });
-                status = res !== 'charlie' ? 'cancel' : 'ok';
-                log(`wakeword received: ${res} => ${status}`);
-                if (status === 'cancel') {
-                    log(`end received cancel`);
-                    audioBuffer = [];
-                    return;
-                }
+            if (m === 'end') {
                 try {
-                    log('audio received');
+                    log('process');
                     const text = await stt(audioBuffer, {
                         record: true,
-                        trimEnd: true,
+                        trimEnd: false,
                     });
-                    log(`spoken text = ${text}`);
-                    const result = await ask(text);
-                    log(`result = ${result}`);
-                    ws.send(result ? 'Ok! :-)' : ':-(');
-                    if (result) {
-                        const resultAudio = await tts({ text: result });
-                        sendPCMInChunks(ws, Buffer.from(resultAudio));
+
+                    console.log('received text', text);
+                    if (text && typeof text === 'string') {
+                        log(`text = ${text}`);
+                        const valid = verify(text);
+                        log(`text verified = ${valid}`);
+
+                        if (valid) {
+                            const result = await ask(valid);
+                            log(`result = ${result}`);
+
+                            const shortText =
+                                result === null
+                                    ? 'Comprends pas'
+                                    : result === false
+                                      ? `Pas possible`
+                                      : 'Ok';
+
+                            ws.send(shortText);
+
+                            const longText =
+                                typeof result === 'string'
+                                    ? result
+                                    : result === null
+                                      ? 'Je ne comprends pas.'
+                                      : result === false
+                                        ? `Cette action n'est pas disponible.`
+                                        : `C'est fait.`;
+
+                            const resultAudio = await tts({
+                                text: longText,
+                            });
+                            sendPCMInChunks(ws, Buffer.from(resultAudio));
+                        }
                     }
                 } catch (e) {
                     console.log(e);

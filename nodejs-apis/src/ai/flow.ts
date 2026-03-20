@@ -19,7 +19,9 @@ const positiveAnswers = [
 
 console.log(process.env.BRAIN);
 
-export async function ask(text: string) {
+export async function ask(
+    text: string
+): Promise<string | boolean | null | void> {
     try {
         const actions: Tools = await getActions();
 
@@ -32,7 +34,7 @@ export async function ask(text: string) {
             if (response === true) {
                 return positiveAnswers[Math.random() * positiveAnswers.length];
             } else if (response === false) {
-                return `Je n'ai pas pu faire ça.`;
+                return false;
             } else if (response !== null) {
                 return response;
             }
@@ -49,5 +51,5 @@ export async function ask(text: string) {
         } catch (e) {}
     }
 
-    return 'Désolé je ne comprends pas !';
+    return null;
 }

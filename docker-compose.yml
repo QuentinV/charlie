@@ -33,15 +33,21 @@ services:
         volumes:
             - ./python-apis/app:/app
             - ./nodejs-apis:/mcp-server
-            - ./vosk:/vosk
+            - ./python-apis/qwen_models:/models
         environment:
+            - PYTHONUNBUFFERED=1
             - MISTRAL_API_KEY=${MISTRAL_API_KEY}
             - SSE_HOST=http://${SSE_HOST}:9300/sse
-            - VOSK_MODEL_KEY=${VOSK_MODEL_KEY}
-            - VOSK_SAMPLE_RATE=${VOSK_SAMPLE_RATE}
+            - STT_LANGUAGE=${STT_LANGUAGE}
+            - LOAD_STT_MODEL=${LOAD_STT_MODEL}
+            - LLM_MODEL=${LLM_MODEL}
         restart: unless-stopped
         networks:
             - internal
+        deploy:
+            resources:
+                limits:
+                    memory: 8G
     db:
         container_name: charlie-db
         image: mongo

@@ -25,12 +25,12 @@ export function setupMqttServer() {
     });
 
     mqttClient.on('message', async (topic, message) => {
-        log('MQTT', `Received on ${topic}: ${message.toString()}`);
+        //log('MQTT', `Received on ${topic}: ${message.toString()}`);
         if (subscribers[topic]) {
             try {
                 subscribers[topic]?.(message.toString());
             } catch (e) {
-                console.log('[MQTT] Error receving message from ' + topic);
+                log('MQTT', 'Error receving message from ' + topic);
             }
         } else {
             console.log('[MQTT] Error topic not supported');

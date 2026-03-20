@@ -18,4 +18,5 @@ export const settingsStore = {
     $enableAddRoom: createBoolSetting('rooms.add.enabled', true),
     $enableAddRoutine: createBoolSetting('routines.add.enabled', false),
     $devicesDiscovery: createBoolSetting('devices.discovery.enabled', false),
+    $echosMenu: createBoolSetting('echos.menu.enabled', false),
 };
