@@ -258,4 +258,15 @@ describe('findIntent', () => {
             },
         });
     });
+
+    test('wait', async () => {
+        expect(await findIntent('attend 1 minute')).toStrictEqual({
+            name: 'wait',
+            freeText: '1 minute',
+            slots: {
+                timeUnit: 'min',
+                text: '1',
+            },
+        });
+    });
 });

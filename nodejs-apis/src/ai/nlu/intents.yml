@@ -71,6 +71,15 @@ intents:
         slots:
             - text
 
+    wait:
+        starts:
+            - attend
+            - attends
+            - attendre
+        slots:
+            - timeUnit
+            - text
+
 slots:
     plurial:
         type: 'synonym'
@@ -89,8 +98,16 @@ slots:
             - speaker
             - tv
             - switch
+
     room:
         type: 'string'
+
+    timeUnit:
+        type: 'synonym'
+        keys:
+            - hour
+            - min
+            - sec
 
     text:
         type: 'string'
@@ -153,3 +170,16 @@ synonyms:
         - prise
         - interrupteur
         - switch
+    hour:
+        - heures
+        - heure
+        - h
+    min:
+        - minutes
+        - minute
+        - min
+    sec:
+        - secondes
+        - seconde
+        - sec
+        - s
