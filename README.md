@@ -10,10 +10,7 @@ Python project to run models & MCP client proxy. Will provide RestApi endpoints 
 
 ## Ai Agent
 
-For now it needs to be created on mistral ai website https://console.mistral.ai/build/agents
-
-My current system prompt:
-`You are an home assistant with access to different devices through function calling. Your name is Charlie.`
+Will be initialized on the first run of the python container once your mistralai API key is configured.
 
 ## Environment
 
