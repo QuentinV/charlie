@@ -6,6 +6,11 @@ const routes: RestApis = {
     'routines/:id': {
         get: async ({ params }) => cs.routines.findOne({ _id: params.id }),
     },
+    'routines/:id/exec': {
+        post: async ({ params }) => {
+            cs.routines.findOne({ _id: params.id });
+        },
+    },
     routines: {
         get: async () => cs.routines.find().toArray(),
         post: async ({ body }) => {

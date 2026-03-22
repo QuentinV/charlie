@@ -4,6 +4,10 @@ import { Routine, TriggerKind } from '../types';
 import { log } from '../manager/services/activities';
 import { ask } from '../ai/flow';
 
+const cache = {};
+
+export async function startRoutine(routine: Routine) {}
+
 export async function setupRoutines() {
     const routines = await cs.routines
         .find({ 'triggers.type': TriggerKind.CRON, active: true })
@@ -24,7 +28,7 @@ export async function setupRoutines() {
                         try {
                             for (let i = 0; i < r.actions.length; ++i) {
                                 const action = r.actions[i];
-                                await ask(action, { log: false });
+                                await ask(action, { log: true });
                             }
                         } catch (error) {
                             log('ROUTINES', 'Task failed');
