@@ -504,6 +504,23 @@ void ESP32HomeAssistant::begin() {
     
     this->setLed(0, 255, 0); // green = booting
 
+    if (this->_cfg.screenEnabled) {
+        Serial.println("Configure screen");
+        Wire.begin(this->_cfg.OLED_SDA, this->_cfg.OLED_SCL);
+        this->display = new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+        if (this->display->begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+            Serial.println("Configure screen next");
+            this->display->setRotation(2);
+            this->display->ssd1306_command(SSD1306_DISPLAYON);
+            this->display->setTextColor(SSD1306_WHITE);
+            this->display->setTextSize(1);
+            this->display->clearDisplay();
+            this->display->setCursor(0, 10);
+            this->display->println("Salut");
+            this->display->display();
+        }
+    }
+
     this->_setupWiFi();       // blocks until connected (or reboots)
     
     Serial.println("WIFI configured");
@@ -517,21 +534,6 @@ void ESP32HomeAssistant::begin() {
     this->_setupSpeakerI2S();
     if (this->_setupMicI2S(EI_CLASSIFIER_FREQUENCY)) {
         ei_printf("Failed to start I2S!");
-    }
-    
-    if (this->_cfg.screenEnabled) {
-        Wire.begin(this->_cfg.OLED_SDA, this->_cfg.OLED_SCL);
-        this->display = new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-        if (this->display->begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-            this->display->setRotation(2);
-            this->display->ssd1306_command(SSD1306_DISPLAYON);
-            this->display->setTextColor(SSD1306_WHITE);
-            this->display->setTextSize(1);
-            this->display->clearDisplay();
-            this->display->setCursor(0, 10);
-            this->display->println("Salut");
-            this->display->display();
-        }
     }
 
     setenv("TZ", "CETCEST,M3.5.0,M10.5.0/3", 1);

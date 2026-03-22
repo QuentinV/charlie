@@ -15,9 +15,11 @@ void setup() {
     cfg.I2S_SPK_BCLK = GPIO_NUM_5;
     cfg.I2S_SPK_DIN = GPIO_NUM_6;
     cfg.screenEnabled = true;
-    
+
+    delay(2000);
     assistant = new ESP32HomeAssistant(cfg);
     assistant->begin();
+    
 }
 
 void loop() {
