@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y \
     gcc \
     cmake \
     ffmpeg git \
+    libvulkan-dev libvulkan1 mesa-vulkan-drivers vulkan-tools mesa-va-drivers mesa-vdpau-drivers \ 
+    glslc \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g yarn \
@@ -23,20 +25,14 @@ RUN pip install --no-cache-dir \
     torchaudio \
     --index-url https://download.pytorch.org/whl/cpu
 
-RUN pip install --no-cache-dir fastapi
-RUN pip install --no-cache-dir uvicorn[standard]
-RUN pip install --no-cache-dir authlib 
-RUN pip install --no-cache-dir mcp
-RUN pip install --no-cache-dir griffe
-RUN pip install --no-cache-dir mistralai==1.12.4
-RUN pip install --no-cache-dir piper-tts
+RUN pip install --no-cache-dir fastapi uvicorn[standard] authlib mcp griffe mistralai==1.12.4 piper-tts
 RUN pip install --no-cache-dir qwen-asr
-RUN pip install --no-cache-dir funasr
-RUN pip install --no-cache-dir modelscope
-RUN pip install --no-cache-dir numpy
-RUN pip install --no-cache-dir setuptools
-RUN pip install --no-cache-dir llama-cpp-python
+RUN pip install --no-cache-dir funasr modelscope numpy setuptools
 RUN pip install --no-cache-dir huggingface_hub
+
+RUN CMAKE_ARGS="-DGGML_VULKAN=on -DVULKAN_SDK_PATH=/usr" \
+    FORCE_CMAKE=1 \
+    pip install llama-cpp-python --no-cache-dir --no-binary llama-cpp-python -v
 
 EXPOSE 8000
 
