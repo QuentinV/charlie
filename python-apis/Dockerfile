@@ -1,38 +1,42 @@
-FROM python:3.11-slim
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
+    python3.11 \
+    python3-pip \
     curl \
-    gnupg \
-    python3-dev \
     build-essential \
-    gcc \
     cmake \
+    gnupg \
     ffmpeg git \
-    libvulkan-dev libvulkan1 mesa-vulkan-drivers vulkan-tools mesa-va-drivers mesa-vdpau-drivers \ 
-    glslc \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g yarn \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir --upgrade pip
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python3 && ln -sf /usr/bin/python3.11 /usr/bin/python
+RUN python -m pip install --upgrade pip
+#RUN pip install --no-cache-dir --upgrade pip
 
-RUN pip install --no-cache-dir \
-    torch \
-    torchaudio \
-    --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+#RUN pip install --no-cache-dir \
+#    torch \
+#    torchaudio \
+#    --index-url https://download.pytorch.org/whl/cpu
 
 RUN pip install --no-cache-dir fastapi uvicorn[standard] authlib mcp griffe mistralai==1.12.4 piper-tts
 RUN pip install --no-cache-dir qwen-asr
 RUN pip install --no-cache-dir funasr modelscope numpy setuptools
 RUN pip install --no-cache-dir huggingface_hub
 
-RUN CMAKE_ARGS="-DGGML_VULKAN=on -DVULKAN_SDK_PATH=/usr" \
-    FORCE_CMAKE=1 \
-    pip install llama-cpp-python --no-cache-dir --no-binary llama-cpp-python -v
+RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1
+ENV LIBRARY_PATH="/usr/local/cuda/lib64/stubs:${LIBRARY_PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH}"
+ENV CMAKE_ARGS="-DGGML_CUDA=ON"
+
+RUN pip install --no-cache-dir llama-cpp-python --verbose
 
 EXPOSE 8000
 
