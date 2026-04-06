@@ -2,12 +2,17 @@ import os
 from fastapi import APIRouter, Request
 from llama_cpp import Llama, llama_cpp
 from huggingface_hub import hf_hub_download
+import torch
 
 router = APIRouter()
 
-# 1. Check if the library itself was compiled with GPU support
-supports_gpu = llama_cpp.llama_supports_gpu_offload()
-print(f"Llama-cpp-python GPU Support Enabled: {supports_gpu}")
+gpu_detected = torch.cuda.is_available()
+if gpu_detected:
+    print(f"🚀 High Performance: Using {torch.cuda.get_device_name(0)}")
+    n_gpu_layers = -1 # Offload all layers
+else:
+    print("⚠️ No GPU found or Driver missing. Falling back to CPU mode.")
+    n_gpu_layers = 0  # Force CPU execution
 
 # Model Configuration
 REPO_ID = "mradermacher/Qwen3.5-2B-Polaris-HighIQ-INSTRUCT-i1-GGUF"
@@ -19,7 +24,6 @@ llm = None
 def load_model(): 
     if not os.path.exists(MODEL_PATH):
         print(f"Model not found at {MODEL_PATH}. Downloading from Hugging Face...")
-        # This downloads the file and returns the local path
         downloaded_path = hf_hub_download(
             repo_id=REPO_ID,
             filename=FILENAME,
@@ -30,7 +34,6 @@ def load_model():
     else:
         print("Model already exists locally.")
 
-    # Initialize Llama with CPU optimizations
     global llm
     llm = Llama(
         model_path=MODEL_PATH,
@@ -40,7 +43,7 @@ def load_model():
         #n_threads=8,
         #n_batch=512,
         chat_format="chatml",
-        n_gpu_layers=1, 
+        n_gpu_layers=n_gpu_layers, 
         n_ctx=4096,
         n_threads=2,          
         n_batch=1024,
