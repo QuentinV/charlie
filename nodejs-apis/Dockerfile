@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Install ffplay dependencies
 RUN apt-get update && apt-get install -y \
+    net-tools iputils-ping \
     ffmpeg \
     libasound2 \
     libxv1 \
