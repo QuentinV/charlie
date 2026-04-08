@@ -74,6 +74,7 @@ export interface Provider {
     _id?: string;
     name: string;
     codesource: string;
+    mac?: string;
     host?: string;
     user?: string;
     password?: string;
