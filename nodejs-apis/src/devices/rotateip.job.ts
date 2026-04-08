@@ -6,6 +6,7 @@ async function rotateProvidersIp() {
     try {
         const subnet = process.env.SUBNET_IP ?? '192.168.1.';
         const devices = await getNetworkDevices(subnet);
+        console.log(JSON.stringify(devices));
 
         const providers = await cs.providers.find().toArray();
         providers.forEach((p: Provider) => {
@@ -22,4 +23,5 @@ async function rotateProvidersIp() {
 
 export async function setupRotateProvidersIp() {
     setInterval(rotateProvidersIp, 60000 * 60);
+    rotateProvidersIp();
 }
