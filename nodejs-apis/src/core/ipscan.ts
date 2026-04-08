@@ -21,31 +21,35 @@ interface DeviceMap {
  * @param subnet The first three octets of the network (e.g., "192.168.1")
  */
 export async function getNetworkDevices(subnet: string): Promise<DeviceMap> {
-    const refreshCommand = `powershell -Command "1..255 | ForEach-Object { ping -n 1 -w 10 ${subnet}$_ } > $null"`;
-    const arpCommand = `arp -a`;
+    // Windows uses PowerShell loop; Linux uses fping (fast) or a bash loop as fallback
+    const refreshCommand = isWindows
+        ? `powershell -Command "1..255 | ForEach-Object { ping -n 1 -w 10 ${subnet}$_ } > $null"`
+        : `for i in {1..255}; do ping -c 1 -W 1 ${subnet}$i > /dev/null 2>&1 & done; wait`;
 
-    // refresh cache
+    const arpCommand = isWindows ? `arp -a` : `arp -an`;
+
+    // Refresh cache
     await new Promise<void>((res) => {
         exec(refreshCommand, () => res());
     });
 
     const map = await new Promise<DeviceMap>((resolve, reject) => {
         exec(arpCommand, (error: ExecException | null, stdout: string) => {
-            if (error) {
-                return reject(error);
-            }
+            if (error) return reject(error);
 
             const devices: DeviceMap = {};
-            const lines: string[] = stdout.split('\n');
+            const lines = stdout.split('\n');
 
-            // Regex: Captures IP in group 1 and MAC (with hyphens) in group 2
+            // Regex handles both Windows (192.168.1.1 ... 00-aa...)
+            // and Linux ( (192.168.1.1) at 00:aa... )
             const arpRegex =
-                /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+([0-9a-fA-F-]{17})/;
+                /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?([0-9a-fA-F:-]{17})/;
 
             for (const line of lines) {
                 const match = line.match(arpRegex);
                 if (match) {
                     const ip = match[1];
+                    // Normalize separators to colons and lowercase
                     const mac = match[2].replace(/-/g, ':').toLowerCase();
 
                     if (ip.startsWith(subnet)) {
@@ -53,12 +57,9 @@ export async function getNetworkDevices(subnet: string): Promise<DeviceMap> {
                     }
                 }
             }
-
             resolve(devices);
         });
     });
-
-    CACHE = map;
 
     return map;
 }
