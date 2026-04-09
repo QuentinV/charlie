@@ -42,8 +42,8 @@ def load_model():
     model = Qwen3ASRModel.from_pretrained(
         LOCAL_MODEL_ASR_DIR,
         device_map="cpu",
-        dtype=torch.float32, 
-        #dtype=torch.bfloat16, 
+        dtype=torch.bfloat16, 
+        #dtype=torch.float32, 
         low_cpu_mem_usage=True,
         max_new_tokens = 128,
         attn_implementation="sdpa" # Scaled Dot Product Attention
