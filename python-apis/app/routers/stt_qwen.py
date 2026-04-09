@@ -24,8 +24,8 @@ if language == "":
 print(f"Running with STT_LANGUAGE = {language}")
 
 # Configuration
-LOCAL_MODEL_ASR_DIR = "/models/Qwen3-ASR-0.6B"
-MODEL_ASR_ID = "Qwen/Qwen3-ASR-0.6B"
+LOCAL_MODEL_ASR_DIR = "/models/Qwen3-ASR-1.7B"
+MODEL_ASR_ID = "Qwen/Qwen3-ASR-1.7B"
 
 model = None
 context="This is a conversation with an assistant named Charlie."
@@ -70,39 +70,6 @@ def load_model():
     
     print("✨ Engine Hot & Ready")
 
-def remove_silence_with_padding(audio_np, sample_rate=16000, aggressiveness=1):
-    vad = webrtcvad.Vad(aggressiveness)
-    frame_duration = 30 # ms
-    frame_size = int(sample_rate * frame_duration / 1000)
-    
-    # We want to keep 6 frames (180ms) of padding
-    padding_frames = 6
-    history = []
-    output = []
-    is_speaking = False
-
-    for i in range(0, len(audio_np) - frame_size, frame_size):
-        frame = audio_np[i : i + frame_size]
-        voiced = vad.is_speech(frame.tobytes(), sample_rate)
-
-        if voiced:
-            if not is_speaking:
-                # Add the frames leading up to the speech
-                output.extend(history[-padding_frames:])
-                is_speaking = True
-            output.append(frame)
-        else:
-            if is_speaking:
-                # Add a bit of trailing silence so the word isn't cut off
-                output.append(frame)
-                is_speaking = False
-            # Keep a small history of silent frames to use as padding later
-            history.append(frame)
-            if len(history) > padding_frames:
-                history.pop(0)
-
-    return np.concatenate(output) if output else audio_np
-
 @router.websocket("/stt/qwen/stream")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -132,7 +99,6 @@ async def websocket_endpoint(websocket: WebSocket):
                     # Process the collected audio
                     try:
                         full_audio = np.concatenate(audio_buffer)
-                        full_audio = remove_silence_with_padding(full_audio, sample_rate=16000)
                         audio_buffer = []
                         
                         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_wav:
