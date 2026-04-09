@@ -36,7 +36,6 @@ def load_model():
         print(f"Model ASR not found. Downloading {MODEL_ASR_ID}...")
         snapshot_download(MODEL_ASR_ID, local_dir=LOCAL_MODEL_ASR_DIR)
 
-    # Load Qwen3-ASR-0.6B on CPU
     # Use float32 for CPU if bfloat16 causes issues on older hardware
     global model
     model = Qwen3ASRModel.from_pretrained(
