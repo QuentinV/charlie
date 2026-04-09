@@ -9,7 +9,7 @@ import json
 import requests
 import sys
 
-from routers import tts, llm, stt_qwen, llm_qwen
+from routers import tts, stt_qwen, llm_qwen
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
@@ -21,6 +21,7 @@ if llmModel == "":
 print(f"Running with LLM_MODEL = {llmModel}")
 
 if llmModel == "mistreal":
+    from routers import llm
     app.include_router(llm.router)
 elif llmModel == "qwen":
     llm_qwen.load_model()
