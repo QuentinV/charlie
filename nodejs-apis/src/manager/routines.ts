@@ -14,7 +14,7 @@ const routes: RestApis = {
     routines: {
         get: async () => cs.routines.find().toArray(),
         post: async ({ body }) => {
-            const { _id, name } = body;
+            const { _id, name, actions, triggers, active } = body;
             const uuid = _id || uuidV4();
             await cs.routines.updateOne(
                 { _id: uuid, name },
@@ -22,6 +22,9 @@ const routes: RestApis = {
                     $set: {
                         _id: uuid,
                         name,
+                        actions,
+                        active,
+                        triggers,
                     },
                 },
                 { upsert: true }

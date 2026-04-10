@@ -24,6 +24,19 @@ services:
         restart: unless-stopped
         networks:
             - internal
+    network-scanner:
+        build: ./network-scanner
+        container_name: charlie-network-scanner
+        profiles: ['cpu', 'gpu']
+        environment:
+            - NODE_ENV=production
+        volumes:
+            - ./network-scanner/src:/app/src
+        ports:
+            - '9306:9306'
+        command: 'yarn start'
+        restart: unless-stopped
+        network_mode: host
     ai-agents:
         build: ./python-apis
         profiles: ['cpu']
@@ -45,7 +58,7 @@ services:
         networks:
             - internal
     ai-agents-gpu:
-        build: ./python-apis
+        build: ./python-apis/Dockerfile.gpu
         container_name: charlie-ai-agents-gpu
         profiles: ['gpu']
         ports:

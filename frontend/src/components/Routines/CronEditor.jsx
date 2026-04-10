@@ -28,12 +28,14 @@ export const CronEditor = ({ onChange, value }) => {
             cron = `${minute} ${hour} * * ${days.join(',')}`;
         }
 
-        onChange(cron);
-    }, [frequency, time, days, interval, onChange]);
+        if (value !== cron) {
+            onChange(cron);
+        }
+    }, [value, frequency, time, days, interval, onChange]);
 
     useEffect(() => {
         const parts = value.split(' ');
-        const [minute, hour, dom, month, dow] = parts;
+        const [minute, hour, _1, _2, dow] = parts;
 
         // Check for "Interval" (e.g., */5 * * * *)
         if (minute.includes('/') && hour === '*' && dow === '*') {

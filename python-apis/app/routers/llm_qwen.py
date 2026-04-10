@@ -21,6 +21,7 @@ REPO_ID = "Qwen/Qwen2.5-1.5B-Instruct-GGUF"
 FILENAME = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
 #REPO_ID = "Qwen/Qwen2.5-3B-Instruct-GGUF"
 #FILENAME = "qwen2.5-3b-instruct-q8_0.gguf"
+# Qwen/Qwen3-1.7B-GGUF
 MODEL_PATH = f"/models/{FILENAME}"
 
 llm = None

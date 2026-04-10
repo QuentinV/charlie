@@ -6,39 +6,39 @@ import { ask } from '../ai/flow';
 
 const cache = {};
 
-export async function startRoutine(routine: Routine) {}
+export async function execRoutine(r: Routine) {
+    try {
+        for (let i = 0; i < r.actions.length; ++i) {
+            const action = r.actions[i];
+            await ask(action, { log: true });
+        }
+    } catch (error) {
+        log('ROUTINES', 'Task failed');
+        console.error('Task failed:', error);
+    }
+}
+
+export function startRoutine(r: Routine) {
+    if (!r?.actions?.length) return;
+    r.triggers
+        .filter((t) => t.type === TriggerKind.CRON)
+        .map((trigger) => {
+            log(
+                'ROUTINES',
+                `Starting cron ${trigger.obj.expression} for ${r.name}`
+            );
+            cron.schedule(trigger.obj.expression, async () => execRoutine(r), {
+                noOverlap: true,
+            });
+        });
+}
 
 export async function setupRoutines() {
     const routines = await cs.routines
         .find({ 'triggers.type': TriggerKind.CRON, active: true })
         .toArray();
 
-    routines.forEach((r: Routine) => {
-        if (!r?.actions?.length) return;
-        r.triggers
-            .filter((t) => t.type === TriggerKind.CRON)
-            .map((trigger) => {
-                log(
-                    'ROUTINES',
-                    `Starting cron ${trigger.obj.expression} for ${r.name}`
-                );
-                cron.schedule(
-                    trigger.obj.expression,
-                    async () => {
-                        try {
-                            for (let i = 0; i < r.actions.length; ++i) {
-                                const action = r.actions[i];
-                                await ask(action, { log: true });
-                            }
-                        } catch (error) {
-                            log('ROUTINES', 'Task failed');
-                            console.error('Task failed:', error);
-                        }
-                    },
-                    { noOverlap: true }
-                );
-            });
-    });
+    routines.forEach((r: Routine) => startRoutine(r));
 }
 
 // '*/5 * * * *'

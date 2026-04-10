@@ -8,6 +8,7 @@ import { RoomsList } from '../components/Rooms';
 import { api } from '../api/charlie';
 import { useUnit } from 'effector-react';
 import { settingsStore } from '../state/settings';
+import { v4 as uuidV4 } from 'uuid';
 
 export const HomePage = () => {
     const navigate = useNavigate();
@@ -43,7 +44,9 @@ export const HomePage = () => {
             a.push({
                 icon: <AutoModeIcon />,
                 name: 'Routines',
-                click: () => navigate('/routines'),
+                click: () => {
+                    navigate(`/routine/new`);
+                },
             });
 
         return a;
