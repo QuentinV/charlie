@@ -23,8 +23,8 @@ if language == "":
 print(f"Running with STT_LANGUAGE = {language}")
 
 # Configuration
-LOCAL_MODEL_ASR_DIR = "/models/Qwen3-ASR-0.6B"
-MODEL_ASR_ID = "Qwen/Qwen3-ASR-0.6B"
+LOCAL_MODEL_ASR_DIR = "/models/Qwen3-ASR-1.7B"
+MODEL_ASR_ID = "Qwen/Qwen3-ASR-1.7B"
 
 model = None
 context="This is a conversation with an assistant named Charlie."
