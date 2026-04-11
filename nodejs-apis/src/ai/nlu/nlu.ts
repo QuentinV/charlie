@@ -84,7 +84,7 @@ function extractSynonyms(
         const synWords = synonyms[i].split(/\s+/);
         if (textWords.length >= synWords.length) {
             for (let j = 0; j < textWords.length; ++j) {
-                const w1 = textWords.slice(j, synWords.length).join(' ');
+                const w1 = textWords.slice(j, j + synWords.length).join(' ');
                 if (compareTwoStrings(w1, syn) > threeshold) {
                     return {
                         name: synonymKey,
