@@ -536,10 +536,10 @@ void ESP32HomeAssistant::begin() {
         ei_printf("Failed to start I2S!");
     }
 
-    setenv("TZ", "CETCEST,M3.5.0,M10.5.0/3", 1);
+    setenv("TZ", "Europe/Paris", 1);
     tzset();
 
-    configTime(3600, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
+    configTime(7200, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
 
     this->setLed(0, 0, 255);
     
