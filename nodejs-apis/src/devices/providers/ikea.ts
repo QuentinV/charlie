@@ -35,7 +35,7 @@ const apis: ProvidersApis = {
                 })
             ),
         changeDeviceState: async ({ device: { externalId } }, { power }) =>
-            client?.operateLight(client?.devices?.[externalId], {
+            !!client?.operateLight(client?.devices?.[externalId], {
                 onOff: power === 'on',
             }),
         getDeviceState: async ({ device: { externalId } }) => {

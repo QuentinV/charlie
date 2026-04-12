@@ -108,10 +108,18 @@ async function call(
     if (!provider) throw new NotFoundError(device.provider);
 
     const api = providerApis[provider.codesource].api;
-    await api.init?.(provider);
+    try {
+        await api.init?.(provider);
 
-    if ((await api.isInitialized?.()) ?? true) {
-        return fnt({ device, api, provider });
+        if ((await api.isInitialized?.()) ?? true) {
+            return await fnt({ device, api, provider });
+        }
+    } catch (e) {
+        log('devices', 'error', {
+            context: { deviceId, deviceName: device.name },
+            data: JSON.stringify(e),
+        });
+        return false;
     }
 }
 
