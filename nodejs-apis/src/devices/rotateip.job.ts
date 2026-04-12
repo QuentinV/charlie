@@ -12,7 +12,9 @@ async function rotateProvidersIp() {
         const providers = await cs.providers.find().toArray();
         providers.forEach((p: Provider) => {
             if (!p.mac) return;
-            const host = devices.find((d) => d.mac === p.mac?.toLowerCase());
+            const host = devices.find(
+                (d) => d.mac === p.mac?.toLowerCase()
+            )?.ip;
             if (host) {
                 cs.providers.updateOne({ _id: p._id }, { $set: { host } });
             }
