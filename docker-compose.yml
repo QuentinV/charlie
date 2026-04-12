@@ -37,6 +37,9 @@ services:
         command: 'yarn start'
         restart: unless-stopped
         network_mode: host
+        cap_add:
+            - NET_ADMIN
+            - NET_RAW
     ai-agents:
         build: ./python-apis
         profiles: ['cpu']
