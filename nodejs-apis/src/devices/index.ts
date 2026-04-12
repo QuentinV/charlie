@@ -112,13 +112,14 @@ async function call(
         await api.init?.(provider);
 
         if ((await api.isInitialized?.()) ?? true) {
-            return fnt({ device, api, provider });
+            return await fnt({ device, api, provider });
         }
     } catch (e) {
         log('devices', 'error', {
             context: { deviceId, deviceName: device.name },
             data: JSON.stringify(e),
         });
+        return false;
     }
 }
 

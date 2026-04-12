@@ -111,16 +111,15 @@ async function changeDevice(
 ): Promise<boolean | string> {
     const devices = await findDevices(req);
     if (devices) {
-        return (
-            await Promise.allSettled(
-                devices.map(
-                    (device) =>
-                        !!changeDeviceState(device._id, {
-                            power,
-                        })
-                )
-            )
-        ).reduce((prev, k: any) => prev && k.value, true);
+        let ok = true;
+        for (let i = 0; i < devices.length; ++i) {
+            ok =
+                ok &&
+                !!(await changeDeviceState(devices[i]._id!, {
+                    power,
+                }));
+        }
+        return ok;
     }
     return "Je ne trouves pas l'appareil demandé.";
 }
