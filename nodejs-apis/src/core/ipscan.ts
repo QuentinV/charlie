@@ -9,7 +9,9 @@ export function getMacAddress(ip: string): string | undefined {
 
 export async function getNetworkDevices(subnet: string): Promise<DevicesMac> {
     CACHE = await (
-        await fetch(`http://localhost:9306/api/devices?subnet=${subnet}`)
+        await fetch(
+            `http://${process.env.NETWORK_SCANNER_HOST ?? 'host.docker.internal'}:9306/api/devices?subnet=${subnet}`
+        )
     ).json();
     return CACHE;
 }
