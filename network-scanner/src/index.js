@@ -42,7 +42,6 @@ const app = express();
 app.use(express.json());
 
 app.get('/api/devices', async (req, res) => {
-    console.log('/api/devices');
     const s = req.query?.subnet ?? '192.168.1';
     const subnet = s + '.';
     res.send(await getNetworkDevices(subnet));
