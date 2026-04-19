@@ -56,7 +56,6 @@ services:
             - PYTHONUNBUFFERED=1
             - MISTRAL_API_KEY=${MISTRAL_API_KEY}
             - SSE_HOST=http://${SSE_HOST}:9300/sse
-            - STT_LANGUAGE=${STT_LANGUAGE}
             - LOAD_STT_MODEL=${LOAD_STT_MODEL}
             - LLM_MODEL=${LLM_MODEL}
         restart: unless-stopped
@@ -98,8 +97,6 @@ services:
             - PYTHONUNBUFFERED=1
             - MISTRAL_API_KEY=${MISTRAL_API_KEY}
             - SSE_HOST=http://${SSE_HOST}:9300/sse
-            - STT_LANGUAGE=${STT_LANGUAGE}
-            - LOAD_STT_MODEL=${LOAD_STT_MODEL}
             - LLM_MODEL=${LLM_MODEL}
         restart: unless-stopped
         networks:
