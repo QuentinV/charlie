@@ -62,6 +62,28 @@ services:
         restart: unless-stopped
         networks:
             - internal
+    asr:
+        image: nightspark77/qwen-asr
+        container_name: charlie-asr
+        ports:
+            - '9307:5000'
+        environment:
+            - MODEL_SIZE=large
+            - MODEL_DIR=/model
+        volumes:
+            - ./python-apis/qwen_models/Qwen3-ASR-1.7B:/model
+            - ./nodejs-apis/src/echo/__tests__/rec-2026-03-09T20-38-20-462Z.wav:/warmup.wav
+        command:
+            [
+                '--ws',
+                '--skip-silence',
+                '--language',
+                'French',
+                '--prompt',
+                'This is a conversation with an assistant named Charlie.',
+                '--warmup',
+                '/warmup.wav',
+            ]
     ai-agents-gpu:
         build: ./python-apis/Dockerfile.gpu
         container_name: charlie-ai-agents-gpu

@@ -52,7 +52,7 @@ export function setupEchoListen() {
                         return;
                     }
 
-                    const text = await stt(audioBuffer, false);
+                    const text = await stt(audioBuffer);
                     console.log('spoken text', text);
                     const result = await ask(text);
                     console.log('result', result);

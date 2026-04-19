@@ -66,7 +66,6 @@ export function setupEchoListen() {
                     log('process');
                     const text = await stt(audioBuffer, {
                         record: true,
-                        trimEnd: false,
                     });
 
                     console.log('received text', text);

@@ -2,40 +2,30 @@ import 'dotenv/config';
 import WebSocket from 'ws';
 import { saveWavWithRotation } from './logs';
 
-function trimEnd500ms(buffer) {
-    const bytesToRemove = 16000 * 1.8; // 0.5s at 16kHz mono PCM16
-    if (buffer.length <= bytesToRemove) return buffer;
-    return buffer.slice(0, buffer.length - bytesToRemove);
-}
+const host = process.env.STT_HOST ?? 'asr:5000';
 
 export interface SttOptions {
     record?: boolean;
     trimEnd?: boolean;
-    key?: string;
 }
 
-let wsCache = {};
-async function getWs(onResult: (text: string | boolean) => void, key: string) {
-    if (wsCache[key]) {
-        wsCache[key].onResult = onResult;
-        return wsCache[key];
+let wsCache: any = null;
+async function getWs(onResult: (text: string | boolean) => void) {
+    if (wsCache) {
+        wsCache.onResult = onResult;
+        return wsCache;
     }
     return new Promise((res, rej) => {
-        const ws = new WebSocket(
-            `ws://${process.env.AI_AGENTS_HOST}/stt/${key}/stream?mode=verify`
-        );
+        const ws = new WebSocket(`ws://${host}`, 'qwen-protocol');
 
         ws.on('open', () => {
-            wsCache[key] = ws;
-            wsCache[key].onResult = onResult;
+            wsCache = ws;
+            wsCache.onResult = onResult;
             res(ws);
+        });
 
-            ws.on('message', (msg) => {
-                const event = JSON.parse(msg.toString());
-                if (event.type === 'result') {
-                    wsCache[key]?.onResult(event.text);
-                }
-            });
+        ws.on('message', (msg) => {
+            wsCache?.onResult(msg.toString());
         });
 
         ws.on('error', (e) => {
@@ -44,22 +34,18 @@ async function getWs(onResult: (text: string | boolean) => void, key: string) {
         });
 
         ws.on('close', () => {
-            delete wsCache[key];
+            wsCache = null;
         });
     });
 }
 
-async function sendChunk(
-    buffer: Buffer<ArrayBuffer>,
-    key: string
-): Promise<string | false> {
+async function sendChunk(buffer: Buffer<ArrayBuffer>): Promise<string | false> {
     return new Promise(async (res, rej) => {
         const ws = await getWs((text) => {
             res(text as any);
-        }, key);
+        });
 
         ws.send(buffer);
-        ws.send('__END__');
     });
 }
 
@@ -67,25 +53,9 @@ export async function stt(
     buffer: any[],
     options?: SttOptions
 ): Promise<string | boolean> {
-    const model = options?.key ?? process.env.DEFAULT_STT_MODEL ?? 'qwen';
-
     if (options?.record) {
         saveWavWithRotation(Buffer.concat(buffer));
     }
 
-    let buff = null;
-    if (model === 'vosk') {
-        buff = Buffer.concat([
-            Buffer.alloc(16000 * 2 * 0.3),
-            Buffer.concat(buffer),
-        ]);
-    } else {
-        buff = Buffer.concat(buffer);
-    }
-
-    if (options.trimEnd) {
-        buff = trimEnd500ms(buff);
-    }
-
-    return sendChunk(buff, model);
+    return sendChunk(Buffer.concat(buffer));
 }
