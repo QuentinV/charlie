@@ -83,6 +83,8 @@ services:
                 '--warmup',
                 '/warmup.wav',
             ]
+        networks:
+            - internal
     ai-agents-gpu:
         build: ./python-apis/Dockerfile.gpu
         container_name: charlie-ai-agents-gpu
