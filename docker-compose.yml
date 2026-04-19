@@ -62,7 +62,7 @@ services:
         networks:
             - internal
     asr:
-        image: nightspark77/qwen-asr
+        build: ../qwen-asr
         container_name: charlie-asr
         ports:
             - '9307:5000'
