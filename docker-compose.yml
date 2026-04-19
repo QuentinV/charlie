@@ -62,7 +62,9 @@ services:
         networks:
             - internal
     asr:
-        build: ../qwen-asr
+        build:
+            context: https://github.com/QuentinV/qwen-asr.git
+            dockerfile: Dockerfile
         container_name: charlie-asr
         ports:
             - '9307:5000'
