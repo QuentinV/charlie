@@ -66,6 +66,7 @@ services:
             context: https://github.com/QuentinV/qwen-asr.git
             dockerfile: Dockerfile
         container_name: charlie-asr
+        profiles: ['cpu', 'gpu']
         ports:
             - '9307:5000'
         environment:
