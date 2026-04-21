@@ -1,8 +1,11 @@
+import { Box, Link } from '@mui/material';
 import React from 'react';
-import { FlashEchoDevice } from '../components/FlashEchoDevice/index.';
 
 export const EchoPage = () => (
     <>
-        <FlashEchoDevice />
+        To flash your echo device please visit :{' '}
+        <Link href="https://quentinv.github.io/charlie-echos/" target="_blank">
+            Charlie echo webflasher
+        </Link>
     </>
 );

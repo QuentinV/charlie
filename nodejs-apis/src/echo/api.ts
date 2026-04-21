@@ -5,6 +5,7 @@ import { connectedEchos } from './listen';
 const DIR = '../echo-devices';
 
 const routes: RestApis = {
+    // TODO firmware.bin isn't enough, 3 files requires, should rework the path
     'echo/:echoType/latest/firmware.bin': {
         get: {
             fullHandler: async ({ params }, res) => {
