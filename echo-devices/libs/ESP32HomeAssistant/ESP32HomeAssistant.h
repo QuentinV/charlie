@@ -90,6 +90,8 @@ public:
     static ESP32HomeAssistant* instance;
 private:
     void _runOTA();
+    void _setWakeUpWordAccuracy(float accuracy);
+    void _setServerIp(String serverip);
     void _setupWiFi();
     void _playAudio(uint8_t* data, size_t len);
     int _setupMicI2S(uint32_t sampling_rate);

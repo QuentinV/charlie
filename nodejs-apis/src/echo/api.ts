@@ -39,7 +39,22 @@ const routes: RestApis = {
         post: {
             handler: async ({ body }) => {
                 const { ip } = body;
-                connectedEchos[ip]?.send('OTA');
+                await connectedEchos[ip]?.send('OTA');
+            },
+        },
+    },
+    'echo/params': {
+        post: {
+            handler: async ({ body }) => {
+                const { ip, wakeWordAccuracy } = body;
+                if (ip) {
+                    await connectedEchos[ip]?.send(`setServerIp:${ip}`);
+                }
+                if (wakeWordAccuracy) {
+                    await connectedEchos[ip]?.send(
+                        `setWakeUpWordAccuracy:${wakeWordAccuracy}`
+                    );
+                }
             },
         },
     },

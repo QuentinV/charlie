@@ -60,6 +60,15 @@ void ESP32HomeAssistant::_runOTA() {
     ESP.restart();
 }
 
+void ESP32HomeAssistant::_setWakeUpWordAccuracy(float accuracy) {
+    this->_cfg.WAKE_UP_WORD_ACCURACY = accuracy;
+}
+
+void ESP32HomeAssistant::_setServerIp(String serverip) {
+    this->serverip = serverip;
+    this->_prefs.putString("serverIp", serverip);
+}
+
 void ESP32HomeAssistant::_setupWiFi() {
     Serial.println("Loading wifi");
     this->_prefs.begin("config", false);
@@ -123,7 +132,23 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
         case WStype_TEXT:
             {
                 String msg = String((char*)payload);
-                if (msg == "OTA") {
+                int splitIndex = msg.indexOf(':');
+
+                String command;
+                String value;
+
+                if (splitIndex != -1) {
+                    command = msg.substring(0, splitIndex);
+                    value = msg.substring(splitIndex + 1);
+                } else {
+                    command = msg;
+                }
+
+                if(command == "setServerIp") {
+                    this->_setServerIp(value);
+                } else if (command == "setWakeUpWordAccuracy") {
+                    this->_setWakeUpWordAccuracy(value.toFloat());
+                } else if (command == "OTA") {
                     this->_runOTA();
                 } else {
                     this->displayText(msg);

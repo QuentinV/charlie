@@ -30,3 +30,13 @@ Move [board file](boards/esp32-s3-devkitc-1-n16r8v.json) to your user folder in
 > .platformio\platforms\espressif32\boards
 
 ![board](docs/board.jpg)
+
+# Versions
+
+- v1.1: new options to set serverip and wake word accuracy through websocket
+    - echo-zero
+    - echo-zero-screen
+
+- v1.0: first version with ESP32HomeAssistant library config
+    - echo-zero
+    - echo-zero-screen
