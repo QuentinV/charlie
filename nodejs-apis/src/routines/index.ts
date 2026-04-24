@@ -11,7 +11,7 @@ interface ExecRoutineResult {
 }
 
 export async function execRoutine(r: Routine): Promise<ExecRoutineResult> {
-    const now = new Date();
+    const lastRun = new Date();
     for (let i = 0; i < r.actions.length; ++i) {
         try {
             const action = r.actions[i];
@@ -20,8 +20,15 @@ export async function execRoutine(r: Routine): Promise<ExecRoutineResult> {
             log('ROUTINES', 'Action failed');
         }
     }
-
-    return { lastRun: now };
+    await cs.routines.updateOne(
+        { _id: r._id },
+        {
+            $set: {
+                lastRun,
+            },
+        }
+    );
+    return { lastRun };
 }
 
 export function startRoutine(r: Routine) {
