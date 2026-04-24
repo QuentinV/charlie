@@ -25,8 +25,7 @@ RUN pip install --no-cache-dir \
     torchaudio \
     --index-url https://download.pytorch.org/whl/cpu
 
-RUN pip install --no-cache-dir fastapi uvicorn[standard] authlib mcp griffe mistralai==1.12.4 piper-tts webrtcvad
-RUN pip install --no-cache-dir qwen-asr
+RUN pip install --no-cache-dir fastapi uvicorn[standard] authlib mcp griffe mistralai==1.12.4 piper-tts
 RUN pip install --no-cache-dir funasr modelscope numpy setuptools
 RUN pip install --no-cache-dir huggingface_hub
 
