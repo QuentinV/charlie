@@ -45,7 +45,12 @@ export const RoutinesList = () => {
     );
 
     return (
-        <Box sx={{ p: 2, maxWidth: 500, mx: 'auto' }}>
+        <Box
+            height="100%"
+            display="flex"
+            flexDirection="column"
+            overflow="hidden"
+        >
             <Box
                 display="flex"
                 justifyContent="space-between"
@@ -60,31 +65,39 @@ export const RoutinesList = () => {
                 </Typography>
             </Box>
 
-            {routines.length === 0 ? (
-                <Paper
-                    variant="outlined"
-                    sx={{
-                        p: 4,
-                        textAlign: 'center',
-                        borderRadius: 4,
-                        borderStyle: 'dashed',
-                    }}
-                >
-                    <Typography color="textSecondary">
-                        Aucune routines
-                    </Typography>
-                </Paper>
-            ) : (
-                routines.map((r) => (
-                    <RoutineListItem
-                        key={r._id}
-                        routine={r}
-                        onEdit={() => navigate(`/routine/${r._id}`)}
-                        onRunNow={runNow}
-                        onToggle={setActive}
-                    />
-                ))
-            )}
+            <Box
+                display="flex"
+                alignItems="center"
+                width="100%"
+                flexDirection="column"
+                overflow="auto"
+            >
+                {routines.length === 0 ? (
+                    <Paper
+                        variant="outlined"
+                        sx={{
+                            p: 4,
+                            textAlign: 'center',
+                            borderRadius: 4,
+                            borderStyle: 'dashed',
+                        }}
+                    >
+                        <Typography color="textSecondary">
+                            Aucune routines
+                        </Typography>
+                    </Paper>
+                ) : (
+                    routines.map((r) => (
+                        <RoutineListItem
+                            key={r._id}
+                            routine={r}
+                            onEdit={() => navigate(`/routine/${r._id}`)}
+                            onRunNow={runNow}
+                            onToggle={setActive}
+                        />
+                    ))
+                )}
+            </Box>
         </Box>
     );
 };
