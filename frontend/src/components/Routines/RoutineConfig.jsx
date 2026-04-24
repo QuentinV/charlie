@@ -96,16 +96,6 @@ export const RoutineConfig = ({ id }) => {
                     <IconButton>
                         <SaveIcon onClick={save} />
                     </IconButton>
-                    <Switch
-                        checked={state.active}
-                        onChange={(e) =>
-                            setState({
-                                ...state,
-                                active: e.target.checked,
-                            })
-                        }
-                        color="success"
-                    />
                     <IconButton>
                         <DeleteIcon
                             onClick={() => setDialogDeleteVisible(true)}

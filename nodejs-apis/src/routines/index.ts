@@ -4,7 +4,7 @@ import { Routine, TriggerKind } from '../types';
 import { log } from '../manager/services/activities';
 import { ask } from '../ai/flow';
 
-const cache = {};
+const cache: { [key: string]: any[] } = {};
 
 interface ExecRoutineResult {
     lastRun: Date;
@@ -31,8 +31,31 @@ export async function execRoutine(r: Routine): Promise<ExecRoutineResult> {
     return { lastRun };
 }
 
+export async function toggleStatusRoutine(r: Routine): Promise<boolean> {
+    if (!r._id) return false;
+
+    const active = !r.active;
+
+    await cs.routines.updateOne(
+        { _id: r._id },
+        {
+            $set: { active },
+        }
+    );
+
+    if (active) {
+        startRoutine(r);
+    } else {
+        log('ROUTINES', `Stop routine ${r.name}`);
+        cache[r._id]?.forEach((c: any) => c?.cron?.());
+    }
+
+    return active;
+}
+
 export function startRoutine(r: Routine) {
-    if (!r?.actions?.length) return;
+    if (!r?._id || !r?.actions?.length) return;
+    cache[r._id!] = [];
     r.triggers
         .filter((t) => t.type === TriggerKind.CRON)
         .map((trigger) => {
@@ -40,9 +63,15 @@ export function startRoutine(r: Routine) {
                 'ROUTINES',
                 `Starting cron ${trigger.obj.expression} for ${r.name}`
             );
-            cron.schedule(trigger.obj.expression, async () => execRoutine(r), {
-                noOverlap: true,
-            });
+            cache[r._id!].push(
+                cron.schedule(
+                    trigger.obj.expression,
+                    async () => execRoutine(r),
+                    {
+                        noOverlap: true,
+                    }
+                )
+            );
         });
 }
 

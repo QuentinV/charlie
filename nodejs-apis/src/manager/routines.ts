@@ -1,6 +1,6 @@
 import { cs } from '../core/db';
 import { NotFoundError } from '../errors';
-import { execRoutine } from '../routines';
+import { execRoutine, toggleStatusRoutine } from '../routines';
 import { RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
 
@@ -23,6 +23,13 @@ const routes: RestApis = {
             const r = await cs.routines.findOne({ _id: params.id });
             const { lastRun } = await execRoutine(r);
             return { lastRun };
+        },
+    },
+    'routines/:id/toggle': {
+        post: async ({ params }) => {
+            const r = await cs.routines.findOne({ _id: params.id });
+            const active = await toggleStatusRoutine(r);
+            return { active };
         },
     },
     routines: {

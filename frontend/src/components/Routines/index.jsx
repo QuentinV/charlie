@@ -30,14 +30,13 @@ export const RoutinesList = () => {
     );
 
     const setActive = useCallback(
-        async (r, checked) => {
-            await api(`routines/${r._id}`, {
-                method: 'PUT',
-                body: JSON.stringify({ active: checked }),
+        async (r) => {
+            const res = await api(`routines/${r._id}/toggle`, {
+                method: 'POST',
             });
             const ro = routines.find((rou) => rou._id === r._id);
             if (ro) {
-                ro.active = checked;
+                ro.active = res.active;
             }
             setRoutines([...routines]);
         },
