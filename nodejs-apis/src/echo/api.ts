@@ -1,6 +1,7 @@
 import { RestApis } from '../types';
 import fs from 'fs';
 import { connectedEchos } from './listen';
+import { cs } from '../core/db';
 
 const DIR = '../echo-devices';
 
@@ -44,18 +45,28 @@ const routes: RestApis = {
             },
         },
     },
-    'echo/params': {
+    'echo/:ip/params': {
+        get: {
+            handler: async ({ params }) =>
+                cs.echoSettings.findOne({ ip: params.ip.replaceAll('-', '.') }),
+        },
         post: {
-            handler: async ({ body }) => {
-                const { ip, wakeWordAccuracy } = body;
-                if (ip) {
-                    await connectedEchos[ip]?.send(`setServerIp:${ip}`);
+            handler: async ({ params, body }) => {
+                const ip = params.ip.replaceAll('-', '.');
+                const { serverIp, wakeWordAccuracy } = body;
+                if (serverIp) {
+                    await connectedEchos[ip]?.send(`setServerIp:${serverIp}`);
                 }
                 if (wakeWordAccuracy) {
                     await connectedEchos[ip]?.send(
                         `setWakeUpWordAccuracy:${wakeWordAccuracy}`
                     );
                 }
+                cs.echoSettings.updateOne(
+                    { ip },
+                    { $set: { serverIp, wakeWordAccuracy } },
+                    { upsert: true }
+                );
             },
         },
     },

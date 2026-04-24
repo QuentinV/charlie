@@ -6,7 +6,7 @@ import { logEcho } from './logs';
 
 const VERIFY_TEXT = ['charlie, ', 'charlie ', 'charlie. '];
 
-export const connectedEchos = {};
+export const connectedEchos: { [key: string]: any } = {};
 
 function sendPCMInChunks(ws, buffer, chunkSize = 4096) {
     for (let i = 0; i < buffer.length; i += chunkSize) {
@@ -29,7 +29,7 @@ export function setupEchoListen() {
     const wss = new WebSocketServer({ port: 9303, path: '/ws/echo' });
 
     wss.on('connection', (ws, req) => {
-        const ip = req.socket.remoteAddress;
+        const ip: string = req.socket.remoteAddress!;
         const log = (message: string) => logEcho(ip, message);
         connectedEchos[ip] = ws;
         log('Device connected');
