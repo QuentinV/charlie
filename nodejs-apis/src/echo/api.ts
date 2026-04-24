@@ -54,13 +54,13 @@ const routes: RestApis = {
             handler: async ({ params, body }) => {
                 const ip = params.ip.replaceAll('-', '.');
                 const { serverIp, wakeWordAccuracy } = body;
-                if (serverIp) {
-                    await connectedEchos[ip]?.send(`setServerIp:${serverIp}`);
-                }
                 if (wakeWordAccuracy) {
                     await connectedEchos[ip]?.send(
                         `setWakeUpWordAccuracy:${wakeWordAccuracy}`
                     );
+                }
+                if (serverIp) {
+                    await connectedEchos[ip]?.send(`setServerIp:${serverIp}`);
                 }
                 cs.echoSettings.updateOne(
                     { ip },
