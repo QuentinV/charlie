@@ -6,16 +6,22 @@ import { ask } from '../ai/flow';
 
 const cache = {};
 
-export async function execRoutine(r: Routine) {
-    try {
-        for (let i = 0; i < r.actions.length; ++i) {
+interface ExecRoutineResult {
+    lastRun: Date;
+}
+
+export async function execRoutine(r: Routine): Promise<ExecRoutineResult> {
+    const now = new Date();
+    for (let i = 0; i < r.actions.length; ++i) {
+        try {
             const action = r.actions[i];
             await ask(action, { log: true });
+        } catch (error) {
+            log('ROUTINES', 'Action failed');
         }
-    } catch (error) {
-        log('ROUTINES', 'Task failed');
-        console.error('Task failed:', error);
     }
+
+    return { lastRun: now };
 }
 
 export function startRoutine(r: Routine) {

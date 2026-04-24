@@ -12,10 +12,9 @@ export const tools: Tools = {
     wait: {
         exec: async (req: WaitRequest) => {
             if (!req.slots?.timeUnit || !req.slots?.text) return false;
-
             const unit = req.slots.timeUnit;
             const time =
-                Number(req.slots.timeUnit) *
+                Number(req.slots.text) *
                 (unit === 'hour' ? 3600 : unit === 'min' ? 60 : 1);
 
             return new Promise((res, rej) => {

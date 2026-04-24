@@ -127,10 +127,19 @@ export const RoutineConfig = ({ id }) => {
 
                     <Box>
                         <ToggleButtonGroup
-                            value={state.type}
+                            value={state.triggers?.[0]?.type}
                             exclusive
                             onChange={(_, val) =>
-                                val && setState({ ...state, type: val })
+                                val &&
+                                setState({
+                                    ...state,
+                                    triggers: [
+                                        {
+                                            ...(state.triggers?.[0] ?? {}),
+                                            type: val,
+                                        },
+                                    ],
+                                })
                             }
                             fullWidth
                             color="primary"
@@ -141,11 +150,19 @@ export const RoutineConfig = ({ id }) => {
                         </ToggleButtonGroup>
                     </Box>
 
-                    {state.type === 'CRON' && (
+                    {state.triggers?.[0]?.type === 'CRON' && (
                         <CronEditor
-                            value={state.expression}
+                            value={state.triggers?.[0]?.obj?.expression ?? ''}
                             onChange={(v) =>
-                                setState({ ...state, expression: v })
+                                setState({
+                                    ...state,
+                                    triggers: [
+                                        {
+                                            type: 'CRON',
+                                            obj: { expression: v },
+                                        },
+                                    ],
+                                })
                             }
                         />
                     )}

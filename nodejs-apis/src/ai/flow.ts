@@ -47,14 +47,18 @@ export async function ask(
         } else {
             isLog && log('nlu', `Cannot find intent for ${text}`);
         }
-    } catch (e) {}
+    } catch (e) {
+        throw e;
+    }
 
     if (process.env.BRAIN === 'SMART') {
         try {
             // Fallback to LLM for complex tasks or misunderstanding
             isLog && log('nlu', `Fallback to LLM`);
             return askDirect(text);
-        } catch (e) {}
+        } catch (e) {
+            throw e;
+        }
     }
 
     return null;

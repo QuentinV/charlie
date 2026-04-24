@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     Box,
     Typography,
@@ -50,7 +50,7 @@ export const RoutineListItem = ({ routine, onToggle, onEdit, onRunNow }) => {
 
                 <Switch
                     checked={routine.active}
-                    onChange={(e) => onToggle(routine.id, e.target.checked)}
+                    onChange={(e) => onToggle(routine, e.target.checked)}
                     color="primary"
                 />
             </Box>
@@ -91,7 +91,7 @@ export const RoutineListItem = ({ routine, onToggle, onEdit, onRunNow }) => {
                 <Stack direction="row" spacing={1}>
                     <IconButton
                         size="small"
-                        onClick={() => onRunNow(routine._id)}
+                        onClick={() => onRunNow(routine)}
                         sx={{ bgcolor: 'primary.50', color: 'primary.main' }}
                     >
                         <PlayArrow fontSize="small" />

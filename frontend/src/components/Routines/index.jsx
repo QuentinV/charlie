@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import { api } from '../../api/charlie';
 import { RoutineListItem } from './RoutineListItem';
+import { useNavigate } from 'react-router-dom';
 
 export const RoutinesList = () => {
+    const navigate = useNavigate();
     const [routines, setRoutines] = useState([]);
 
     useEffect(() => {
@@ -12,6 +14,35 @@ export const RoutinesList = () => {
             setRoutines(res);
         })();
     }, []);
+
+    const runNow = useCallback(
+        async (routine) => {
+            const res = await api(`routines/${routine._id}/exec`, {
+                method: 'POST',
+            });
+            const r = routines.find((r) => r._id === routine._id);
+            if (r) {
+                r.lastRun = res.lastRun;
+            }
+            setRoutines([...routines]);
+        },
+        [routines, setRoutines]
+    );
+
+    const setActive = useCallback(
+        async (r, checked) => {
+            await api(`routines/${r._id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ active: checked }),
+            });
+            const ro = routines.find((rou) => rou._id === r._id);
+            if (ro) {
+                ro.active = checked;
+            }
+            setRoutines([...routines]);
+        },
+        [routines, setRoutines]
+    );
 
     return (
         <Box sx={{ p: 2, maxWidth: 500, mx: 'auto' }}>
@@ -46,11 +77,11 @@ export const RoutinesList = () => {
             ) : (
                 routines.map((r) => (
                     <RoutineListItem
-                        key={r.id}
+                        key={r._id}
                         routine={r}
-                        onEdit={() => {}}
-                        onRunNow={() => {}}
-                        onToggle={() => {}}
+                        onEdit={() => navigate(`/routine/${r._id}`)}
+                        onRunNow={runNow}
+                        onToggle={setActive}
                     />
                 ))
             )}

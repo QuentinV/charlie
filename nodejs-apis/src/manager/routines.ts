@@ -1,14 +1,28 @@
 import { cs } from '../core/db';
+import { NotFoundError } from '../errors';
+import { execRoutine } from '../routines';
 import { RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
 
 const routes: RestApis = {
     'routines/:id': {
         get: async ({ params }) => cs.routines.findOne({ _id: params.id }),
+        put: async ({ params, body }) => {
+            const r = cs.routines.findOne({ _id: params.id });
+            if (!r) throw new NotFoundError(params.id);
+            await cs.routines.updateOne(
+                { _id: params.id },
+                {
+                    $set: body,
+                }
+            );
+        },
     },
     'routines/:id/exec': {
         post: async ({ params }) => {
-            cs.routines.findOne({ _id: params.id });
+            const r = await cs.routines.findOne({ _id: params.id });
+            const { lastRun } = await execRoutine(r);
+            return { lastRun };
         },
     },
     routines: {
@@ -17,7 +31,7 @@ const routes: RestApis = {
             const { _id, name, actions, triggers, active } = body;
             const uuid = _id || uuidV4();
             await cs.routines.updateOne(
-                { _id: uuid, name },
+                { _id: uuid },
                 {
                     $set: {
                         _id: uuid,

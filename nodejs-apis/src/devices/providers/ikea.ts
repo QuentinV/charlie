@@ -18,6 +18,13 @@ const apis: ProvidersApis = {
         init: async ({ host, password }) => {
             if (!host || !password) return false;
             client = new TradfriClient(host);
+            client.on('error', async (err) => {
+                console.error(
+                    'Caught a Tradfri error via event listener:',
+                    err.message
+                );
+            });
+
             const { identity, psk } = await client.authenticate(password);
             await client.connect(identity, psk);
 
