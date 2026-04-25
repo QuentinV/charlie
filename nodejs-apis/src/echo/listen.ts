@@ -13,6 +13,7 @@ function sendPCMInChunks(ws, buffer, chunkSize = 4096) {
         const chunk = buffer.slice(i, i + chunkSize);
         ws.send(chunk, { binary: true });
     }
+    ws.send('playAudio');
 }
 
 function verify(text: string) {
