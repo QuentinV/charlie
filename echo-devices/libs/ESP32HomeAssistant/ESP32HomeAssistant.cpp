@@ -110,24 +110,46 @@ void ESP32HomeAssistant::_setupWiFi() {
     Serial.printf("serverIp: %s, wakeUpWordAccuracy: %f", this->serverip, this->wakeUpWordAccuracy);
 }
 
-void ESP32HomeAssistant::_playAudio(uint8_t* data, size_t len) {
-    int16_t* samples = (int16_t*)data;
-    size_t sample_count = len / 2;
+void ESP32HomeAssistant::_playBufferedAudio() {
+    if (this->totalPlaybackSamples == 0 || this->playbackBuffer == NULL) return;
 
-    float volume = 0.5f;  // clean, safe, non-distorting
+    float volume = 0.5f;
+    int16_t* p = this->playbackBuffer; // Local pointer for faster access
 
-    for (size_t i = 0; i < sample_count; i++) {
-        float s = samples[i] * volume;
-
-        // clamp
+    for (size_t i = 0; i < this->totalPlaybackSamples; i++) {
+        // Multiply first, then clamp
+        int32_t s = (int32_t)(p[i] * volume);
         if (s > 32767) s = 32767;
-        if (s < -32768) s = -32768;
-
-        samples[i] = (int16_t)s;
+        else if (s < -32768) s = -32768;
+        p[i] = (int16_t)s;
     }
 
-    size_t bytes_written;
-    i2s_write(this->_cfg.I2S_SPK_PORT, data, len, &bytes_written, portMAX_DELAY);
+    size_t bytes_written = 0;
+
+    i2s_write(
+        this->_cfg.I2S_SPK_PORT, 
+        (const char*)this->playbackBuffer, 
+        this->totalPlaybackSamples * sizeof(int16_t), 
+        &bytes_written, 
+        portMAX_DELAY
+    );
+
+    this->totalPlaybackSamples = 0;
+}
+
+void ESP32HomeAssistant::_handleIncomingAudio(uint8_t *payload, size_t length) {
+    if (this->totalPlaybackSamples + (length / 2) > MAX_SAMPLES_PLAYBACK) {
+        Serial.println("Playback buffer full!");
+        return;
+    }
+
+    this->setLed(128, 0, 128);
+
+    // (this->playbackBuffer + this->totalPlaybackSamples) moves the pointer 
+    // by (totalPlaybackSamples * 2) bytes because it's an int16_t pointer.
+    memcpy(this->playbackBuffer + this->totalPlaybackSamples, payload, length);
+
+    this->totalPlaybackSamples += (length / 2);
 }
 
 void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
@@ -153,7 +175,10 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
                     command = msg;
                 }
 
-                if (command == "setWakeUpWordAccuracy") {
+                if (command == "playAudio") {
+                    this->_playBufferedAudio();
+                    this->setLed(0, 0, 0);
+                } else if (command == "setWakeUpWordAccuracy") {
                     this->_setWakeUpWordAccuracy(value.toFloat());
                 } else if(command == "setServerIp") {
                     //Serial.printf("setServerIp: %s\n", value);
@@ -166,7 +191,7 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
                 break;    
             }
         case WStype_BIN:
-            this->_playAudio(payload, length);
+            this->_handleIncomingAudio(payload, length);
             break;
     }
 }
@@ -180,7 +205,7 @@ int ESP32HomeAssistant::_setupMicI2S(uint32_t sampling_rate) {
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
         .communication_format = I2S_COMM_FORMAT_STAND_I2S,
         .intr_alloc_flags = 0,
-        .dma_buf_count = 80,
+        .dma_buf_count = 30,
         .dma_buf_len = 512,
         .use_apll = false,
         .tx_desc_auto_clear = false,
@@ -229,8 +254,6 @@ bool ESP32HomeAssistant::_allocateInferenceBuffer(uint32_t n_samples) {
 
     if (this->inference.buffer == NULL || this->inference_window == NULL) {
         Serial.println("PSRAM Allocation Failed!");
-    } else {
-        Serial.printf("Buffer moved to PSRAM. New Address: %p\n", (void*)this->inference_window);
     }
 
     if (this->inference.buffer == NULL) {
@@ -239,6 +262,9 @@ bool ESP32HomeAssistant::_allocateInferenceBuffer(uint32_t n_samples) {
 
     this->inference.buf_count = 0;
     this->inference.n_samples = n_samples;
+
+    this->bufferCaptureAudio = (int16_t*)heap_caps_malloc(MAX_SAMPLES * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+    this->totalRecordedSamples = 0;
 
     return true;
 } 
@@ -266,6 +292,9 @@ void ESP32HomeAssistant::_setupSpeakerI2S() {
 
     i2s_driver_install(this->_cfg.I2S_SPK_PORT, &spk_config, 0, NULL);
     i2s_set_pin(this->_cfg.I2S_SPK_PORT, &spk_pins);
+
+    this->playbackBuffer = (int16_t*)heap_caps_malloc(MAX_SAMPLES_PLAYBACK * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+    this->totalPlaybackSamples = 0;
 }
 
 int ESP32HomeAssistant::_ei_get_sliding_window_data(size_t offset, size_t length, float *out_ptr) {
@@ -273,6 +302,39 @@ int ESP32HomeAssistant::_ei_get_sliding_window_data(size_t offset, size_t length
         out_ptr[i] = (float)this->inference_window[offset + i];
     }
     return 0;
+}
+
+void ESP32HomeAssistant::_sendAudioWS() {
+    if (!this->webSocket.isConnected()) {
+        this->setLed(255, 0, 0);
+        return;
+    }
+
+    this->setLed(128, 0, 128);
+    this->webSocket.sendTXT("start");
+    
+    size_t samples_sent = 0;
+    const size_t burst_size = 4096; // Send 4KB at a time (2048 * 2 bytes)
+
+    while (samples_sent < this->totalRecordedSamples) {
+        size_t to_send = min(burst_size, this->totalRecordedSamples - samples_sent);
+        
+        this->webSocket.sendBIN(
+            (uint8_t*)(this->bufferCaptureAudio + samples_sent), 
+            to_send * sizeof(int16_t)
+        );
+        
+        samples_sent += to_send;
+
+        vTaskDelay(pdMS_TO_TICKS(2)); 
+    }
+
+    this->totalRecordedSamples = 0;
+    
+    vTaskDelay(pdMS_TO_TICKS(10)); 
+    this->webSocket.sendTXT("end");
+
+    this->setLed(0, 0, 0);
 }
 
 void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
@@ -292,7 +354,7 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
     size_t samples_since_last_inference = 0;
     silenceStart = 0;
     time_t startTime = 0;
-    bool sendMode = false;
+    bool recordMode = false;
 
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(2));
@@ -310,30 +372,35 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
         }
 
         size_t frames_read = capture_bytes_read / sizeof(int32_t);
-
-        int64_t sum = 0;
-        // Convert 32‑bit I2S to 16‑bit PCM
         for (size_t i = 0; i < frames_read; i++) {
+            // Convert 32‑bit I2S to 16‑bit PCM && apply gain
             capture_pcm16[i] = (int16_t)(capture_raw32[i] >> 15);
             capture_pcm16[i] = (int16_t)((float)capture_pcm16[i] * gain);
-            sum += capture_pcm16[i];
 
-             // Push to circular buffer (inference.buffer should be size 16000)
-            this->inference.buffer[this->inference.buf_count] = capture_pcm16[i];
-            this->inference.buf_count = (this->inference.buf_count + 1) % window;
+            // Copy to buffers
+            if (recordMode) {
+                if (this->totalRecordedSamples < MAX_SAMPLES) {
+                    this->bufferCaptureAudio[this->totalRecordedSamples++] = capture_pcm16[i];
+                }
+            } else {
+                // Push to circular buffer (inference.buffer should be size 16000)
+                this->inference.buffer[this->inference.buf_count] = capture_pcm16[i];
+                this->inference.buf_count = (this->inference.buf_count + 1) % window;
+            }
         }
 
-        if (sendMode) {
+        if (recordMode) {
             time_t t = time(NULL);
 
             if (t - startTime > 5) {
                 Serial.println("Max duration reached. Ending.");
-
-                if (this->webSocket.isConnected())
-                    this->webSocket.sendTXT("end");
-
-                sendMode = false;
-                this->setLed(0, 0, 0);
+                recordMode = false;
+                this->_sendAudioWS();   
+                
+                memset(this->inference.buffer, 0, window * sizeof(int16_t));
+                this->inference.buf_count = 0;
+                samples_since_last_inference = 0;
+                
                 continue;
             }
 
@@ -352,19 +419,18 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                 if (silenceStart == 0) {
                     silenceStart = t;
                 } else if (t - silenceStart > MIC_DURATION_SILENCE) {
-                    if (this->webSocket.isConnected())
-                        this->webSocket.sendTXT("end");
-                    sendMode = false;
-                    this->setLed(0, 0, 0);
+                    recordMode = false;
+                    this->_sendAudioWS();
+
+                    memset(this->inference.buffer, 0, window * sizeof(int16_t));
+                    this->inference.buf_count = 0;
+                    samples_since_last_inference = 0;
+                    
                     continue;
                 }
             } else {
                 silenceStart = 0;
             }
-
-            if (this->webSocket.isConnected())
-                this->webSocket.sendBIN((uint8_t*)capture_pcm16, frames_read * sizeof(int16_t));
-
         } else {
             samples_since_last_inference += frames_read;
 
@@ -396,15 +462,13 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                 if ( result.classification[0].value > this->wakeUpWordAccuracy) {
                     this->setLed(255, 255, 255);
 
-                    sendMode = true;
+                    recordMode = true;
                     silenceStart = 0;
-
-                    if (this->webSocket.isConnected()) {
-                        this->webSocket.sendTXT("start");
-                        this->webSocket.sendBIN( (uint8_t*)this->inference_window, window * sizeof(int16_t) );
-                    }
-                    
                     startTime = time(NULL);
+
+                    // this->printMemoryUsage();
+                    memcpy(this->bufferCaptureAudio, this->inference_window, window * sizeof(int16_t));
+                    this->totalRecordedSamples = window;
                 }
             }
         }    
@@ -578,7 +642,7 @@ void ESP32HomeAssistant::begin() {
 
     this->setLed(0, 0, 255);
     
-    xTaskCreatePinnedToCore( wsTask, "TaskWebSocket", 4096, NULL, 1, &this->taskWebSocketHandle, 0);
+    xTaskCreatePinnedToCore( wsTask, "TaskWebSocket", 1024 * 8, NULL, 1, &this->taskWebSocketHandle, 0);
     delay(10000);
     xTaskCreatePinnedToCore( listenAndSendTask, "ListenAndSend", 1024 * 16, NULL, 10, &this->listenAndSendHandle, 1 );
     
