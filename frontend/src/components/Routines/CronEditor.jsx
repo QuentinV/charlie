@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import {
     Box,
     Stack,
@@ -10,62 +10,66 @@ import {
 } from '@mui/material';
 import { Repeat } from '@mui/icons-material';
 
+const parse = (value) => {
+    const parts = (value ?? '00 09 * * *').split(' ');
+    const [minute, hour, _1, _2, dow] = parts;
+
+    if (minute.includes('/') && hour === '*' && dow === '*') {
+        return {
+            frequency: 'interval',
+            days: ['1', '2', '3', '4', '5'],
+            interval: minute.replace('*/', ''),
+        };
+    }
+
+    if (dow && dow !== '*' && dow !== '?') {
+        return {
+            frequency: 'weekly',
+            time: `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`,
+            days: dow.split(','),
+        };
+    }
+
+    return {
+        frequency: 'daily',
+        time: `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`,
+        days: ['1', '2', '3', '4', '5'],
+    };
+};
+
 export const CronEditor = ({ onChange, value }) => {
-    const [frequency, setFrequency] = useState('daily');
-    const [time, setTime] = useState('09:00');
-    const [days, setDays] = useState(['1', '2', '3', '4', '5']);
-    const [interval, setInterval] = useState('5');
+    const { frequency, days, interval, time } = parse(value);
 
-    useEffect(() => {
-        let cron = '* * * * *';
-        const [hour, minute] = time.split(':');
+    const change = useCallback(
+        ({ t, f, i, d }) => {
+            let cron = '* * * * *';
+            const freq = f ?? frequency;
+            const int = i ?? interval ?? '5';
+            const da = d ?? days;
+            const [hour, minute] = (t ?? time ?? '09:00').split(':');
+            console.log(freq, int, da, hour, minute);
 
-        if (frequency === 'interval') {
-            cron = `*/${interval} * * * *`;
-        } else if (frequency === 'daily') {
-            cron = `${minute} ${hour} * * *`;
-        } else if (frequency === 'weekly') {
-            cron = `${minute} ${hour} * * ${days.join(',')}`;
-        }
+            if (freq === 'interval') {
+                cron = `*/${int} * * * *`;
+            } else if (freq === 'daily') {
+                cron = `${minute} ${hour} * * *`;
+            } else if (freq === 'weekly') {
+                cron = `${minute} ${hour} * * ${da.join(',')}`;
+            }
 
-        if (value !== cron) {
-            onChange(cron);
-        }
-    }, [value, frequency, time, days, interval, onChange]);
-
-    useEffect(() => {
-        const parts = value.split(' ');
-        const [minute, hour, _1, _2, dow] = parts;
-
-        // Check for "Interval" (e.g., */5 * * * *)
-        if (minute.includes('/') && hour === '*' && dow === '*') {
-            setFrequency('interval');
-            setDays(['1', '2', '3', '4', '5']);
-            setInterval(minute.replace('*/', ''));
-            return;
-        }
-
-        // Check for "Weekly" (Specific days assigned)
-        if (dow && dow !== '*' && dow !== '?') {
-            setFrequency('weekly');
-            setTime(`${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`);
-            setDays(dow.split(','));
-            return;
-        }
-
-        setFrequency('daily');
-        if (hour) {
-            setTime(`${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`);
-        }
-        setDays(['1', '2', '3', '4', '5']);
-    }, [value]);
+            if (value !== cron) {
+                onChange(cron);
+            }
+        },
+        [frequency, interval, days, time, onChange, value]
+    );
 
     return (
         <>
             <ToggleButtonGroup
                 value={frequency}
                 exclusive
-                onChange={(_, val) => val && setFrequency(val)}
+                onChange={(_, val) => val && change({ f: val })}
                 fullWidth
                 sx={{ mb: 1, borderRadius: 2 }}
             >
@@ -91,7 +95,7 @@ export const CronEditor = ({ onChange, value }) => {
                             <TextField
                                 select
                                 value={interval}
-                                onChange={(e) => setInterval(e.target.value)}
+                                onChange={(e) => change({ i: e.target.value })}
                                 variant="standard"
                                 sx={{
                                     width: 80,
@@ -122,7 +126,9 @@ export const CronEditor = ({ onChange, value }) => {
                                 <TextField
                                     type="time"
                                     value={time}
-                                    onChange={(e) => setTime(e.target.value)}
+                                    onChange={(e) =>
+                                        change({ t: e.target.value })
+                                    }
                                     variant="standard"
                                     sx={{
                                         '& .MuiInput-root': {
@@ -148,18 +154,18 @@ export const CronEditor = ({ onChange, value }) => {
                                                 <Box
                                                     key={i}
                                                     onClick={() =>
-                                                        setDays((prev) =>
-                                                            isSelected
-                                                                ? prev.filter(
+                                                        change({
+                                                            d: isSelected
+                                                                ? days.filter(
                                                                       (d) =>
                                                                           d !==
                                                                           i.toString()
                                                                   )
                                                                 : [
-                                                                      ...prev,
+                                                                      ...days,
                                                                       i.toString(),
-                                                                  ]
-                                                        )
+                                                                  ],
+                                                        })
                                                     }
                                                     sx={{
                                                         width: 36,

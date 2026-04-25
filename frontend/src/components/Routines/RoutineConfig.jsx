@@ -78,7 +78,7 @@ export const RoutineConfig = ({ id }) => {
             body: JSON.stringify(state),
         });
         if (id === 'new') {
-            navigate(`rountine/${res.uuid}`);
+            navigate(`/rountine/${res.uuid}`);
         }
     }, [navigate, id, state]);
 
@@ -121,15 +121,15 @@ export const RoutineConfig = ({ id }) => {
                             exclusive
                             onChange={(_, val) =>
                                 val &&
-                                setState({
-                                    ...state,
+                                setState((prev) => ({
+                                    ...prev,
                                     triggers: [
                                         {
                                             ...(state.triggers?.[0] ?? {}),
                                             type: val,
                                         },
                                     ],
-                                })
+                                }))
                             }
                             fullWidth
                             color="primary"
@@ -142,18 +142,18 @@ export const RoutineConfig = ({ id }) => {
 
                     {state.triggers?.[0]?.type === 'CRON' && (
                         <CronEditor
-                            value={state.triggers?.[0]?.obj?.expression ?? ''}
-                            onChange={(v) =>
-                                setState({
-                                    ...state,
+                            value={state.triggers?.[0]?.obj?.expression}
+                            onChange={(v) => {
+                                setState((prev) => ({
+                                    ...prev,
                                     triggers: [
                                         {
                                             type: 'CRON',
                                             obj: { expression: v },
                                         },
                                     ],
-                                })
-                            }
+                                }));
+                            }}
                         />
                     )}
 
