@@ -8,7 +8,7 @@ const VERIFY_TEXT = ['charlie, ', 'charlie ', 'charlie. '];
 
 export const connectedEchos: { [key: string]: any } = {};
 
-function sendPCMInChunks(ws, buffer, chunkSize = 4096) {
+function sendPCMInChunks(ws, buffer, chunkSize = 8192) {
     for (let i = 0; i < buffer.length; i += chunkSize) {
         const chunk = buffer.slice(i, i + chunkSize);
         ws.send(chunk, { binary: true });
