@@ -21,6 +21,7 @@ import tuya from './providers/tuya';
 import default_custom from './providers/default_custom';
 import shelly from './providers/shelly';
 import custom_button from './providers/custom_button';
+import custom_buttonv2 from './providers/custom_buttonv2';
 
 // Register all possible providers here
 const providerApis: { [name: string]: ProvidersApis } = {
@@ -33,6 +34,7 @@ const providerApis: { [name: string]: ProvidersApis } = {
     tuya,
     shelly,
     custom_button,
+    custom_buttonv2,
 };
 
 export const availableProvidersCodeSources = Object.keys(providerApis);
