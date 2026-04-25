@@ -113,6 +113,7 @@ private:
     bool isWsConnected = false;
 
     String serverip;
+    float wakeUpWordAccuracy;
     WebSocketsClient webSocket;
 
     int16_t* inference_window = NULL;

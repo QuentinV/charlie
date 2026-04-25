@@ -61,18 +61,25 @@ void ESP32HomeAssistant::_runOTA() {
 }
 
 void ESP32HomeAssistant::_setWakeUpWordAccuracy(float accuracy) {
-    this->_cfg.WAKE_UP_WORD_ACCURACY = accuracy;
+    this->wakeUpWordAccuracy = accuracy;
+    this->_prefs.begin("config", false);
+    this->_prefs.putFloat("wordAccuracy", accuracy);
+    this->_prefs.end();
 }
 
 void ESP32HomeAssistant::_setServerIp(String serverip) {
-    this->serverip = serverip;
+    this->_prefs.begin("config", false);
     this->_prefs.putString("serverIp", serverip);
+    this->_prefs.end();
+    delay(1000);
+    ESP.restart();
 }
 
 void ESP32HomeAssistant::_setupWiFi() {
     Serial.println("Loading wifi");
     this->_prefs.begin("config", false);
     this->serverip = this->_prefs.getString("serverIp", "");
+    this->wakeUpWordAccuracy = this->_prefs.getFloat("wordAccuracy", this->_cfg.WAKE_UP_WORD_ACCURACY);
     Serial.println("Loaded serverIp: " + this->serverip);
 
     WiFi.mode(WIFI_AP_STA);
@@ -99,6 +106,8 @@ void ESP32HomeAssistant::_setupWiFi() {
     this->serverip = serverIp;
 
     this->_prefs.end();
+
+    Serial.printf("serverIp: %s, wakeUpWordAccuracy: %f", this->serverip, this->wakeUpWordAccuracy);
 }
 
 void ESP32HomeAssistant::_playAudio(uint8_t* data, size_t len) {
@@ -144,10 +153,11 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
                     command = msg;
                 }
 
-                if(command == "setServerIp") {
-                    this->_setServerIp(value);
-                } else if (command == "setWakeUpWordAccuracy") {
+                if (command == "setWakeUpWordAccuracy") {
                     this->_setWakeUpWordAccuracy(value.toFloat());
+                } else if(command == "setServerIp") {
+                    //Serial.printf("setServerIp: %s\n", value);
+                    this->_setServerIp(value);
                 } else if (command == "OTA") {
                     this->_runOTA();
                 } else {
@@ -383,7 +393,7 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                 run_classifier(&signal, &result, false);
 
                 //Serial.printf("Classification = %f", result.classification[0].value);
-                if ( result.classification[0].value > this->_cfg.WAKE_UP_WORD_ACCURACY) {
+                if ( result.classification[0].value > this->wakeUpWordAccuracy) {
                     this->setLed(255, 255, 255);
 
                     sendMode = true;
