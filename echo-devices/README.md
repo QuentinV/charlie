@@ -33,14 +33,4 @@ Move [board file](boards/esp32-s3-devkitc-1-n16r8v.json) to your user folder in
 
 # Versions
 
-- v1.2: add recorded audio into PSRAM buffer before sending to server to avoid problem with network latency. Same for received audio.
-    - echo-zero
-    - echo-zero-screen
-
-- v1.1: new options to set serverip and wake word accuracy through websocket
-    - echo-zero
-    - echo-zero-screen
-
-- v1.0: first version with ESP32HomeAssistant library config
-    - echo-zero
-    - echo-zero-screen
+View the changelog here: [changelog.json](./changelog.json)

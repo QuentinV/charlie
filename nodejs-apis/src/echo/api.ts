@@ -6,11 +6,10 @@ import { cs } from '../core/db';
 const DIR = '../echo-devices';
 
 const routes: RestApis = {
-    // TODO firmware.bin isn't enough, 3 files requires, should rework the path
     'echo/:echoType/latest/firmware.bin': {
         get: {
             fullHandler: async ({ params }, res) => {
-                const filePath = `${DIR}/${params.echoType}/.pio/build/esp32-s3-wroom-n16r8/firmware.bin`;
+                const filePath = `${DIR}/.pio/build/${params.echoType}/firmware.bin`;
 
                 fs.stat(filePath, (err, stats) => {
                     if (err) {
@@ -42,6 +41,29 @@ const routes: RestApis = {
             handler: async ({ body }) => {
                 const { ip } = body;
                 await connectedEchos[ip]?.send('OTA');
+            },
+        },
+    },
+    'echo/changelogs': {
+        get: {
+            fullHandler: async (_, res) => {
+                const filePath = `${DIR}/changelog.json`;
+                fs.stat(filePath, (err, stats) => {
+                    if (err) {
+                        console.error(err);
+                        return res.sendStatus(404);
+                    }
+
+                    res.setHeader('Content-Type', 'application/json');
+                    res.setHeader(
+                        'Content-Disposition',
+                        'attachment; filename=changelog.json'
+                    );
+                    res.setHeader('Content-Length', stats.size);
+
+                    const stream = fs.createReadStream(filePath);
+                    stream.pipe(res);
+                });
             },
         },
     },

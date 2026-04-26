@@ -31,13 +31,11 @@ ESP32HomeAssistant::ESP32HomeAssistant(const HAConfig& cfg)
 }
 
 void ESP32HomeAssistant::_runOTA() {
-    setLed(255, 0, 255);
-    vTaskDelete(this->taskWebSocketHandle);
+    setLed(0, 255, 255);
     vTaskDelete(this->listenAndSendHandle);
 
-    serverip = "192.168.1.17";
     WiFiClient client;
-    t_httpUpdate_return ret = httpUpdate.update( client, "http://" + serverip + ":9300/api/echo/" + this->_cfg.deviceType + "/latest/firmware.bin" );
+    t_httpUpdate_return ret = httpUpdate.update( client, "http://" + this->serverip + ":9300/api/echo/" + this->_cfg.deviceType + "/latest/firmware.bin" );
 
     switch (ret) {
         case HTTP_UPDATE_FAILED:

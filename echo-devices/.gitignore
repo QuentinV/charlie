@@ -5,5 +5,7 @@
 .env
 .pio/**/**
 !.pio/build
-!.pio/build/esp32-s3-wroom-n16r8
-!.pio/build/esp32-s3-wroom-n16r8/firmware.bin
+!.pio/build/echo-zero
+!.pio/build/echo-zero/firmware.bin
+!.pio/build/echo-zero-screen
+!.pio/build/echo-zero-screen/firmware.bin
