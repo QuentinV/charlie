@@ -84,7 +84,7 @@ export interface Provider {
 export type PowerType = 'on' | 'off' | 'pause';
 
 export interface DeviceState {
-    power: PowerType;
+    power?: PowerType;
     level?: number;
     additional?: object;
 }
@@ -111,7 +111,6 @@ export interface ProviderApi {
         params: DeviceState
     ) => Promise<DeviceState | boolean>;
     getDeviceState?: (meta: ProviderApiMetaInfo) => Promise<DeviceState>;
-    toggleDeviceState?: (meta: ProviderApiMetaInfo) => Promise<boolean>;
     getFunctions?: (
         meta: ProviderApiMetaInfo
     ) => Promise<ProviderFunctionDef[]>;

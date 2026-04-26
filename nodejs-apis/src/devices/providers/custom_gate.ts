@@ -3,7 +3,7 @@ import { ProvidersApis } from '../../types';
 
 const apis: ProvidersApis = {
     api: {
-        toggleDeviceState: async ({ provider: { host } }) => {
+        changeDeviceState: async ({ provider: { host } }) => {
             try {
                 await fetch(`http://${host}/state/toggle`, {
                     method: 'POST',
@@ -15,7 +15,7 @@ const apis: ProvidersApis = {
                 await log('provider-custom_button', e?.toString());
                 return false;
             }
-            return true;
+            return {};
         },
     },
 };
