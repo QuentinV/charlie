@@ -142,7 +142,7 @@ export async function changeDeviceState(
     log('devices', 'changeDeviceState', { context: { deviceId, params } });
 
     const res = await call(deviceId, async ({ device, api, provider }) => {
-        const p: DeviceState = {};
+        const p: DeviceState = params ?? {};
         if (!params && device?.type !== 'button') {
             // button = toggle so no state, everything else reload and inverse previous state if toggle
             const state = await getDeviceState(deviceId);

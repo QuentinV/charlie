@@ -78,7 +78,7 @@ export const RoutineConfig = ({ id }) => {
             body: JSON.stringify(state),
         });
         if (id === 'new') {
-            navigate(`/rountine/${res.uuid}`);
+            navigate(`/routine/${res.uuid}`);
         }
     }, [navigate, id, state]);
 

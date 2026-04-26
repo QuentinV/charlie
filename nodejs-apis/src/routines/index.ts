@@ -10,6 +10,11 @@ interface ExecRoutineResult {
     lastRun: Date;
 }
 
+export async function stopRoutine(rid: string) {
+    log('ROUTINES', `Stop routine ${rid}`);
+    cache[rid]?.forEach((c: any) => c?.stop?.());
+}
+
 export async function execRoutine(r: Routine): Promise<ExecRoutineResult> {
     const lastRun = new Date();
     for (let i = 0; i < r.actions.length; ++i) {
@@ -46,11 +51,16 @@ export async function toggleStatusRoutine(r: Routine): Promise<boolean> {
     if (active) {
         startRoutine(r);
     } else {
-        log('ROUTINES', `Stop routine ${r.name}`);
-        cache[r._id]?.forEach((c: any) => c?.cron?.());
+        stopRoutine(r._id);
     }
 
     return active;
+}
+
+export function restartRoutine(r: Routine) {
+    if (!r?.active || !r._id) return;
+    stopRoutine(r._id);
+    startRoutine(r);
 }
 
 export function startRoutine(r: Routine) {
@@ -69,6 +79,7 @@ export function startRoutine(r: Routine) {
                     async () => execRoutine(r),
                     {
                         noOverlap: true,
+                        timezone: 'Europe/Paris',
                     }
                 )
             );
