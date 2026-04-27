@@ -102,7 +102,7 @@ describe('findIntent', () => {
         expect(await findIntent('oublie ça')).toStrictEqual({
             name: 'pauseDevice',
             freeText: 'ça',
-            slots: { text: 'ça' },
+            slots: { text: 'ca' },
         });
 
         expect(await findIntent(`non c'est bon`)).toStrictEqual({

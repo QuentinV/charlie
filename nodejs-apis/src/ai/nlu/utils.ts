@@ -16,7 +16,7 @@ const synFillingWords = [
 ];
 
 export function normalizeAndSplit(text: string, filterFillingsWords?: boolean) {
-    let res = text.split(/\s+/);
+    let res = normalize(text).split(/\s+/);
     if (filterFillingsWords) {
         res = res.filter((s) => !synFillingWords.includes(s));
     }
