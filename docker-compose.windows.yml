@@ -1,0 +1,105 @@
+services:
+    api:
+        build: ./nodejs-apis
+        container_name: charlie-api
+        environment:
+            - NODE_ENV=production
+        volumes:
+            - ./nodejs-apis/src:/app/src
+            - ./nodejs-apis/.env:/app/.env
+            - ./nodejs-apis/tsconfig.json:/app/tsconfig.json
+            - ./nodejs-apis/recordings:/app/recordings
+            - ./echo-devices:/echo-devices
+        ports:
+            - '9300:9300' # http server
+            - '9303:9303' # ws
+            - '9304:9304' # mqtt server
+        command: 'yarn start'
+        depends_on:
+            - db
+        restart: unless-stopped
+        networks:
+            - internal
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+
+    ai-agents:
+        build: ./python-apis
+        container_name: charlie-ai-agents
+        ports:
+            - '9301:8000'
+        volumes:
+            - ./python-apis/app:/app
+            - ./nodejs-apis:/mcp-server
+            - ./python-apis/qwen_models:/models
+        environment:
+            - PYTHONUNBUFFERED=1
+            - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+            - SSE_HOST=http://${SSE_HOST}:9300/sse
+            - LLM_MODEL=${LLM_MODEL}
+        restart: unless-stopped
+        networks:
+            - internal
+    asr:
+        build: ../qwen-asr
+        container_name: charlie-asr
+        ports:
+            - '9307:5000'
+        environment:
+            - MODEL_SIZE=large
+            - MODEL_DIR=/model
+        volumes:
+            - ./python-apis/qwen_models/Qwen3-ASR-1.7B:/model
+            - ./nodejs-apis/src/echo/__tests__/rec-2026-03-09T20-38-20-462Z.wav:/warmup.wav
+        command:
+            [
+                '--ws',
+                '--skip-silence',
+                '--language',
+                'French',
+                '--prompt',
+                'This is a conversation with an assistant named Charlie.',
+                '--warmup',
+                '/warmup.wav',
+            ]
+        networks:
+            - internal
+    db:
+        container_name: charlie-db
+        image: mongo
+        ports:
+            - '9302:27017'
+        restart: unless-stopped
+        volumes:
+            - ./db:/data/db
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=
+            - MONGO_INITDB_ROOT_PASSWORD=
+        networks:
+            - internal
+    frontend:
+        build: ./frontend
+        container_name: charlie-frontend
+        environment:
+            - NODE_ENV=production
+            - API_HOST=http://api:9300
+        volumes:
+            - ./frontend/src:/app/src
+            - ./frontend/.env:/app/.env
+            - ./frontend/vite.config.js:/app/vite.config.js
+            - ./frontend/public:/app/public
+            - ./certs:/certs
+        ports:
+            - '9305:3000'
+        command: 'yarn start --host'
+        depends_on:
+            - api
+        restart: unless-stopped
+        networks:
+            - internal
+
+networks:
+    internal:
+        driver: bridge
+    charlieExternal:
+        external: true
