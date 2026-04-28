@@ -6,7 +6,7 @@ from piper.voice import PiperVoice
 
 router = APIRouter()
 
-voice = PiperVoice.load("/app/voices/fr_FR-upmc-medium.onnx", config_path="/app/voices/fr_FR-upmc-medium.onnx.json")
+voice = PiperVoice.load("/app/voices/fr_FR-siwis-medium.onnx", config_path="/app/voices/fr_FR-siwis-medium.onnx.json")
 
 def build_wav_header(sample_rate, sample_width, channels, data_size):
     # WAV header for PCM format

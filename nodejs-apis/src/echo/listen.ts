@@ -6,6 +6,38 @@ import { logEcho } from './logs';
 
 const VERIFY_TEXT = ['charlie, ', 'charlie ', 'charlie. '];
 
+function random(arr: string[]) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+const positiveAnswers = [
+    "C'est fait.",
+    "C'est fait ! Je vais m'octroyer une pause de deux secondes pour fêter ça.",
+    "C'est fait ! J'espère que vous appréciez l'effort.",
+    "C'est comme si c'était fait.",
+    'Mission accomplie.',
+    "Pas de problème, je m'en occupe.",
+    "C'est réglé, chef.",
+    "Biiip... boop... c'est fini!",
+    'Affirmatif.',
+    'Pas de souci.',
+];
+const notPossibleAnswers = [
+    "Cette action n'est pas disponible.",
+    'Je ne peux pas faire ça, malheureusement.',
+    "Désolée, mes pouvoirs s'arrêtent ici.",
+    'Action impossible. Mon système dit non.',
+    'Erreur 404 : Volonté non trouvée.',
+];
+const doesNotUnderstandAnswers = [
+    'Je ne comprends pas.',
+    'Hein ? Peux-tu répéter ?',
+    "Je n'ai pas capté un seul mot.",
+    "C'est du chinois pour moi, ça.",
+    'Vous parlez à une maison, là. Soyez plus clair !',
+    'Pardon ? Ma logique me fait défaut.',
+];
+
 export const connectedEchos: { [key: string]: any } = {};
 
 function sendPCMInChunks(ws, buffer, chunkSize = 8192) {
@@ -92,10 +124,10 @@ export function setupEchoListen() {
                                 typeof result === 'string'
                                     ? result
                                     : result === null
-                                      ? 'Je ne comprends pas.'
+                                      ? random(doesNotUnderstandAnswers)
                                       : result === false
-                                        ? `Cette action n'est pas disponible.`
-                                        : `C'est fait.`;
+                                        ? random(notPossibleAnswers)
+                                        : random(positiveAnswers);
 
                             const resultAudio = await tts({
                                 text: longText,
