@@ -1,4 +1,4 @@
-import { Device, PowerType, Room, Tools } from '../../../types';
+import { Device, DeviceTypes, PowerType, Room, Tools } from '../../../types';
 import { cs } from '../../../core/db';
 import Fuse from 'fuse.js';
 import { changeDeviceState } from '../../../devices';
@@ -11,6 +11,7 @@ interface DeviceRequest {
         deviceType?: string;
         room?: string;
         plurial?: 'plurial';
+        predefinedRoom?: string;
     };
 }
 
@@ -34,6 +35,14 @@ async function getRoom(q: string): Promise<Room | undefined> {
 }
 
 async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
+    DeviceTypes;
+    if (req.slots?.predefinedRoom === 'house') {
+        log('devices-actions', 'house requested, use all shutters devices');
+        return cs.devices
+            .find({ type: { $in: [DeviceTypes.shutter] } })
+            .toArray();
+    }
+
     const room = await getRoom(req.slots?.room);
     if (!req.freeText && room === null) {
         log('devices-actions', `no room found for ${req.slots?.room}`);
@@ -49,7 +58,7 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
         filter['_id'] = { $in: room.devices };
     }
 
-    if (req.slots?.deviceType) {
+    if (req.slots?.deviceType && req.slots?.deviceType !== 'house') {
         filter.type = req.slots.deviceType;
         log(
             'devices-actions',
@@ -63,7 +72,7 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
             return [devices[0]];
         }
 
-        if (req.slots?.plurial) {
+        if (req.slots?.plurial || req.slots?.deviceType === 'house') {
             log('devices-actions', 'pick all devices because plurial');
             return devices;
         }

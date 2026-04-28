@@ -52,16 +52,16 @@ export interface Device {
     state?: DeviceState;
 }
 
-export const DeviceTypes = {
-    light: 'light',
-    switch: 'switch',
-    shutter: 'shutter',
-    sprinkler: 'sprinkler',
-    tv: 'tv',
-    sensor: 'sensor',
-    button: 'button',
-    unknown: 'unknown',
-};
+export enum DeviceTypes {
+    light = 'light',
+    switch = 'switch',
+    shutter = 'shutter',
+    sprinkler = 'sprinkler',
+    tv = 'tv',
+    sensor = 'sensor',
+    button = 'button',
+    unknown = 'unknown',
+}
 
 export interface Room {
     _id: string;

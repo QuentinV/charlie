@@ -196,6 +196,26 @@ describe('findIntent', () => {
                 room: 'salon',
             },
         });
+
+        expect(await findIntent('ouvre la maison')).toStrictEqual({
+            name: 'turnOnDevice',
+            freeText: 'la maison',
+            slots: {
+                predefinedRoom: 'house',
+            },
+        });
+
+        expect(await findIntent('ouvre les volets de la maison')).toStrictEqual(
+            {
+                name: 'turnOnDevice',
+                freeText: 'les volets de la maison',
+                slots: {
+                    deviceType: 'shutter',
+                    plurial: 'plurial',
+                    predefinedRoom: 'house',
+                },
+            }
+        );
     });
 
     test('turnOffDevice', async () => {
