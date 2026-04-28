@@ -111,43 +111,32 @@ void ESP32HomeAssistant::_setupWiFi() {
 void ESP32HomeAssistant::_playBufferedAudio() {
     if (this->totalPlaybackSamples == 0 || this->playbackBuffer == NULL) return;
 
-    float volume = 0.5f;
-    int16_t* p = this->playbackBuffer; // Local pointer for faster access
-
-    for (size_t i = 0; i < this->totalPlaybackSamples; i++) {
-        // Multiply first, then clamp
-        int32_t s = (int32_t)(p[i] * volume);
-        if (s > 32767) s = 32767;
-        else if (s < -32768) s = -32768;
-        p[i] = (int16_t)s;
-    }
-
+    size_t bytes_to_write = this->totalPlaybackSamples * sizeof(int16_t);
     size_t bytes_written = 0;
 
-    i2s_write(
-        this->_cfg.I2S_SPK_PORT, 
-        (const char*)this->playbackBuffer, 
-        this->totalPlaybackSamples * sizeof(int16_t), 
-        &bytes_written, 
-        portMAX_DELAY
-    );
+    i2s_write(this->_cfg.I2S_SPK_PORT, (const char*)this->playbackBuffer, bytes_to_write, &bytes_written, portMAX_DELAY);
 
     this->totalPlaybackSamples = 0;
 }
 
 void ESP32HomeAssistant::_handleIncomingAudio(uint8_t *payload, size_t length) {
-    if (this->totalPlaybackSamples + (length / 2) > MAX_SAMPLES_PLAYBACK) {
-        Serial.println("Playback buffer full!");
+    size_t samplesInPayload = length / 2;
+    if (this->totalPlaybackSamples + samplesInPayload > MAX_SAMPLES_PLAYBACK) {
+        Serial.println("Buffer full!");
         return;
     }
 
     this->setLed(128, 0, 128);
 
-    // (this->playbackBuffer + this->totalPlaybackSamples) moves the pointer 
-    // by (totalPlaybackSamples * 2) bytes because it's an int16_t pointer.
-    memcpy(this->playbackBuffer + this->totalPlaybackSamples, payload, length);
+    int16_t* src = (int16_t*)payload;
+    int16_t* dest = this->playbackBuffer + this->totalPlaybackSamples;
+    float volume = 0.5f;
 
-    this->totalPlaybackSamples += (length / 2);
+    for (size_t i = 0; i < samplesInPayload; i++) {
+        dest[i] = (int16_t)(src[i] * volume);
+    }
+
+    this->totalPlaybackSamples += samplesInPayload;
 }
 
 void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
