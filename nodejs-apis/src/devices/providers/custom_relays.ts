@@ -28,6 +28,28 @@ const apis: ProvidersApis = {
 
             return false;
         },
+        getDeviceState: async ({
+            provider: { host },
+            device: { type, externalId },
+        }) => {
+            if (type !== 'button') {
+                try {
+                    const res = await fetch(
+                        `http://${host}/state?id=${externalId}`,
+                        {
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    );
+                    const json = await res.json();
+                    return { power: json?.state === 'high' ? 'on' : 'off' };
+                } catch (e) {
+                    await log('provider-custom_buttonv2', e?.toString());
+                }
+            }
+            return { power: 'off' };
+        },
     },
 };
 
