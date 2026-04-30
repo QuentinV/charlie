@@ -7,6 +7,7 @@ import musics from '../musics/api';
 import assistant from '../ai/api';
 import echo from '../echo/api';
 import activities from './activities';
+import settings from './settings';
 
 export default {
     ...assistant,
@@ -17,5 +18,6 @@ export default {
     ...routines,
     ...tools,
     ...echo,
+    ...settings,
     ...(process.env.TOOL_MUSIC === 'true' ? musics : {}),
 };

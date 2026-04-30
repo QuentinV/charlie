@@ -6,15 +6,12 @@ import AutoModeIcon from '@mui/icons-material/AutoMode';
 import { useNavigate } from 'react-router-dom';
 import { RoomsList } from '../components/Rooms';
 import { api } from '../api/charlie';
-import { useUnit } from 'effector-react';
-import { settingsStore } from '../state/settings';
-import { v4 as uuidV4 } from 'uuid';
+import { useSetting } from '../state/settingsHooks';
 
 export const HomePage = () => {
     const navigate = useNavigate();
-    const enableAddDevice = useUnit(settingsStore.$enableAddDevice);
-    const enableAddRoom = useUnit(settingsStore.$enableAddRoom);
-    const enableAddRoutine = useUnit(settingsStore.$enableAddRoutine);
+    const enableAddDevice = useSetting('experimental.devices.add.enabled');
+    const enableAddRoutine = useSetting('routines.add.enabled');
 
     const actions = useMemo(() => {
         const a = [];
@@ -25,20 +22,19 @@ export const HomePage = () => {
                 click: () => navigate('/discovery'),
             });
 
-        if (enableAddRoom)
-            a.push({
-                icon: <RoomPreferencesIcon />,
-                name: 'Rooms',
-                click: async () => {
-                    const { uuid } = await api('rooms', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            name: 'Untitled room',
-                        }),
-                    });
-                    navigate(`/room/${uuid}`);
-                },
-            });
+        a.push({
+            icon: <RoomPreferencesIcon />,
+            name: 'Rooms',
+            click: async () => {
+                const { uuid } = await api('rooms', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: 'Untitled room',
+                    }),
+                });
+                navigate(`/room/${uuid}`);
+            },
+        });
 
         if (enableAddRoutine)
             a.push({
@@ -50,7 +46,7 @@ export const HomePage = () => {
             });
 
         return a;
-    }, [navigate, enableAddDevice, enableAddRoom, enableAddRoutine]);
+    }, [navigate, enableAddDevice, enableAddRoutine]);
 
     return (
         <>

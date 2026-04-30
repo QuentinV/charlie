@@ -138,9 +138,6 @@ export interface Activity {
     modified?: Date;
 }
 
-// --- Settings
-export interface Settings {}
-
 // --- Routines
 export interface TimeTrigger {
     expression: string;
