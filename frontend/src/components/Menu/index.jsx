@@ -26,7 +26,7 @@ export const Menu = () => {
     const [drawerOpen, setDrawerOpen] = React.useState(false);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
-    const enableAddRoutine = useSetting('routines.add.enabled');
+    const enableAddRoutine = useSetting('routines.enabled');
     const showAiAsk = useSetting('experimental.ai.ask.show');
     const pwaPrompt = useUnit($pwaPrompt);
     const devicesDiscovery = useSetting(

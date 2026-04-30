@@ -89,10 +89,7 @@ Create a `.env` file in the `nodejs-apis` folder:
 AI_AGENTS_HOST=localhost:8000
 DB_HOST=localhost:27017
 
-ROTATE_PROVIDERS_IP=false
 SUBNET_IP=192.168.1
-
-ECHO_LISTEN=true
 
 TOOL_NOTIFICATION=true
 EMAIL_NOTIFICATION_USER=

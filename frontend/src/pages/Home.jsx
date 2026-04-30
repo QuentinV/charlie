@@ -11,7 +11,7 @@ import { useSetting } from '../state/settingsHooks';
 export const HomePage = () => {
     const navigate = useNavigate();
     const enableAddDevice = useSetting('experimental.devices.add.enabled');
-    const enableAddRoutine = useSetting('routines.add.enabled');
+    const enableAddRoutine = useSetting('routines.enabled');
 
     const actions = useMemo(() => {
         const a = [];

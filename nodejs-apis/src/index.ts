@@ -15,6 +15,7 @@ import { setupEchoListen } from './echo/listen';
 import { setupMqttServer } from './messaging/receive';
 import { setupRoutines } from './routines';
 import { setupRotateProvidersIp } from './devices/rotateip.job';
+import { settings } from './manager/services/settings';
 
 const app = express();
 
@@ -62,6 +63,10 @@ const app = express();
 
     registerNotificationApi(app);
 
+    app.post('/api/restart', () => {
+        process.exit(0);
+    });
+
     // Error handler
     app.use((err: any, req: any, res: any, next: any) => {
         console.error(err.stack);
@@ -97,19 +102,19 @@ const app = express();
         });
     }
 
-    if (process.env.ECHO_LISTEN === 'true') {
+    if (settings.echo?.listen) {
         setupEchoListen();
     }
 
-    if ((process.env.MQTT ?? 'true') === 'true') {
+    if (settings.mqtt?.enabled) {
         setupMqttServer();
     }
 
-    if ((process.env.ROUTINES ?? 'true') === 'true') {
+    if (settings.routines?.enabled) {
         setupRoutines();
     }
 
-    if ((process.env.ROTATE_PROVIDERS_IP ?? 'true') === 'true') {
+    if (settings.devices?.providers?.rotateIp?.enabled) {
         setupRotateProvidersIp();
     }
 })();
