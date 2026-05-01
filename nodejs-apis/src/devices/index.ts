@@ -7,11 +7,12 @@ import {
     ProviderApi,
     ProviderFunctionDef,
     ProvidersApis,
+    ProvidersApisPlugin,
     RestApis,
     Tools,
 } from '../types';
 import { log } from '../manager/services/activities';
-
+import { createPlugin } from './providers/plugin';
 import ikea from './providers/ikea';
 import sony_bravia_tv from './providers/sony_bravia_tv';
 import nanoleaf from './providers/nanoleafs';
@@ -24,20 +25,37 @@ import custom_gate from './providers/custom_gate';
 import custom_relays from './providers/custom_relays';
 
 // Register all possible providers here
-const providerApis: { [name: string]: ProvidersApis } = {
-    default_custom,
-    ikea,
-    sony_bravia_tv,
-    nanoleaf,
-    clim,
-    customGarden,
-    tuya,
-    shelly,
-    custom_gate,
-    custom_relays,
-};
+let providerApis: { [name: string]: ProvidersApis } = {};
 
-export const availableProvidersCodeSources = Object.keys(providerApis);
+export let availableProvidersCodeSources: string[] = [];
+
+export async function fetchProviderApis() {
+    const providers = await cs.plugins.find({ type: 'provider' }).toArray();
+
+    providerApis = {
+        ...providers.reduce(
+            (prev, p: ProvidersApisPlugin) => {
+                prev[p.name] = createPlugin(p);
+                return prev;
+            },
+            {} as { [key: string]: ProvidersApisPlugin }
+        ),
+        default_custom,
+        ikea,
+        sony_bravia_tv,
+        nanoleaf,
+        clim,
+        customGarden,
+        tuya,
+        shelly,
+        custom_gate,
+        custom_relays,
+    };
+
+    availableProvidersCodeSources = Object.keys(providerApis);
+
+    return providerApis;
+}
 
 export async function getProviderTools(id: string) {
     const provider = await cs.providers.findOne({ _id: id });

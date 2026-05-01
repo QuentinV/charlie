@@ -127,6 +127,12 @@ export interface ProvidersApis {
     tools?: Tools;
 }
 
+export interface ProvidersApisPlugin {
+    name: string;
+    host: string;
+    type?: string;
+}
+
 // --- Activities
 export interface Activity {
     _id?: string;
