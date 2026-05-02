@@ -6,5 +6,6 @@
     "routines": "routines",
     "states": "states",
     "musics_playlists": "musics_playlists",
-    "activities": "activities"
+    "activities": "activities",
+    "echoSettings": "echo_settings"
 }

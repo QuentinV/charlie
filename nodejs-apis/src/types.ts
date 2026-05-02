@@ -52,16 +52,16 @@ export interface Device {
     state?: DeviceState;
 }
 
-export const DeviceTypes = {
-    light: 'light',
-    switch: 'switch',
-    shutter: 'shutter',
-    sprinkler: 'sprinkler',
-    tv: 'tv',
-    sensor: 'sensor',
-    button: 'button',
-    unknown: 'unknown',
-};
+export enum DeviceTypes {
+    light = 'light',
+    switch = 'switch',
+    shutter = 'shutter',
+    sprinkler = 'sprinkler',
+    tv = 'tv',
+    sensor = 'sensor',
+    button = 'button',
+    unknown = 'unknown',
+}
 
 export interface Room {
     _id: string;
@@ -74,6 +74,7 @@ export interface Provider {
     _id?: string;
     name: string;
     codesource: string;
+    mac?: string;
     host?: string;
     user?: string;
     password?: string;
@@ -83,7 +84,7 @@ export interface Provider {
 export type PowerType = 'on' | 'off' | 'pause';
 
 export interface DeviceState {
-    power: PowerType;
+    power?: PowerType;
     level?: number;
     additional?: object;
 }
@@ -110,7 +111,6 @@ export interface ProviderApi {
         params: DeviceState
     ) => Promise<DeviceState | boolean>;
     getDeviceState?: (meta: ProviderApiMetaInfo) => Promise<DeviceState>;
-    toggleDeviceState?: (meta: ProviderApiMetaInfo) => Promise<boolean>;
     getFunctions?: (
         meta: ProviderApiMetaInfo
     ) => Promise<ProviderFunctionDef[]>;
@@ -140,3 +140,21 @@ export interface Activity {
 
 // --- Settings
 export interface Settings {}
+
+// --- Routines
+export interface TimeTrigger {
+    expression: string;
+}
+
+export type TriggerType = TimeTrigger;
+export enum TriggerKind {
+    CRON = 'CRON',
+}
+
+export interface Routine {
+    _id?: string;
+    name: string;
+    triggers: { type: TriggerKind; obj: TriggerType }[];
+    actions: string[];
+    active: boolean;
+}

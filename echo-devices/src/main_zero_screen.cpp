@@ -8,6 +8,7 @@ void setup() {
     HAConfig cfg;
     cfg.apName = "CharlieEcho";    
     cfg.apPassword = "CharlieEcho123";
+    cfg.deviceType = "echo-zero-screen";
     cfg.I2S_MIC_WS = GPIO_NUM_11;
     cfg.I2S_MIC_SD = GPIO_NUM_12;
     cfg.I2S_MIC_SCK = GPIO_NUM_13;

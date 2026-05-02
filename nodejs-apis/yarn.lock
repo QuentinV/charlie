@@ -1917,11 +1917,6 @@ dns-packet@^5.2.2:
   dependencies:
     "@leichtgewicht/ip-codec" "^2.0.1"
 
-dnssd@^0.4.1:
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/dnssd/-/dnssd-0.4.1.tgz#0c9a726bc5deaf0ed416b05ef57be80dbba5c585"
-  integrity sha512-mEz5Ii+o+k3kYHTXY6fTLOjCwraX8TQowIgUySAbEYuGqtSMbfBc/tvDZ8wGPywnmlLE6/XeXi6qPcAKVTvPUQ==
-
 dom-serializer@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/dom-serializer/-/dom-serializer-2.0.0.tgz#e41b802e1eedf9f6cae183ce5e622d789d7d8e53"
@@ -3652,6 +3647,11 @@ node-coap-client@^2.1.0:
   dependencies:
     debug "^4.3.4"
     node-dtls-client "^1.1.1"
+
+node-cron@^4.2.1:
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/node-cron/-/node-cron-4.2.1.tgz#6979be4aee4702f06322d21220df8de252c8e265"
+  integrity sha512-lgimEHPE/QDgFlywTd8yTR61ptugX3Qer29efeyWw2rv259HtGBNn1vZVmp8lB9uo9wC0t/AT4iGqXxia+CJFg==
 
 node-dtls-client@^1.1.1:
   version "1.1.1"

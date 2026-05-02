@@ -1,0 +1,34 @@
+[
+    {
+        "version": "1.3",
+        "description": "working OTA",
+        "devices": [
+            "echo-zero",
+            "echo-zero-screen"
+        ]
+    },
+    {
+        "version": "1.2",
+        "description": "add recorded audio into PSRAM buffer before sending to server to avoid problem with network latency. Same for received audio.",
+        "devices": [
+            "echo-zero",
+            "echo-zero-screen"
+        ]
+    },
+    {
+        "version": "1.1",
+        "description": "new options to set serverip and wake word accuracy through websocket.",
+        "devices": [
+            "echo-zero",
+            "echo-zero-screen"
+        ]
+    },
+    {
+        "version": "1.0",
+        "description": "first version with ESP32HomeAssistant library config",
+        "devices": [
+            "echo-zero",
+            "echo-zero-screen"
+        ]
+    }
+]

@@ -30,7 +30,7 @@ const routes: RestApis = {
             let macAddress = mac;
             if (!macAddress && host?.startsWith('192.168.')) {
                 try {
-                    macAddress = await getMacAddress(host);
+                    macAddress = getMacAddress(host);
                 } catch (e) {
                     console.log(e);
                 }

@@ -1,3 +1,8 @@
 import React from 'react';
+import { RoutinesList } from '../components/Routines';
 
-export const RoutinesPage = () => <></>;
+export const RoutinesPage = () => (
+    <>
+        <RoutinesList />
+    </>
+);

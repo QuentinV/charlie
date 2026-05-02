@@ -15,6 +15,7 @@ import { settingsStore } from './state/settings';
 import { useUnit } from 'effector-react';
 import { ActivitiesPage } from './pages/Activities';
 import { EchoPage } from './pages/Echo';
+import { RoutineEditPage } from './pages/RoutineEdit';
 
 export default function App() {
     const showMusicPlayer = useUnit(settingsStore.$showMusicPlayer);
@@ -62,6 +63,10 @@ export default function App() {
                                 <Route
                                     path="/routines"
                                     element={<RoutinesPage />}
+                                />
+                                <Route
+                                    path="/routine/:id"
+                                    element={<RoutineEditPage />}
                                 />
                                 <Route path="/ai" element={<AiPage />} />
                                 <Route

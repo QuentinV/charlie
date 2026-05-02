@@ -2,6 +2,7 @@ services:
     api:
         build: ./nodejs-apis
         container_name: charlie-api
+        profiles: ['cpu', 'gpu']
         environment:
             - NODE_ENV=production
             - PULSE_SERVER=unix:/tmp/pulse/native
@@ -23,10 +24,27 @@ services:
         restart: unless-stopped
         networks:
             - internal
-        #devices:
-        #    - '/dev/snd:/dev/snd'
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+    network-scanner:
+        build: ./network-scanner
+        container_name: charlie-network-scanner
+        profiles: ['cpu', 'gpu']
+        environment:
+            - NODE_ENV=production
+        volumes:
+            - ./network-scanner/src:/app/src
+        ports:
+            - '9306:9306'
+        command: 'yarn start'
+        restart: unless-stopped
+        network_mode: host
+        cap_add:
+            - NET_ADMIN
+            - NET_RAW
     ai-agents:
         build: ./python-apis
+        profiles: ['cpu']
         container_name: charlie-ai-agents
         ports:
             - '9301:8000'
@@ -38,18 +56,67 @@ services:
             - PYTHONUNBUFFERED=1
             - MISTRAL_API_KEY=${MISTRAL_API_KEY}
             - SSE_HOST=http://${SSE_HOST}:9300/sse
-            - STT_LANGUAGE=${STT_LANGUAGE}
-            - LOAD_STT_MODEL=${LOAD_STT_MODEL}
             - LLM_MODEL=${LLM_MODEL}
         restart: unless-stopped
         networks:
             - internal
+    asr:
+        build:
+            context: https://github.com/QuentinV/qwen-asr.git
+            dockerfile: Dockerfile
+        container_name: charlie-asr
+        profiles: ['cpu', 'gpu']
+        ports:
+            - '9307:5000'
+        environment:
+            - MODEL_SIZE=large
+            - MODEL_DIR=/model
+        volumes:
+            - ./python-apis/qwen_models/Qwen3-ASR-1.7B:/model
+            - ./nodejs-apis/src/echo/__tests__/rec-2026-03-09T20-38-20-462Z.wav:/warmup.wav
+        command:
+            [
+                '--ws',
+                '--skip-silence',
+                '--language',
+                'French',
+                '--prompt',
+                'This is a conversation with an assistant named Charlie.',
+                '--warmup',
+                '/warmup.wav',
+            ]
+        networks:
+            - internal
+    ai-agents-gpu:
+        build: ./python-apis/Dockerfile.gpu
+        container_name: charlie-ai-agents-gpu
+        profiles: ['gpu']
+        ports:
+            - '9301:8000'
+        volumes:
+            - ./python-apis/app:/app
+            - ./nodejs-apis:/mcp-server
+            - ./python-apis/qwen_models:/models
+        environment:
+            - PYTHONUNBUFFERED=1
+            - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+            - SSE_HOST=http://${SSE_HOST}:9300/sse
+            - LLM_MODEL=${LLM_MODEL}
+        restart: unless-stopped
+        networks:
+            - internal
+        #devices:
+        #    - /dev/dri:/dev/dri
         deploy:
             resources:
-                limits:
-                    memory: 12G
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: all
+                          capabilities: [gpu]
     db:
         container_name: charlie-db
+        profiles: ['cpu', 'gpu']
         image: mongo
         ports:
             - '9302:27017'
@@ -64,6 +131,7 @@ services:
     frontend:
         build: ./frontend
         container_name: charlie-frontend
+        profiles: ['cpu', 'gpu']
         environment:
             - NODE_ENV=production
             - API_HOST=http://api:9300

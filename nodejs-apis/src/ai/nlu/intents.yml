@@ -50,6 +50,7 @@ intents:
         slots:
             - plurial
             - deviceType
+            - predefinedRoom
             - room
 
     turnOffDevice:
@@ -63,6 +64,7 @@ intents:
         slots:
             - plurial
             - deviceType
+            - predefinedRoom
             - room
 
     playMusic:
@@ -99,6 +101,11 @@ slots:
             - tv
             - switch
 
+    predefinedRoom:
+        type: 'synonym'
+        keys:
+            - house
+
     room:
         type: 'string'
 
@@ -121,6 +128,8 @@ synonyms:
         - les
         - des
 
+    house:
+        - maison
     light:
         - lumière
         - lampe

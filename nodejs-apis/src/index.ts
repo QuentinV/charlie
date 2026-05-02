@@ -13,6 +13,8 @@ import { defaultApiPath, getSwaggerDoc } from './swagger';
 import { registerNotificationApi } from './core/notifications';
 import { setupEchoListen } from './echo/listen';
 import { setupMqttServer } from './messaging/receive';
+import { setupRoutines } from './routines';
+import { setupRotateProvidersIp } from './devices/rotateip.job';
 
 const app = express();
 
@@ -101,5 +103,13 @@ const app = express();
 
     if ((process.env.MQTT ?? 'true') === 'true') {
         setupMqttServer();
+    }
+
+    if ((process.env.ROUTINES ?? 'true') === 'true') {
+        setupRoutines();
+    }
+
+    if ((process.env.ROTATE_PROVIDERS_IP ?? 'true') === 'true') {
+        setupRotateProvidersIp();
     }
 })();

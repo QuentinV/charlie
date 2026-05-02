@@ -33,6 +33,9 @@
 #define SCREEN_HEIGHT 32
 #define OLED_RESET    -1
 
+#define MAX_SAMPLES 320000 // 20s max
+#define MAX_SAMPLES_PLAYBACK 640000
+
 struct HAConfig {
     // WiFi / portal
     const char* apName     = "HomeAssistantEcho";
@@ -77,27 +80,34 @@ public:
     // Call once in setup()
     void begin();
     void setLed(uint8_t r, uint8_t g, uint8_t b);
+    void displayText(String msg);
     void reset();
 
     void printMemoryUsage();
 
     int _ei_get_sliding_window_data(size_t offset, size_t length, float *out_ptr);
-    void _onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length);
     void _listenAndSendTask(void *arg);
+    void _onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length);
     void _wsTask(void *arg);
     void _displayStatusOnScreenTask(void *arg);
-
+    
     static ESP32HomeAssistant* instance;
 private:
     void _runOTA();
+    void _setWakeUpWordAccuracy(float accuracy);
+    void _setServerIp(String serverip);
     void _setupWiFi();
-    void _playAudio(uint8_t* data, size_t len);
-    int _setupMicI2S(uint32_t sampling_rate);
+
+    void _handleIncomingAudio(uint8_t *payload, size_t length);
+    void _playBufferedAudio();
     void _setupSpeakerI2S();
 
-    bool _allocateInferenceBuffer(uint32_t n_samples);
+    int _setupMicI2S(uint32_t sampling_rate);
+    bool _allocateInferenceBuffer(uint32_t n_samples);    
+    void _sendAudioWS();
+
     void _drawListeningScreen();
-    void displayText(String msg);
+
 
     // State
     HAConfig            _cfg;
@@ -111,10 +121,17 @@ private:
     bool isWsConnected = false;
 
     String serverip;
+    float wakeUpWordAccuracy;
     WebSocketsClient webSocket;
 
     int16_t* inference_window = NULL;
     inference_t inference;
+
+    int16_t* bufferCaptureAudio = NULL;
+    size_t totalRecordedSamples;
+
+    int16_t* playbackBuffer = NULL;
+    size_t totalPlaybackSamples;
 
     // Task handles
     TaskHandle_t listenAndSendHandle;

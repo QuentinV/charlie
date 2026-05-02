@@ -1,64 +1,95 @@
-# Charlie
+# 🤖 Charlie — Home Assistant
 
-my own home assistant
+A self-hosted, privacy-first home assistant with full offline capability through local NLU, ASR, and TTS models.
 
-# Backend - python-apis
+More advanced SMART features are available through possibility for MCP with Mistral AI support.
 
-## Intro
+---
 
-Python project to run models & MCP client proxy. Will provide RestApi endpoints as interface called by NodeJS project.
+## ✨ Features
 
-## Ai Agent
+- 🔌 **Fully offline** — NLU and device support can run entirely without internet connectivity
+- 🌍 **Multilingual** — NLU is configured for French by default; other languages are supported via a `.yml` config file. ASR (Qwen) also supports multiple languages, configurable in `docker-compose.yml`
+- 🔊 **Voice synthesis** — TTS via Piper (French voices included); alternative voices can be sourced from the piper online voices
+- 📡 **Echo device support** — Any device capable of streaming PCM16 audio over WebSocket is compatible
 
-Will be initialized on the first run of the python container once your mistralai API key is configured.
+---
 
-## Environment
-
-Agent id and mistral api key needs to be configured as env variable with `.env` in root for docker compose
+## 🏗️ Architecture Overview
 
 ```
+Echo Device (ESP32-S3 / Browser)
+        ↓ WebSocket
+ASR ←→  nodejs-apis (logic)  ←→  python-apis (AI Agent, TTS)
+        ↓
+      MongoDB
+```
+
+---
+
+## 🚀 Getting Started
+
+### 🪟 Windows
+
+Use `docker-compose.windows.yml` to run the full stack locally. ASR requires cloning [`qwen-asr`](https://github.com/QuentinV/qwen-asr) into a sibling folder to run on CPU.
+
+### 🐧 Linux
+
+Use `docker-compose.yml` — it will automatically fetch and build `qwen-asr` from GitHub.
+
+---
+
+## 🐍 Backend — `python-apis`
+
+A Python/FastAPI service responsible for running AI models and acting as an MCP client proxy. It exposes REST endpoints consumed by the Node.js backend.
+
+### 🤖 AI Agent
+
+The agent is initialized on the first run once a Mistral AI API key is configured.
+
+### ⚙️ Environment
+
+Create a `.env` file at the project root:
+
+```env
 MISTRAL_API_KEY=
-SSE_HOST=host.docker.internal
-STT_LANGUAGE=French
+SSE_HOST=host.docker.internal   # Use 'api' for full Docker deployment
 ```
 
-`SSE_HOST=host.docker.internal` is used for development when having nodejs running on host. This should be set to `api` for deployment with full docker-compose.
+> `SSE_HOST=host.docker.internal` is intended for local development when the Node.js server runs on the host machine.
 
-## Run
+### ▶️ Running
 
-`python-apis` folder with python fastapi is configured to run with docker therefore you can use 'docker-compose' available at root.
-
-Refer to section "Ai Agent" for configuration.
-
-Run in root folder:
-
-> docker compose up ai-agents --build
-
-This will start server on port 9301 with endpoints:
-
-- **/ask** : LLM call **{ question: "" }** with MCP configuration to nodejs server. `MistralAi`is the default LLM used.
-- **/tts**: TTS payload **{ text: "" }** will return blob based on Accept header. TTS uses `piper` library
-
-# Backend - nodejs-apis
-
-## Intro
-
-NodeJs backend to run
-
-- **MCP server**
-- **Rest Api**: [Swagger](http://localhost:9300/api-docs)
-- **Audio listeners servers**: websocket for browser and UDP for ESP32-S3 or other echo devices
-
-## Environment variables
-
-Create a .env file in "nodejs-apis" folder
-
+```bash
+docker compose up ai-agents --build
 ```
+
+Starts on **port 9301** with the following endpoints:
+
+| Endpoint | Method | Payload              | Description                                                      |
+| -------- | ------ | -------------------- | ---------------------------------------------------------------- |
+| `/ask`   | POST   | `{ "question": "" }` | LLM call via MistralAI with MCP routing                          |
+| `/tts`   | POST   | `{ "text": "" }`     | Returns audio blob (format based on `Accept` header) using Piper |
+
+---
+
+## 🟢 Backend — `nodejs-apis`
+
+Node.js backend providing:
+
+- 🔗 **MCP server**
+- 📖 **REST API** — [Swagger docs](http://localhost:9300/api-docs)
+- 🎙️ **Audio listeners** — WebSocket (browser) and UDP (ESP32-S3 / other echo devices)
+
+### ⚙️ Environment
+
+Create a `.env` file in the `nodejs-apis` folder:
+
+```env
 AI_AGENTS_HOST=localhost:8000
 DB_HOST=localhost:27017
-MQTT=true
 
-MACVENDORS_APIKEY=(optional)
+ROTATE_PROVIDERS_IP=false
 SUBNET_IP=192.168.1
 
 ECHO_LISTEN=true
@@ -74,41 +105,63 @@ MUSICS_DIR=
 MUSICS_PLAYER_HOST=audio
 
 TOOL_TORRENT=true
-TORRENT_DELUGE_HOST=(optional)
-TORRENT_DELUGE_PASSWORD=(optional)
+TORRENT_DELUGE_HOST=        # optional
+TORRENT_DELUGE_PASSWORD=    # optional
 ```
 
-- [Get a mistral API key](https://console.mistral.ai/build/agents?workspace_dialog=apiKeys)
-- [Get Mac vendors api key](https://api.macvendors.com) (optional)
+**Resources:**
 
-# Frontend
+- 🔑 [Get a Mistral API key](https://console.mistral.ai/build/agents?workspace_dialog=apiKeys)
 
-React app in `frontend` folder can be run. `yarn` as package management and `vite` to build.
+---
 
-## Environment variables
+## 🎤 Backend — ASR
 
-Configure enviromnent variables in `.env`:
+ASR is powered by a separate service: [`qwen-asr`](https://github.com/QuentinV/qwen-asr)
 
-- `VITE_WEBPUSH_VAPID_PUBLICKEY`: webpush notification public key generated by server with `generate-webpush-keys` server task.
+---
 
-## Start
+## 🖥️ Frontend
 
-> yarn start
+React application located in the `frontend` folder. Uses `yarn` for package management and `vite` for bundling.
 
-# Echo devices esp32-S3
+### ⚙️ Environment
 
-## Intro
+Create a `.env` file in the `frontend` folder:
 
-Similar to Alexa or google echo devices, the idea is to build small device with microphone, small speaker with capability to send audio to the nodejs server for analysis and call to LLM.
+```env
+VITE_WEBPUSH_VAPID_PUBLICKEY=   # Generated by the server via the `generate-webpush-keys` task
+```
 
-The ESP32-S3 is perfect for this. Low energy consumption with WIFI capability. Also support Camera for facial recognition capabilities.
+### ▶️ Running
 
-[Description](esp32-s3/README.md)
+```bash
+yarn start
+```
 
-# Default provider api
+---
 
-## MQTT `default_custom`
+## 📟 Echo Devices — ESP32-S3
 
-State is published to `device/${deviceId}/state`
+Charlie supports custom-built echo devices similar to Amazon Alexa or Google Home. The ESP32-S3 microcontroller is well-suited for this use case, offering:
 
-State can be received by sending message to `device/state` `{ id, power, state }`
+- ⚡ Low power consumption with Wi-Fi support
+- 🎙️ Audio streaming to the Node.js server for ASR + LLM processing
+- 📷 Optional camera module for facial recognition
+
+See the [ESP32-S3 documentation](echo-devices/README.md) for build and setup instructions.
+
+---
+
+## 🔌 Device Provider APIs
+
+### 📨 MQTT — `default_custom`
+
+Enable MQTT in environment configuration.
+
+- **State publishing:** `device/{deviceId}/state`
+- **State control:** Send to `device/state` with payload `{ id, power, state }`
+
+### 🌐 HTTP — `custom_relays`
+
+See [`esp32-devices`](https://github.com/QuentinV/esp32-devices) for the HTTP relay provider.
