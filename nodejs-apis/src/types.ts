@@ -31,6 +31,15 @@ export type RestApiFullHandler = (
 
 export type RestApis = { [route: string]: RestApi };
 
+// --- GRPC apis
+export interface GrpcApi {
+    [pack: string]: {
+        [service: string]: {
+            [fntName: string]: (call: any) => Promise<any>;
+        };
+    };
+}
+
 // --- Tools
 export interface Tool<P> {
     description?: string;
