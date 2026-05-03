@@ -7,7 +7,7 @@ import {
 import { loadSync } from '@grpc/proto-loader';
 import mcpRoutes from './tools/mcp/api.grpc';
 
-const packages = {
+const services = {
     ...mcpRoutes,
 };
 
@@ -25,28 +25,25 @@ export async function setupGrpcServer() {
         oneofs: true,
     });
     const mcpProto = loadPackageDefinition(packageDef);
-    const defaultPackageMcpProto = mcpProto[defaultPackage];
+    const rootObj = mcpProto[defaultPackage];
 
-    Object.entries(packages).forEach(([pack, services]) => {
-        let rootObj: GrpcObject = defaultPackageMcpProto[pack];
-        Object.entries(services ?? {}).forEach(([name, fnts]) => {
-            server.addService(
-                rootObj[name].service,
-                Object.entries(fnts).reduce((prev, [key, fnt]) => {
-                    prev[key] = async (call, callback) => {
-                        const res: any = {};
-                        try {
-                            const result = await fnt(call);
-                            res.resultJson = JSON.stringify(result);
-                        } catch (e) {
-                            res.isError = true;
-                        }
-                        callback(null, res);
-                    };
-                    return prev;
-                }, {})
-            );
-        });
+    Object.entries(services ?? {}).forEach(([name, fnts]) => {
+        server.addService(
+            rootObj[name].service,
+            Object.entries(fnts).reduce((prev, [key, fnt]) => {
+                prev[key] = async (call, callback) => {
+                    const res: any = {};
+                    try {
+                        const result = await fnt(call);
+                        res.resultJson = JSON.stringify(result);
+                    } catch (e) {
+                        res.isError = true;
+                    }
+                    callback(null, res);
+                };
+                return prev;
+            }, {})
+        );
     });
 
     /*

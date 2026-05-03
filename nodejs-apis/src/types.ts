@@ -33,10 +33,8 @@ export type RestApis = { [route: string]: RestApi };
 
 // --- GRPC apis
 export interface GrpcApi {
-    [pack: string]: {
-        [service: string]: {
-            [fntName: string]: (call: any) => Promise<any>;
-        };
+    [service: string]: {
+        [fntName: string]: (call: any) => Promise<any>;
     };
 }
 

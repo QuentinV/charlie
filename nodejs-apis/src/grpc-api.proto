@@ -1,3 +1,17 @@
 syntax = "proto3";
 
-import "tools/mcp/api.proto";
+package api;
+
+service MCPService {
+  rpc CallTool (ToolRequest) returns (ToolResponse);
+}
+
+message ToolRequest {
+  string toolName = 1;
+  string argumentsJson = 2;
+}
+
+message ToolResponse {
+  string resultJson = 1;
+  bool isError = 2;
+}
