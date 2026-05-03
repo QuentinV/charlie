@@ -37,6 +37,7 @@ services:
             - MISTRAL_API_KEY=${MISTRAL_API_KEY}
             - SSE_HOST=http://${SSE_HOST}:9300/sse
             - LLM_MODEL=${LLM_MODEL}
+            - TOOL_HOST=${TOOL_HOST}
         restart: unless-stopped
         networks:
             - internal

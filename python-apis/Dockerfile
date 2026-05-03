@@ -31,7 +31,12 @@ RUN pip install --no-cache-dir huggingface_hub
 
 RUN CMAKE_ARGS="-DGGML_VULKAN=on -DVULKAN_SDK_PATH=/usr" \
     FORCE_CMAKE=1 \
-    pip install llama-cpp-python --no-cache-dir --no-binary llama-cpp-python -v
+    pip install llama-cpp-python==0.3.1 --no-cache-dir --no-binary llama-cpp-python -v
+
+RUN pip install --no-cache-dir \
+    grpcio \
+    grpcio-tools \
+    protobuf
 
 EXPOSE 8000
 

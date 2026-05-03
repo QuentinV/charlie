@@ -57,7 +57,9 @@ services:
             - PYTHONUNBUFFERED=1
             - MISTRAL_API_KEY=${MISTRAL_API_KEY}
             - SSE_HOST=http://${SSE_HOST}:9300/sse
+            - TOOL_HOST=${TOOL_HOST}
             - LLM_MODEL=${LLM_MODEL}
+            - BUILD_GRPC_API=${BUILD_GRPC_API}
         restart: unless-stopped
         networks:
             - internal

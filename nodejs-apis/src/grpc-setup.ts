@@ -17,7 +17,7 @@ const defaultPackage = 'api';
 export async function setupGrpcServer() {
     const server = new Server();
 
-    const packageDef = loadSync('./src/grpc-api.proto', {
+    const packageDef = loadSync('./src/grpc_api.proto', {
         keepCase: true,
         longs: String,
         enums: String,

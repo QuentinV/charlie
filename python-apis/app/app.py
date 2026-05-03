@@ -1,4 +1,3 @@
-
 import os
 from fastapi import FastAPI, Request, Header, WebSocket
 from fastapi.responses import Response
@@ -9,17 +8,21 @@ import json
 import requests
 import sys
 
-from routers import tts, llm_qwen
+from routers import tts, generate_grpc, grpc
+#, llm_qwen
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
 
+buildGrpcApi = os.getenv("BUILD_GRPC_API")
+if buildGrpcApi == "true":
+    generate_grpc.build_protos()
+
 llmModel = os.getenv("LLM_MODEL")
-if llmModel == "":
-    llmModel = "mistreal"
+#if llmModel == "":
+#    llmModel = "mistreal"
 
 print(f"Running with LLM_MODEL = {llmModel}")
-
 if llmModel == "mistreal":
     from routers import llm
     app.include_router(llm.router)
