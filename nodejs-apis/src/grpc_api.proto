@@ -4,6 +4,7 @@ package api;
 
 service MCPService {
   rpc CallTool (ToolRequest) returns (ToolResponse);
+  rpc ListTools (ListToolsRequest) returns (ListToolsResponse);
 }
 
 message ToolRequest {
@@ -12,6 +13,12 @@ message ToolRequest {
 }
 
 message ToolResponse {
-  string resultJson = 1;
-  bool isError = 2;
+  optional string resultJson = 1;
+  optional string errorMessage = 3;
+}
+
+message ListToolsRequest {}
+
+message ListToolsResponse {
+  string content = 1;  
 }

@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0egrpc_api.proto\x12\x03\x61pi\"6\n\x0bToolRequest\x12\x10\n\x08toolName\x18\x01 \x01(\t\x12\x15\n\rargumentsJson\x18\x02 \x01(\t\"3\n\x0cToolResponse\x12\x12\n\nresultJson\x18\x01 \x01(\t\x12\x0f\n\x07isError\x18\x02 \x01(\x08\x32=\n\nMCPService\x12/\n\x08\x43\x61llTool\x12\x10.api.ToolRequest\x1a\x11.api.ToolResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0egrpc_api.proto\x12\x03\x61pi\"6\n\x0bToolRequest\x12\x10\n\x08toolName\x18\x01 \x01(\t\x12\x15\n\rargumentsJson\x18\x02 \x01(\t\"b\n\x0cToolResponse\x12\x17\n\nresultJson\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x19\n\x0c\x65rrorMessage\x18\x03 \x01(\tH\x01\x88\x01\x01\x42\r\n\x0b_resultJsonB\x0f\n\r_errorMessage\"\x12\n\x10ListToolsRequest\"$\n\x11ListToolsResponse\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t2y\n\nMCPService\x12/\n\x08\x43\x61llTool\x12\x10.api.ToolRequest\x1a\x11.api.ToolResponse\x12:\n\tListTools\x12\x15.api.ListToolsRequest\x1a\x16.api.ListToolsResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,7 +34,11 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_TOOLREQUEST']._serialized_start=23
   _globals['_TOOLREQUEST']._serialized_end=77
   _globals['_TOOLRESPONSE']._serialized_start=79
-  _globals['_TOOLRESPONSE']._serialized_end=130
-  _globals['_MCPSERVICE']._serialized_start=132
-  _globals['_MCPSERVICE']._serialized_end=193
+  _globals['_TOOLRESPONSE']._serialized_end=177
+  _globals['_LISTTOOLSREQUEST']._serialized_start=179
+  _globals['_LISTTOOLSREQUEST']._serialized_end=197
+  _globals['_LISTTOOLSRESPONSE']._serialized_start=199
+  _globals['_LISTTOOLSRESPONSE']._serialized_end=235
+  _globals['_MCPSERVICE']._serialized_start=237
+  _globals['_MCPSERVICE']._serialized_end=358
 # @@protoc_insertion_point(module_scope)

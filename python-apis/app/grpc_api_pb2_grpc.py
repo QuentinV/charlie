@@ -39,12 +39,23 @@ class MCPServiceStub(object):
                 request_serializer=grpc__api__pb2.ToolRequest.SerializeToString,
                 response_deserializer=grpc__api__pb2.ToolResponse.FromString,
                 _registered_method=True)
+        self.ListTools = channel.unary_unary(
+                '/api.MCPService/ListTools',
+                request_serializer=grpc__api__pb2.ListToolsRequest.SerializeToString,
+                response_deserializer=grpc__api__pb2.ListToolsResponse.FromString,
+                _registered_method=True)
 
 
 class MCPServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def CallTool(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListTools(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -57,6 +68,11 @@ def add_MCPServiceServicer_to_server(servicer, server):
                     servicer.CallTool,
                     request_deserializer=grpc__api__pb2.ToolRequest.FromString,
                     response_serializer=grpc__api__pb2.ToolResponse.SerializeToString,
+            ),
+            'ListTools': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListTools,
+                    request_deserializer=grpc__api__pb2.ListToolsRequest.FromString,
+                    response_serializer=grpc__api__pb2.ListToolsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -86,6 +102,33 @@ class MCPService(object):
             '/api.MCPService/CallTool',
             grpc__api__pb2.ToolRequest.SerializeToString,
             grpc__api__pb2.ToolResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListTools(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/api.MCPService/ListTools',
+            grpc__api__pb2.ListToolsRequest.SerializeToString,
+            grpc__api__pb2.ListToolsResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -17,6 +17,14 @@ const tools = async (): Promise<Tools> => ({
     ...(await getProvidersTools()),
 });
 
-export default tools;
+let toolsCache: Tools | null = null;
+
+export async function initTools() {
+    toolsCache = await tools();
+}
+
+export async function getTools(): Promise<Tools> {
+    return toolsCache!;
+}
 
 // TODO tool plugin - register save db as provider but type = 'tool'

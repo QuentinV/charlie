@@ -63,7 +63,7 @@
     "web-push": "^3.6.7",
     "ws": "^8.18.3",
     "zod": "^3.24.1",
-    "zod-to-json-schema": "^3.24.6"
+    "zod-to-json-schema": "^3.25.2"
   },
   "dependencies": {}
 }

@@ -8,14 +8,14 @@ import json
 import requests
 import sys
 
-from routers import tts, generate_grpc, grpc
+from routers import tts, generate_grpc
 #, llm_qwen
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
 
 buildGrpcApi = os.getenv("BUILD_GRPC_API")
-if buildGrpcApi == "true":
+if buildGrpcApi:
     generate_grpc.build_protos()
 
 llmModel = os.getenv("LLM_MODEL")
