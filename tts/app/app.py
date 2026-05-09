@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Request, Header
+import os
+from fastapi import FastAPI, Request, Header
 from fastapi.responses import Response
+import logging
 import struct
 import json
 from piper.voice import PiperVoice
 
-router = APIRouter()
+app = FastAPI()
+logger = logging.getLogger("uvicorn")
 
 voice = PiperVoice.load("/app/voices/fr_FR-siwis-medium.onnx", config_path="/app/voices/fr_FR-siwis-medium.onnx.json")
 
@@ -29,7 +32,7 @@ def build_wav_header(sample_rate, sample_width, channels, data_size):
     )
     return header
 
-@router.post("/tts")
+@app.post("/tts")
 async def generate_tts(request: Request, accept: str = Header(default="audio/L16")):
     body = await request.json()
     text = body.get("text")

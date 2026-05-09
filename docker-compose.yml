@@ -2,7 +2,6 @@ services:
     api:
         build: ./nodejs-apis
         container_name: charlie-api
-        profiles: ['cpu', 'gpu']
         environment:
             - NODE_ENV=production
             - PULSE_SERVER=unix:/tmp/pulse/native
@@ -18,7 +17,6 @@ services:
             - '9300:9300' # http server
             - '9303:9303' # audio udp
             - '9304:9304' # mqtt server
-            - '9308:9308' # grpc server
         command: 'yarn start'
         depends_on:
             - db
@@ -30,7 +28,6 @@ services:
     network-scanner:
         build: ./network-scanner
         container_name: charlie-network-scanner
-        profiles: ['cpu', 'gpu']
         environment:
             - NODE_ENV=production
         volumes:
@@ -43,23 +40,13 @@ services:
         cap_add:
             - NET_ADMIN
             - NET_RAW
-    ai-agents:
-        build: ./python-apis
-        profiles: ['cpu']
-        container_name: charlie-ai-agents
+    tts:
+        build: ./tts
+        container_name: charlie-tts
         ports:
             - '9301:8000'
         volumes:
-            - ./python-apis/app:/app
-            - ./nodejs-apis:/mcp-server
-            - ./python-apis/qwen_models:/models
-        environment:
-            - PYTHONUNBUFFERED=1
-            - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-            - SSE_HOST=http://${SSE_HOST}:9300/sse
-            - TOOL_HOST=${TOOL_HOST}
-            - LLM_MODEL=${LLM_MODEL}
-            - BUILD_GRPC_API=${BUILD_GRPC_API}
+            - ./tts/app:/app
         restart: unless-stopped
         networks:
             - internal
@@ -68,7 +55,6 @@ services:
             context: https://github.com/QuentinV/qwen-asr.git
             dockerfile: Dockerfile
         container_name: charlie-asr
-        profiles: ['cpu', 'gpu']
         ports:
             - '9307:5000'
         environment:
@@ -90,36 +76,32 @@ services:
             ]
         networks:
             - internal
-    ai-agents-gpu:
-        build: ./python-apis/Dockerfile.gpu
-        container_name: charlie-ai-agents-gpu
-        profiles: ['gpu']
-        ports:
-            - '9301:8000'
-        volumes:
-            - ./python-apis/app:/app
-            - ./nodejs-apis:/mcp-server
-            - ./python-apis/qwen_models:/models
-        environment:
-            - PYTHONUNBUFFERED=1
-            - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-            - SSE_HOST=http://${SSE_HOST}:9300/sse
-            - LLM_MODEL=${LLM_MODEL}
-        restart: unless-stopped
+    llm:
+        image: ghcr.io/ggml-org/llama.cpp:server
+        container_name: charlie-llm
         networks:
             - internal
-        #devices:
-        #    - /dev/dri:/dev/dri
-        deploy:
-            resources:
-                reservations:
-                    devices:
-                        - driver: nvidia
-                          count: all
-                          capabilities: [gpu]
+        ports:
+            - '9308:9308'
+        volumes:
+            - ./llm-models:/app/models
+        environment:
+            - LLAMA_ARG_THREADS=${LLAMA_ARG_THREADS:-6}
+            - LLAMA_ARG_CTX_SIZE=${LLAMA_ARG_CTX_SIZE:-32768}
+            - LLAMA_ARG_BATCH=${LLAMA_ARG_CTX_SIZE:-512}
+            - LLAMA_ARG_KV_UNIFIED=on
+        command: >
+            -m /app/models/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf
+            --host 0.0.0.0
+            --port 9308
+            --jinja
+            --cache-type-k q8_0
+            --cache-type-v q8_0
+            --prio 1
+            --reasoning off
+        restart: unless-stopped
     db:
         container_name: charlie-db
-        profiles: ['cpu', 'gpu']
         image: mongo
         ports:
             - '9302:27017'
@@ -134,7 +116,6 @@ services:
     frontend:
         build: ./frontend
         container_name: charlie-frontend
-        profiles: ['cpu', 'gpu']
         environment:
             - NODE_ENV=production
             - API_HOST=http://api:9300
