@@ -2,7 +2,6 @@ import devices from './devices';
 import rooms from './rooms';
 import providers from './providers';
 import routines from './routines';
-import tools from './tools';
 import musics from '../musics/api';
 import assistant from '../ai/api';
 import echo from '../echo/api';
@@ -16,7 +15,6 @@ export default {
     ...activities,
     ...providers,
     ...routines,
-    ...tools,
     ...echo,
     ...settings,
     ...(process.env.TOOL_MUSIC === 'true' ? musics : {}),
