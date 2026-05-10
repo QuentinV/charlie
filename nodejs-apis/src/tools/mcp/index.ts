@@ -29,24 +29,35 @@ export async function getTools(): Promise<Tools> {
     return toolsCache!;
 }
 
-export async function getToolsSchemas() {
-    return Object.entries(await getTools()).map(([k, t]) => {
-        if (!t?.description || !t?.exec) {
-            console.error('Missing def or exec for mcp tool', k, t);
-            return;
-        }
-        const { $schema, ...parameters } = zodToJsonSchema(
-            z.object(t.inputSchema)
-        );
-        return {
-            type: 'function',
-            function: {
-                name: k,
-                description: t.description,
-                parameters,
-            },
-        };
-    });
+interface ToolsSchema {
+    type: string;
+    function?: {
+        name: string;
+        description: string;
+        parameters: any;
+    };
+}
+
+export async function getToolsSchemas(): Promise<ToolsSchema[]> {
+    return Object.entries(await getTools())
+        .map(([k, t]) => {
+            if (!t?.description || !t?.exec) {
+                console.error('Missing def or exec for mcp tool', k, t);
+                return;
+            }
+            const { $schema, ...parameters } = zodToJsonSchema(
+                z.object(t.inputSchema)
+            );
+            return {
+                type: 'function',
+                function: {
+                    name: k,
+                    description: t.description,
+                    parameters,
+                },
+            };
+        })
+        .filter((t) => !!t);
 }
 
 // TODO tool plugin - register save db as provider but type = 'tool'

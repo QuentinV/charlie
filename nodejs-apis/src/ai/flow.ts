@@ -1,5 +1,4 @@
 import { getActions } from '../tools/actions';
-import { askDirect } from './llm';
 import { Tools } from '../types';
 import { findIntent } from './nlu/nlu';
 import { log } from '../manager/services/activities';
@@ -55,7 +54,7 @@ export async function ask(
         try {
             // Fallback to LLM for complex tasks or misunderstanding
             isLog && log('nlu', `Fallback to LLM`);
-            return askDirect(text);
+            // return askDirect(text);
         } catch (e) {
             throw e;
         }
