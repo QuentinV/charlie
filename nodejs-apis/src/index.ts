@@ -6,7 +6,6 @@ import { setupRoutines } from './routines';
 import { setupRotateProvidersIp } from './devices/rotateip.job';
 import { settings } from './manager/services/settings';
 import { setupRestApi } from './restapi-setup.';
-import { setupGrpcServer } from './grpc-setup';
 
 (async () => {
     await initAll();
@@ -28,6 +27,4 @@ import { setupGrpcServer } from './grpc-setup';
     if (settings.devices?.providers?.rotateIp?.enabled) {
         setupRotateProvidersIp();
     }
-
-    await setupGrpcServer();
 })();

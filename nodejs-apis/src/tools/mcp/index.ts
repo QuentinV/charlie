@@ -1,4 +1,6 @@
 import { Tools } from '../../types';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import { z } from 'zod';
 import { getProvidersTools } from '../../devices';
 import greetings from './impl/greetings';
 import weather from './impl/weather';
@@ -25,6 +27,26 @@ export async function initTools() {
 
 export async function getTools(): Promise<Tools> {
     return toolsCache!;
+}
+
+export async function getToolsSchemas() {
+    return Object.entries(await getTools()).map(([k, t]) => {
+        if (!t?.description || !t?.exec) {
+            console.error('Missing def or exec for mcp tool', k, t);
+            return;
+        }
+        const { $schema, ...parameters } = zodToJsonSchema(
+            z.object(t.inputSchema)
+        );
+        return {
+            type: 'function',
+            function: {
+                name: k,
+                description: t.description,
+                parameters,
+            },
+        };
+    });
 }
 
 // TODO tool plugin - register save db as provider but type = 'tool'
