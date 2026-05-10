@@ -13,26 +13,18 @@ import {
 } from '../types';
 import { log } from '../manager/services/activities';
 import { createPlugin } from './providers/plugin';
-import ikea from './providers/ikea';
-import sony_bravia_tv from './providers/sony_bravia_tv';
-import nanoleaf from './providers/nanoleafs';
-import clim from './providers/clim_mitshubishi';
-import customGarden from './providers/custom_garden';
-import tuya from './providers/tuya';
-import default_custom from './providers/default_custom';
-import shelly from './providers/shelly';
-import custom_gate from './providers/custom_gate';
-import custom_relays from './providers/custom_relays';
+import defaultProviders from './providers';
 
-// Register all possible providers here
-let providerApis: { [name: string]: ProvidersApis } = {};
+type ProvidersApisByName = { [name: string]: ProvidersApis };
 
-export let availableProvidersCodeSources: string[] = [];
+type ProvidersDevicesApis = {
+    provider: Provider;
+    api: ProviderApi;
+};
 
-export async function fetchProviderApis() {
+export async function providersApis(): Promise<ProvidersApisByName> {
     const providers = await cs.plugins.find({ type: 'provider' }).toArray();
-
-    providerApis = {
+    return {
         ...providers.reduce(
             (prev, p: ProvidersApisPlugin) => {
                 prev[p.name] = createPlugin(p);
@@ -40,38 +32,21 @@ export async function fetchProviderApis() {
             },
             {} as { [key: string]: ProvidersApisPlugin }
         ),
-        default_custom,
-        ikea,
-        sony_bravia_tv,
-        nanoleaf,
-        clim,
-        customGarden,
-        tuya,
-        shelly,
-        custom_gate,
-        custom_relays,
+        ...defaultProviders,
     };
-
-    availableProvidersCodeSources = Object.keys(providerApis);
-
-    return providerApis;
 }
 
 export async function getProviderTools(id: string) {
     const provider = await cs.providers.findOne({ _id: id });
-    return providerApis[provider.codesource]?.tools;
+    return (await providersApis())[provider.codesource]?.tools;
 }
-
-type ProvidersDevicesApis = {
-    provider: Provider;
-    api: ProviderApi;
-};
 
 export async function getProvidersApis(
     filter?: (api?: ProvidersDevicesApis) => boolean
 ): Promise<ProvidersDevicesApis[]> {
+    const pa = await providersApis();
     let apis = (await cs.providers.find().toArray()).map((p: Provider) => ({
-        api: providerApis[p.codesource]?.api,
+        api: pa[p.codesource]?.api,
         provider: p,
     }));
     if (filter) {
@@ -81,19 +56,21 @@ export async function getProvidersApis(
 }
 
 export async function getProvidersTools(): Promise<Tools> {
+    const pa = await providersApis();
     return (await cs.providers.find().toArray()).reduce(
         (prev: Tools, p: Provider) => ({
             ...prev,
-            ...providerApis[p.codesource]?.tools,
+            ...pa[p.codesource]?.tools,
         }),
         {}
     );
 }
 
 export async function getProvidersRestApis(): Promise<RestApis> {
+    const pa = await providersApis();
     return (await cs.providers.find().toArray()).reduce(
         (prev: RestApis, p: Provider) => {
-            const def = providerApis[p.codesource]?.restApi;
+            const def = pa[p.codesource]?.restApi;
             if (!def) return prev;
 
             const basePath = p.name.trim().replace(' ', '-').toLowerCase();
@@ -127,7 +104,8 @@ async function call(
     const provider = await cs.providers.findOne({ _id: device.provider });
     if (!provider) throw new NotFoundError(device.provider);
 
-    const api = providerApis[provider.codesource].api;
+    const pa = await providersApis();
+    const api = pa[provider.codesource].api;
     try {
         await api.init?.(provider);
 
