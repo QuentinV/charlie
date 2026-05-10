@@ -77,28 +77,16 @@ services:
         networks:
             - internal
     llm:
-        image: ghcr.io/ggml-org/llama.cpp:server
+        build: ./llm
         container_name: charlie-llm
         networks:
             - internal
         ports:
             - '9308:9308'
         volumes:
-            - ./llm-models:/app/models
+            - ./llm/models:/app/models
         environment:
             - LLAMA_ARG_THREADS=${LLAMA_ARG_THREADS:-6}
-            - LLAMA_ARG_CTX_SIZE=${LLAMA_ARG_CTX_SIZE:-32768}
-            - LLAMA_ARG_BATCH=${LLAMA_ARG_CTX_SIZE:-512}
-            - LLAMA_ARG_KV_UNIFIED=on
-        command: >
-            -m /app/models/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf
-            --host 0.0.0.0
-            --port 9308
-            --jinja
-            --cache-type-k q8_0
-            --cache-type-v q8_0
-            --prio 1
-            --reasoning off
         restart: unless-stopped
     db:
         container_name: charlie-db
