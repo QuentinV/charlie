@@ -1,105 +1,22 @@
 import 'dotenv/config';
 import { getTools, getToolsSchemas } from '../tools/mcp';
-import { log } from '../manager/services/activities';
+import { log as ogLog } from '../manager/services/activities';
+import { Activity } from '../types';
+import {
+    LlmChatCompletionsChoicesTool,
+    LlmChatCompletionsRequest,
+} from './llm.types';
 
 const host = process.env.LLM_HOST ?? 'llm:9308';
 const LIMIT_TURN = 10;
+const LLM_LANG_OUTPUT = process.env.LLM_LANGUAGE?.toUpperCase() ?? 'FRENCH';
 
-interface LlmChatCompletionsTools {
-    type: string;
-    function?: {
-        name: string;
-        description: string;
-        parameters: any;
-    };
+function log(message: string, activity?: Activity) {
+    return ogLog('LLM', message, activity);
 }
 
-interface LlmChatMessage {
-    role: 'system' | 'user' | 'assistant' | 'tool';
-    content: string;
-    tool_call_id?: string;
-    name?: string;
-}
-
-interface LlmChatCompletionsRequest {
-    messages: LlmChatMessage[];
-    tools: LlmChatCompletionsTools[];
-}
-
-interface LlmChatCompletionsChoicesTool {
-    type: 'function';
-    function: { name: string; arguments: string };
-    id: string;
-}
-
-interface LlmChatCompletionsChoices {
-    finish_reason: 'tool_calls' | 'stop';
-    index: number;
-    message: {
-        role: 'assistant';
-        content: string;
-        tool_calls?: LlmChatCompletionsChoicesTool[];
-    };
-}
-
-interface LlmChatCompletionsResponse {
-    choices: LlmChatCompletionsChoices[];
-    created: number; // timestamp
-    model: string;
-    id: string;
-    usage: {
-        completion_tokens: number;
-        prompt_tokens: number;
-        total_tokens: number;
-        prompt_tokens_details: {
-            cached_tokens: number;
-        };
-    };
-    timings: {
-        cache_n: number;
-        prompt_n: number;
-        prompt_ms: number; // + predicted_ms = total
-        prompt_per_token_ms: number;
-        prompt_per_second: number;
-        predicted_n: number;
-        predicted_ms: number;
-        predicted_per_token_ms: number;
-        predicted_per_second: number;
-    };
-}
-
+// ===== Sessions =====
 const sessions: { [id: string]: LlmChatCompletionsRequest } = {};
-
-async function execTool({
-    function: { name, arguments: args },
-}: LlmChatCompletionsChoicesTool): Promise<string> {
-    console.log(`LLM requested tool: ${name}`);
-
-    const params = JSON.parse(args);
-
-    try {
-        log('MCP Tools', `calling ${name}`, {
-            context: { name: name, params },
-        });
-
-        const tool = (await getTools())?.[name];
-        if (!tool) {
-            return 'tool not found';
-        }
-
-        const res = await tool?.exec(params);
-
-        if (res === true || res === false) {
-            return JSON.stringify({ success: res });
-        } else if (res) {
-            return typeof res !== 'string' ? JSON.stringify(res) : res;
-        }
-    } catch (e) {
-        return `An error occured.`;
-    }
-
-    return JSON.stringify({ success: 'unknown' });
-}
 
 async function getSession(
     sessionId: string
@@ -117,6 +34,40 @@ async function getSession(
     return sessions[sessionId];
 }
 
+// ===== Tool execution =====
+async function execTool({
+    function: { name, arguments: args },
+}: LlmChatCompletionsChoicesTool): Promise<string> {
+    try {
+        const params = JSON.parse(args);
+
+        log(`calling ${name}`, { context: { name: name, params } });
+
+        const tool = (await getTools())?.[name];
+        if (!tool) {
+            throw new Error(`tool not found ${name}`);
+        }
+
+        const res = await tool?.exec(params);
+
+        if (res === true || res === false) {
+            return JSON.stringify({ success: res });
+        } else if (res) {
+            return typeof res !== 'string' ? JSON.stringify(res) : res;
+        }
+    } catch (e) {
+        const m = (e as any)?.message;
+        log(`Error calling tools ${m}`, {
+            context: { name: name },
+            data: { error: JSON.stringify(e) },
+        });
+        return m ?? 'An error occured with tool';
+    }
+
+    return JSON.stringify({ success: 'unknown' });
+}
+
+// ===== Request to LLM =====
 export async function req(
     req: LlmChatCompletionsRequest
 ): Promise<LlmChatCompletionsResponse> {
@@ -130,6 +81,7 @@ export async function req(
     return res.json();
 }
 
+// ===== Orchestration =====
 export async function chat(
     sessionId: string,
     mesage: string,
@@ -145,7 +97,7 @@ export async function chat(
 
     session.messages.push({
         role: 'user',
-        content: mesage + '. TOUJOURS REPONDRE EN FRANCAIS.',
+        content: mesage + ` (ALWAYS ANSWER IN ${LLM_LANG_OUTPUT})`,
     });
 
     try {
@@ -181,10 +133,12 @@ export async function chat(
 
             (
                 await Promise.allSettled(
-                    message.tool_calls.map(async (t) => ({
-                        tool: t,
-                        result: await execTool(t),
-                    }))
+                    message.tool_calls.map(
+                        async (t: LlmChatCompletionsChoicesTool) => ({
+                            tool: t,
+                            result: await execTool(t),
+                        })
+                    )
                 )
             ).forEach((p: any) => {
                 const r = p.value;
@@ -201,8 +155,9 @@ export async function chat(
             throw Error('limit of turns has been reached');
         }
     } catch (e) {
-        console.log(e);
-        return 'An error occured';
+        const m = (e as any)?.message;
+        log(m ?? '', { data: { error: JSON.stringify(e) } });
+        return m ?? 'An error occured';
     }
 
     return 'An unknown error occured';
