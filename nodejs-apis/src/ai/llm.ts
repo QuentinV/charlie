@@ -1,10 +1,11 @@
 import 'dotenv/config';
-import { getTools, getToolsSchemas } from '../tools/mcp';
+import { toolsExecutors, toolsSchemas } from '../tools/mcp';
 import { log as ogLog } from '../manager/services/activities';
 import { Activity } from '../types';
 import {
     LlmChatCompletionsChoicesTool,
     LlmChatCompletionsRequest,
+    LlmChatCompletionsResponse,
 } from './llm.types';
 
 const host = process.env.LLM_HOST ?? 'llm:9308';
@@ -29,7 +30,7 @@ async function getSession(
                     content: 'You are an helpful home assistant named Charlie.',
                 },
             ],
-            tools: await getToolsSchemas(),
+            tools: await toolsSchemas(),
         };
     return sessions[sessionId];
 }
@@ -43,7 +44,7 @@ async function execTool({
 
         log(`calling ${name}`, { context: { name: name, params } });
 
-        const tool = (await getTools())?.[name];
+        const tool = toolsExecutors()[name];
         if (!tool) {
             throw new Error(`tool not found ${name}`);
         }
