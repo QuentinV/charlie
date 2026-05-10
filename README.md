@@ -18,11 +18,24 @@ More advanced SMART features are available through possibility for MCP with Mist
 ## 🏗️ Architecture Overview
 
 ```
-Echo Device (ESP32-S3 / Browser)
-        ↓ WebSocket
-ASR ←→  nodejs-apis (logic)  ←→  python-apis (AI Agent, TTS)
-        ↓
-      MongoDB
+                ┌──────────────────────────┐
+                │       Echo Device        │
+                │  (ESP32-S3 / Browser)    │
+                └────────────▲─────────────┘
+                             │
+                        [ WebSocket Conn ]
+                             │
+                             ▼
+            ┌─────────────────────────────────┐       ┌──────────────┐
+            │           Orchestrator          │ <───> │   MongoDB    │
+            │           (NodeJS API)          │       │  (Database)  │
+            └────▲───────────▲───────────▲────┘       └──────────────┘
+                 │           │           │
+                 ▼           ▼           ▼
+          ┌───────────┐┌───────────┐┌──────────┐
+          │    ASR    ││    LLM    ││   TTS    │
+          │ Container ││ Container ││Container │
+          └───────────┘└───────────┘└──────────┘
 ```
 
 ---
@@ -37,86 +50,79 @@ Use `docker-compose.windows.yml` to run the full stack locally. ASR requires clo
 
 Use `docker-compose.yml` — it will automatically fetch and build `qwen-asr` from GitHub.
 
----
-
-## 🐍 Backend — `python-apis`
+## 🐍 Backend
 
 A Python/FastAPI service responsible for running AI models and acting as an MCP client proxy. It exposes REST endpoints consumed by the Node.js backend.
 
 ### 🤖 AI Agent
 
-The agent is initialized on the first run once a Mistral AI API key is configured.
+`llm` service will startup `llama.cpp` server after downloading one of the latest `qwen` model compatible with tool calling.
 
-### ⚙️ Environment
+The setting `flow.agentic.enabled` needs to be turned on for the flow to be enhanced with agentic fallback in case NLU doesn't get it.
 
-Create a `.env` file at the project root:
-
-```env
-MISTRAL_API_KEY=
-SSE_HOST=host.docker.internal   # Use 'api' for full Docker deployment
-```
-
-> `SSE_HOST=host.docker.internal` is intended for local development when the Node.js server runs on the host machine.
-
-### ▶️ Running
+▶️ Running
 
 ```bash
-docker compose up ai-agents --build
+docker compose up llm --build
 ```
 
-Starts on **port 9301** with the following endpoints:
+Starts on **port 9308** with a UI available on [http://localhost:9308](http://localhost:9308)
 
-| Endpoint | Method | Payload              | Description                                                      |
-| -------- | ------ | -------------------- | ---------------------------------------------------------------- |
-| `/ask`   | POST   | `{ "question": "" }` | LLM call via MistralAI with MCP routing                          |
-| `/tts`   | POST   | `{ "text": "" }`     | Returns audio blob (format based on `Accept` header) using Piper |
+The orchestration logic is done through nodejs therefore no tools can be called from this UI.
 
----
-
-## 🟢 Backend — `nodejs-apis`
+### 🟢 Orchestrator `nodejs-apis`
 
 Node.js backend providing:
 
-- 🔗 **MCP server**
-- 📖 **REST API** — [Swagger docs](http://localhost:9300/api-docs)
-- 🎙️ **Audio listeners** — WebSocket (browser) and UDP (ESP32-S3 / other echo devices)
+- **Management** of home (devices, rooms, activities, routines)
+- **MCP tools** : tools are defined and send to LLM through prompt, no MCP server created but could me
+- **REST API** — [Swagger docs](http://localhost:9300/api-docs)
+- **Audio listeners** — WebSocket (browser) and UDP (ESP32-S3 / other echo devices)
 
-### ⚙️ Environment
+⚙️ Environment
 
-Create a `.env` file in the `nodejs-apis` folder:
+To run it on server no configuration required for hosts.
+To run it locally, create a `.env` file in the `nodejs-apis` folder:
 
 ```env
-AI_AGENTS_HOST=localhost:8000
+TTS_HOST=localhost:9301
 DB_HOST=localhost:27017
+STT_HOST=localhost:9307
+LLM_HOST=localhost:9308
 
-SUBNET_IP=192.168.1
+SUBNET_IP=192.168.1                     # optional
 
-TOOL_NOTIFICATION=true
-EMAIL_NOTIFICATION_USER=
-EMAIL_NOTIFICATION_EMAIL=
-EMAIL_NOTIFICATION_PASSWORD=
-EMAIL_NOTIFICATION_TARGET_EMAIL=
+TOOL_NOTIFICATION=true                  # optional
+EMAIL_NOTIFICATION_USER=                # optional
+EMAIL_NOTIFICATION_EMAIL=               # optional
+EMAIL_NOTIFICATION_PASSWORD=            # optional
+EMAIL_NOTIFICATION_TARGET_EMAIL=        # optional
 
-TOOL_MUSIC=true
-MUSICS_DIR=
-MUSICS_PLAYER_HOST=audio
+TOOL_MUSIC=true                         # optional
+MUSICS_DIR=                             # optional
+MUSICS_PLAYER_HOST=audio                # optional
 
-TOOL_TORRENT=true
-TORRENT_DELUGE_HOST=        # optional
-TORRENT_DELUGE_PASSWORD=    # optional
+TOOL_TORRENT=true                       # optional
+TORRENT_DELUGE_HOST=                    # optional
+TORRENT_DELUGE_PASSWORD=                # optional
+
+ECHO_CONTINOUS_AUDIO_TEST=true          # optional
 ```
 
-**Resources:**
-
-- 🔑 [Get a Mistral API key](https://console.mistral.ai/build/agents?workspace_dialog=apiKeys)
-
----
-
-## 🎤 Backend — ASR
+### 🎤 ASR
 
 ASR is powered by a separate service: [`qwen-asr`](https://github.com/QuentinV/qwen-asr)
 
----
+### 🎤 Text-to-Speech (TTS)
+
+Text to speech is using Piper through python implementation.
+To run it separatly:
+
+```
+docker compose up tts --build
+```
+
+Available endpoint: `POST http://localhost:9301/tts { "text": "Salut !" }`
 
 ## 🖥️ Frontend
 
