@@ -4,6 +4,11 @@ const schema: JSONSchema7 = {
     title: 'Feature Settings',
     type: 'object',
     properties: {
+        'flow.agentic.enabled': {
+            type: 'boolean',
+            title: 'Enable agentic fallback flow',
+            tags: ['Flow', 'AI'],
+        },
         'routines.enabled': {
             type: 'boolean',
             title: 'Enable Routines',

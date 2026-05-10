@@ -2,6 +2,9 @@ import { getActions } from '../tools/actions';
 import { Tools } from '../types';
 import { findIntent } from './nlu/nlu';
 import { log } from '../manager/services/activities';
+import { settings } from '../manager/services/settings';
+import { chat } from './llm';
+import { v4 as uuid } from 'uuid';
 
 const positiveAnswers = [
     `Très bien, c'est fait.`,
@@ -15,8 +18,6 @@ const positiveAnswers = [
     `D'accord.`,
     `C'est fait`,
 ];
-
-console.log(process.env.BRAIN);
 
 export interface AskOptions {
     log?: boolean;
@@ -50,11 +51,10 @@ export async function ask(
         throw e;
     }
 
-    if (process.env.BRAIN === 'SMART') {
+    if (settings.flow?.agentic?.enabled) {
         try {
-            // Fallback to LLM for complex tasks or misunderstanding
             isLog && log('nlu', `Fallback to LLM`);
-            // return askDirect(text);
+            return await chat(uuid(), text);
         } catch (e) {
             throw e;
         }
