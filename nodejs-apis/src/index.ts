@@ -12,7 +12,7 @@ import { setupRestApi } from './restapi-setup.';
 
     await setupRestApi();
 
-    if (settings.echo?.listen) {
+    if (settings.echos?.listen) {
         setupEchoListen();
     }
 
