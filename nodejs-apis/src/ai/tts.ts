@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-const host = process.env.TTS_HOST ?? 'tts:9301';
+const host = process.env.TTS_HOST ?? 'tts:8000';
 
 export interface TTSRequest {
     text: string;
