@@ -45,7 +45,7 @@ function sendPCMInChunks(ws, buffer, chunkSize = 8192) {
         const chunk = buffer.slice(i, i + chunkSize);
         ws.send(chunk, { binary: true });
     }
-    ws.send('playAudio');
+    ws.send(JSON.stringify({ c: 'playAudio' }));
 }
 
 function verify(text: string) {
@@ -118,7 +118,9 @@ export function setupEchoListen() {
                                       ? `Pas possible`
                                       : 'Ok';
 
-                            ws.send(shortText);
+                            ws.send(
+                                JSON.stringify({ c: 'feedback', v: shortText })
+                            );
 
                             const longText =
                                 typeof result === 'string'
