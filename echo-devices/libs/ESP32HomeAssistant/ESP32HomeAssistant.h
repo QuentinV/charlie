@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include "esp_system.h"
 #include "esp_heap_caps.h"
 #include <WiFiManager.h>
@@ -14,6 +15,9 @@
 #include <HTTPClient.h>
 #include <HTTPUpdate.h>
 #include <Adafruit_SSD1306.h>
+#include <vector>
+#include <Adafruit_AHTX0.h>
+#include <SoftwareWire.h>
 
 #define WS_PORT 9303
 
@@ -36,6 +40,13 @@
 #define MAX_SAMPLES 320000 // 20s max
 #define MAX_SAMPLES_PLAYBACK 640000
 
+struct I2CScreen {
+  int sda;
+  int scl;
+  uint8_t w;
+  uint8_t h;
+};
+
 struct HAConfig {
     // WiFi / portal
     const char* apName     = "HomeAssistantEcho";
@@ -51,20 +62,27 @@ struct HAConfig {
     uint8_t neoPixelCount  = 1;
     uint8_t neoPixelBright = 50;
 
+    // Mic
     i2s_port_t I2S_MIC_PORT = I2S_NUM_0;
     gpio_num_t I2S_MIC_WS = GPIO_NUM_17;
     gpio_num_t I2S_MIC_SD = GPIO_NUM_18;
     gpio_num_t I2S_MIC_SCK = GPIO_NUM_16;
 
+    // Speaker
     i2s_port_t I2S_SPK_PORT = I2S_NUM_1;
     gpio_num_t I2S_SPK_LRC = GPIO_NUM_7;
     gpio_num_t I2S_SPK_BCLK = GPIO_NUM_6;
     gpio_num_t I2S_SPK_DIN = GPIO_NUM_5;
 
-    gpio_num_t OLED_SDA = GPIO_NUM_1;
-    gpio_num_t OLED_SCL = GPIO_NUM_2;    
+    // Screens
+    std::vector<I2CScreen> displays;
 
-    bool screenEnabled = false;
+    // Temp
+    gpio_num_t TEMP_SDA = GPIO_NUM_39;
+    gpio_num_t TEMP_SCL = GPIO_NUM_14;
+
+    bool feedbackScreenEnabled = false;
+    bool tempSensorEnabled = false;
 };
 
 typedef struct {
@@ -80,7 +98,7 @@ public:
     // Call once in setup()
     void begin();
     void setLed(uint8_t r, uint8_t g, uint8_t b);
-    void displayText(String msg);
+    void displayFeedback(String msg);
     void reset();
 
     void printMemoryUsage();
@@ -97,6 +115,8 @@ private:
     void _setWakeUpWordAccuracy(float accuracy);
     void _setServerIp(String serverip);
     void _setupWiFi();
+    void _setupDisplays();
+    void _setupTempSensor();
 
     void _handleIncomingAudio(uint8_t *payload, size_t length);
     void _playBufferedAudio();
@@ -107,14 +127,18 @@ private:
     void _sendAudioWS();
 
     void _drawListeningScreen();
-
+    void _updateDisplay(int key, JsonArray texts );
 
     // State
     HAConfig            _cfg;
     Preferences         _prefs;
     WiFiManager         _wm;
     Adafruit_NeoPixel*  _pixels = nullptr;    
-    Adafruit_SSD1306*   display;
+
+    std::vector<Adafruit_SSD1306*> _displays;
+    TwoWire* _w2;
+
+    Adafruit_AHTX0 _tempSensor;
 
     unsigned long silenceStart = 0;
     bool mute = false;

@@ -2,6 +2,12 @@ import { RestApis } from '../types';
 import fs from 'fs';
 import { connectedEchos } from './listen';
 import { cs } from '../core/db';
+import {
+    setServerIp,
+    setWakeUpWordAccuracy,
+    startOTA,
+    updateDisplays,
+} from './service';
 
 const DIR = '../echo-devices';
 
@@ -40,7 +46,7 @@ const routes: RestApis = {
         post: {
             handler: async ({ body }) => {
                 const { ip } = body;
-                await connectedEchos[ip]?.send('OTA');
+                await startOTA(ip);
             },
         },
     },
@@ -77,18 +83,25 @@ const routes: RestApis = {
                 const ip = params.ip.replaceAll('-', '.');
                 const { serverIp, wakeWordAccuracy } = body;
                 if (wakeWordAccuracy) {
-                    await connectedEchos[ip]?.send(
-                        `setWakeUpWordAccuracy:${wakeWordAccuracy}`
-                    );
+                    await setWakeUpWordAccuracy(ip, wakeWordAccuracy);
                 }
                 if (serverIp) {
-                    await connectedEchos[ip]?.send(`setServerIp:${serverIp}`);
+                    await setServerIp(ip, serverIp);
                 }
                 cs.echoSettings.updateOne(
                     { ip },
                     { $set: { serverIp, wakeWordAccuracy } },
                     { upsert: true }
                 );
+            },
+        },
+    },
+    'echo/:ip/screens': {
+        post: {
+            handler: async ({ params, body }) => {
+                const ip = params.ip.replaceAll('-', '.');
+                const { screens } = body;
+                await updateDisplays(ip, screens);
             },
         },
     },
