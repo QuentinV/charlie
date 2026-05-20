@@ -44,10 +44,30 @@ const schema: JSONSchema7 = {
             title: 'Enable discovery of devices',
             tags: ['Devices', 'Experimental'],
         },
-        'experimental.music.player.show': {
+        'musics.show': {
             type: 'boolean',
-            title: 'Enable musics player',
-            tags: ['Music', 'Experimental'],
+            title: 'Enable music assistant iframe',
+            tags: ['Music'],
+        },
+        'music.assistant.url': {
+            type: 'string',
+            title: 'URL music assistant',
+            tags: ['Music'],
+        },
+        'music.assistant.apikey': {
+            type: 'string',
+            title: 'Music assistant api key',
+            tags: ['Music'],
+        },
+        'music.assitant.playername': {
+            type: 'string',
+            title: 'Music assistant default playername',
+            tags: ['Music'],
+        },
+        'music.sendspin.url': {
+            type: 'string',
+            title: 'Sendspin agent url',
+            tags: ['Music'],
         },
         'experimental.ai.ask.show': {
             type: 'boolean',
