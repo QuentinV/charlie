@@ -16,21 +16,23 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router-dom';
 import { useUnit } from 'effector-react';
-import { settingsStore } from '../../state/settings';
 import { NfcJsonReader } from '../NfcJsonReader';
 import { $pwaPrompt, setPwaPrompt } from '../../state/standalone';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import { useSetting } from '../../state/settingsHooks';
 
 export const Menu = () => {
     const theme = useTheme();
     const [drawerOpen, setDrawerOpen] = React.useState(false);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
-    const devicesDiscovery = useUnit(settingsStore.$devicesDiscovery);
-    const enableAddRoutine = useUnit(settingsStore.$enableAddRoutine);
-    const showAiAsk = useUnit(settingsStore.$showAiAsk);
+    const enableAddRoutine = useSetting('routines.enabled');
+    const showAiAsk = useSetting('experimental.ai.ask.show');
     const pwaPrompt = useUnit($pwaPrompt);
-    const echosMenu = useUnit(settingsStore.$echosMenu);
+    const devicesDiscovery = useSetting(
+        'experimental.devices.discovery.enabled'
+    );
+    const echosMenu = useSetting('echos.menu.enabled', true);
 
     const navItems = [{ label: 'Home', route: '/' }];
     enableAddRoutine &&
@@ -38,8 +40,11 @@ export const Menu = () => {
     devicesDiscovery &&
         navItems.push({ label: 'Discover', route: '/discover' });
     showAiAsk && navItems.push({ label: 'AI', route: '/ai' });
+    useSetting('musics.show') &&
+        navItems.push({ label: 'Musics', route: '/musics' });
     navItems.push({ label: 'Activities', route: '/activities' });
     echosMenu && navItems.push({ label: 'Echos', route: '/echos' });
+    navItems.push({ label: 'Settings', route: '/settings' });
 
     return (
         <>

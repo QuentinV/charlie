@@ -2,7 +2,7 @@ export const HOST = '/api';
 
 export const api = async (url, init = undefined) => {
     const res = await fetch(`${HOST}/${url}`, {
-        ...init,
+        ...(init ?? {}),
         headers: [
             //['x-language', i18n.language ?? 'en'],
             ['Content-Type', 'application/json'],

@@ -1,22 +1,19 @@
-import { createEvent, createStore } from 'effector';
+import { createEffect, createEvent, createStore } from 'effector';
+import { api } from '../api/charlie';
 
 const $settings = createStore({});
-const updateSettings = createEvent();
-$settings.on(updateSettings, (_, v) => v);
+const $schema = createStore({});
 
-function createBoolSetting(key, defaultValue) {
-    const $store = createStore(defaultValue);
-    $store.on($settings.updates, (_, v) => v?.[key]);
-    return $store;
-}
+const update = createEvent();
+$settings.on(update, (_, v) => v);
 
-export const settingsStore = {
+const loadFx = createEffect(async () => api('settings'));
+$settings.on(loadFx.doneData, (_, state) => state.settings);
+$schema.on(loadFx.doneData, (_, state) => state.schema);
+
+export const settings = {
     $settings,
-    $showMusicPlayer: createBoolSetting('music.player.show', false),
-    $showAiAsk: createBoolSetting('ai.ask.show', false),
-    $enableAddDevice: createBoolSetting('devices.add.enabled', false),
-    $enableAddRoom: createBoolSetting('rooms.add.enabled', true),
-    $enableAddRoutine: createBoolSetting('routines.add.enabled', true),
-    $devicesDiscovery: createBoolSetting('devices.discovery.enabled', false),
-    $echosMenu: createBoolSetting('echos.menu.enabled', true),
+    $schema,
+    loadFx,
+    update,
 };

@@ -32,15 +32,35 @@ export type RestApiFullHandler = (
 export type RestApis = { [route: string]: RestApi };
 
 // --- Tools
-export interface Tool<P> {
+export interface ToolExecutor<P> {
+    exec: (params?: P) => Promise<string | void | boolean>;
+}
+
+export interface Tool<P> extends ToolExecutor<P> {
     description?: string;
     inputSchema?: any;
-    exec: (params?: P) => Promise<string | void | boolean>;
     disabled?: boolean;
     instance?: any;
 }
 
 export type Tools = { [name: string]: Tool<any> };
+export type ToolsExecutors = { [name: string]: ToolExecutor<any> };
+
+export interface ToolSchema {
+    type: string;
+    function?: {
+        name: string;
+        description: string;
+        parameters: any;
+    };
+}
+
+export type ToolsSchema = ToolSchema[];
+
+export interface ToolPlugin {
+    name: string;
+    host: string;
+}
 
 // --- Devices, Room, providers
 export interface Device {
@@ -127,6 +147,12 @@ export interface ProvidersApis {
     tools?: Tools;
 }
 
+export interface ProvidersApisPlugin {
+    name: string;
+    host: string;
+    type?: string;
+}
+
 // --- Activities
 export interface Activity {
     _id?: string;
@@ -137,9 +163,6 @@ export interface Activity {
     from?: string;
     modified?: Date;
 }
-
-// --- Settings
-export interface Settings {}
 
 // --- Routines
 export interface TimeTrigger {

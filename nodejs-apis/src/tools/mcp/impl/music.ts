@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import {
-    audioPlayer,
-    executeCommand,
-    searchLibrary,
-} from '../../../musics/service';
+import { executeCommand, searchLibrary } from '../../../musics/service';
 import { Tools } from '../../../types';
 
 export const tools: Tools = {
@@ -20,15 +16,18 @@ export const tools: Tools = {
                 'decreaseVolume',
                 'skip',
             ]),
-            songId: z.optional(z.number()),
+            songId: z.optional(z.string()),
         },
-        exec: async ({ command, songId }) => {
-            if (!audioPlayer[command]) return 'Unkwown command';
+        exec: async ({ command, songId }: any) => {
             try {
                 await executeCommand({ command, songId });
                 return 'Done';
             } catch (e) {
-                return 'Error';
+                if ((e as any)?.message.indexOf('server error') !== -1) {
+                    console.log('Server error', e);
+                    return 'API error. Do not retry.';
+                }
+                return 'Unkown error. Do not retry.';
             }
         },
     },
@@ -38,8 +37,8 @@ export const tools: Tools = {
         exec: async ({ term }) => {
             const songs = await searchLibrary({ q: term });
             const filteredSongs = songs
-                .slice(0, 5)
-                .map((it: any) => `- ${it.id}: ${it.name}`);
+                .slice(0, 3)
+                .map((it: any) => `- ${it.item_id}: ${it.name}`);
             return filteredSongs.length === 0
                 ? 'Found no sounds'
                 : (filteredSongs.length > 1

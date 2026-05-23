@@ -1,12 +1,20 @@
 import { cs } from '../core/db';
-import { NotFoundError } from '../errors';
-import { execRoutine, restartRoutine, toggleStatusRoutine } from '../routines';
+import {
+    execRoutine,
+    restartRoutine,
+    stopRoutine,
+    toggleStatusRoutine,
+} from '../routines';
 import { RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
 
 const routes: RestApis = {
     'routines/:id': {
         get: async ({ params }) => cs.routines.findOne({ _id: params.id }),
+        delete: async ({ params }) => {
+            stopRoutine(params.id);
+            await cs.routines.deleteOne({ _id: params.id });
+        },
     },
     'routines/:id/exec': {
         post: async ({ params }) => {

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-const host = process.env.AI_AGENTS_HOST;
+const host = process.env.TTS_HOST ?? 'tts:8000';
 
 export interface TTSRequest {
     text: string;

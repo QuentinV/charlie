@@ -3,9 +3,11 @@
     "devices": "devices",
     "rooms": "rooms",
     "providers": "providers",
+    "plugins": "plugins",
     "routines": "routines",
     "states": "states",
     "musics_playlists": "musics_playlists",
     "activities": "activities",
-    "echoSettings": "echo_settings"
+    "echoSettings": "echo_settings",
+    "settings": "settings"
 }

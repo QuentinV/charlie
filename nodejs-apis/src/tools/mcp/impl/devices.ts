@@ -111,7 +111,7 @@ export default async () => {
             inputSchema: {
                 deviceId: z.string(),
                 functionname: z.string(),
-                params: z.any(),
+                params: z.record(z.any()),
             },
             exec: async ({ deviceId, functionname, params }) => {
                 log('tools-devices', 'call-device-additional-function', {

@@ -85,6 +85,7 @@ export const RoutineConfig = ({ id }) => {
     const remove = useCallback(async () => {
         await api(`routines/${id}`, { method: 'DELETE' });
         setDialogDeleteVisible(false);
+        navigate('/routines');
     }, [setDialogDeleteVisible, id]);
 
     if (!state) return;

@@ -22,21 +22,13 @@ services:
             - internal
         extra_hosts:
             - 'host.docker.internal:host-gateway'
-
-    ai-agents:
-        build: ./python-apis
-        container_name: charlie-ai-agents
+    tts:
+        build: ./tts
+        container_name: charlie-tts
         ports:
             - '9301:8000'
         volumes:
-            - ./python-apis/app:/app
-            - ./nodejs-apis:/mcp-server
-            - ./python-apis/qwen_models:/models
-        environment:
-            - PYTHONUNBUFFERED=1
-            - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-            - SSE_HOST=http://${SSE_HOST}:9300/sse
-            - LLM_MODEL=${LLM_MODEL}
+            - ./tts/app:/app
         restart: unless-stopped
         networks:
             - internal
@@ -64,6 +56,18 @@ services:
             ]
         networks:
             - internal
+    llm:
+        build: ./llm
+        container_name: charlie-llm
+        networks:
+            - internal
+        ports:
+            - '9308:9308'
+        volumes:
+            - ./llm/models:/app/models
+        environment:
+            - LLAMA_ARG_THREADS=${LLAMA_ARG_THREADS:-6}
+        restart: unless-stopped
     db:
         container_name: charlie-db
         image: mongo

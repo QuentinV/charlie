@@ -3,102 +3,114 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { theme } from './theme';
 import { HomePage } from './pages/Home';
 import { NotFoundPage } from './pages/NotFound';
-import { Box, ThemeProvider } from '@mui/material';
+import { Box, CircularProgress, ThemeProvider } from '@mui/material';
 import { Menu } from './components/Menu';
 import { Footer } from './components/Footer';
 import { DevicesDiscoveryPage } from './pages/DevicesDiscovery';
 import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
 import { AiPage } from './pages/AiPage';
-import Musics from './components/Musics';
-import { settingsStore } from './state/settings';
 import { useUnit } from 'effector-react';
 import { ActivitiesPage } from './pages/Activities';
 import { EchoPage } from './pages/Echo';
 import { RoutineEditPage } from './pages/RoutineEdit';
+import { settings } from './state/settings';
+import { useSetting } from './state/settingsHooks';
+import SettingsPage from './pages/Settings';
+import { MusicsPage } from './pages/Musics';
+
+settings.loadFx();
 
 export default function App() {
-    const showMusicPlayer = useUnit(settingsStore.$showMusicPlayer);
-    const showAiAsk = useUnit(settingsStore.$showAiAsk);
-    const devicesDiscovery = useUnit(settingsStore.$devicesDiscovery);
-    const echosMenu = useUnit(settingsStore.$echosMenu);
+    const loadingSettings = useUnit(settings.loadFx.pending);
+    const showAiAsk = useSetting('experimental.ai.ask.show');
+
     return (
         <ThemeProvider theme={theme}>
             <Router>
-                <Box
-                    sx={{
-                        flexGrow: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        height: '100%',
-                    }}
-                >
-                    <Box sx={{ flexGrow: 0 }}>
-                        <Menu />
-                    </Box>
+                {loadingSettings && <CircularProgress aria-label="Loading…" />}
+                {!loadingSettings && (
                     <Box
                         sx={{
-                            p: 3,
-                            paddingTop: 1,
                             flexGrow: 1,
                             display: 'flex',
                             flexDirection: 'column',
-                            overflow: 'auto',
+                            height: '100%',
                         }}
-                        className="overlay"
                     >
-                        <Box sx={{ height: '100%' }}>
-                            <Routes>
-                                <Route path="/" element={<HomePage />} />
-                                {devicesDiscovery && (
+                        <Box sx={{ flexGrow: 0 }}>
+                            <Menu />
+                        </Box>
+                        <Box
+                            sx={{
+                                p: 1,
+                                paddingTop: 1,
+                                flexGrow: 1,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflow: 'auto',
+                            }}
+                            className="overlay"
+                        >
+                            <Box sx={{ height: '100%' }}>
+                                <Routes>
+                                    <Route path="/" element={<HomePage />} />
                                     <Route
                                         path="/discovery"
                                         element={<DevicesDiscoveryPage />}
                                     />
-                                )}
-                                <Route
-                                    path="/room/:id"
-                                    element={<RoomPage />}
-                                />
-                                <Route
-                                    path="/routines"
-                                    element={<RoutinesPage />}
-                                />
-                                <Route
-                                    path="/routine/:id"
-                                    element={<RoutineEditPage />}
-                                />
-                                <Route path="/ai" element={<AiPage />} />
-                                <Route
-                                    path="/activities"
-                                    element={<ActivitiesPage />}
-                                />
-                                {echosMenu && (
+                                    <Route
+                                        path="/room/:id"
+                                        element={<RoomPage />}
+                                    />
+                                    <Route
+                                        path="/routines"
+                                        element={<RoutinesPage />}
+                                    />
+                                    <Route
+                                        path="/routine/:id"
+                                        element={<RoutineEditPage />}
+                                    />
+                                    <Route path="/ai" element={<AiPage />} />
+                                    <Route
+                                        path="/activities"
+                                        element={<ActivitiesPage />}
+                                    />
                                     <Route
                                         path="/echos"
                                         element={<EchoPage />}
+                                    />{' '}
+                                    <Route
+                                        path="/musics"
+                                        element={<MusicsPage />}
                                     />
-                                )}
-                                <Route path="*" element={<NotFoundPage />} />
-                            </Routes>
+                                    <Route
+                                        path="/settings"
+                                        element={<SettingsPage />}
+                                    />
+                                    <Route
+                                        path="*"
+                                        element={<NotFoundPage />}
+                                    />
+                                </Routes>
+                            </Box>
                         </Box>
+                        {showAiAsk && (
+                            <Box
+                                sx={{
+                                    flexGrow: 0,
+                                    marginTop: 'auto',
+                                    height: '50px',
+                                    color: 'white',
+                                    display: 'flex',
+                                    width: '100%',
+                                }}
+                            >
+                                <Footer />
+                            </Box>
+                        )}
                     </Box>
-                    {showAiAsk && (
-                        <Box
-                            sx={{
-                                flexGrow: 0,
-                                marginTop: 'auto',
-                                height: '50px',
-                                color: 'white',
-                                display: 'flex',
-                                width: '100%',
-                            }}
-                        >
-                            <Footer />
-                        </Box>
-                    )}
-                    {showMusicPlayer && <Musics />}
-                </Box>
+                )}
             </Router>
         </ThemeProvider>
     );
