@@ -38,7 +38,9 @@ export async function ask(
         if (res?.name && actions[res.name]) {
             const response = await actions[res.name].exec(res);
             if (response === true) {
-                return positiveAnswers[Math.random() * positiveAnswers.length];
+                return positiveAnswers[
+                    Math.floor(Math.random() * positiveAnswers.length)
+                ];
             } else if (response === false) {
                 return false;
             } else if (response !== null) {

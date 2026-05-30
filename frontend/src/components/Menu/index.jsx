@@ -40,6 +40,8 @@ export const Menu = () => {
     devicesDiscovery &&
         navItems.push({ label: 'Discover', route: '/discover' });
     showAiAsk && navItems.push({ label: 'AI', route: '/ai' });
+    useSetting('musics.show') &&
+        navItems.push({ label: 'Musics', route: '/musics' });
     navItems.push({ label: 'Activities', route: '/activities' });
     echosMenu && navItems.push({ label: 'Echos', route: '/echos' });
     navItems.push({ label: 'Settings', route: '/settings' });

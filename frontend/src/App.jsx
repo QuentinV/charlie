@@ -10,7 +10,6 @@ import { DevicesDiscoveryPage } from './pages/DevicesDiscovery';
 import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
 import { AiPage } from './pages/AiPage';
-import Musics from './components/Musics';
 import { useUnit } from 'effector-react';
 import { ActivitiesPage } from './pages/Activities';
 import { EchoPage } from './pages/Echo';
@@ -18,13 +17,12 @@ import { RoutineEditPage } from './pages/RoutineEdit';
 import { settings } from './state/settings';
 import { useSetting } from './state/settingsHooks';
 import SettingsPage from './pages/Settings';
+import { MusicsPage } from './pages/Musics';
 
 settings.loadFx();
 
 export default function App() {
     const loadingSettings = useUnit(settings.loadFx.pending);
-
-    const showMusicPlayer = useSetting('experimental.music.player.show');
     const showAiAsk = useSetting('experimental.ai.ask.show');
 
     return (
@@ -45,7 +43,7 @@ export default function App() {
                         </Box>
                         <Box
                             sx={{
-                                p: 3,
+                                p: 1,
                                 paddingTop: 1,
                                 flexGrow: 1,
                                 display: 'flex',
@@ -81,6 +79,10 @@ export default function App() {
                                     <Route
                                         path="/echos"
                                         element={<EchoPage />}
+                                    />{' '}
+                                    <Route
+                                        path="/musics"
+                                        element={<MusicsPage />}
                                     />
                                     <Route
                                         path="/settings"
@@ -107,7 +109,6 @@ export default function App() {
                                 <Footer />
                             </Box>
                         )}
-                        {showMusicPlayer && <Musics />}
                     </Box>
                 )}
             </Router>
