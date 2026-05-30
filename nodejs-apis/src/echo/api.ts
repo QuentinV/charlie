@@ -88,7 +88,7 @@ const routes: RestApis = {
                 if (serverIp) {
                     await setServerIp(ip, serverIp);
                 }
-                cs.echoSettings.updateOne(
+                await cs.echoSettings.updateOne(
                     { ip },
                     { $set: { serverIp, wakeWordAccuracy } },
                     { upsert: true }
@@ -100,8 +100,18 @@ const routes: RestApis = {
         post: {
             handler: async ({ params, body }) => {
                 const ip = params.ip.replaceAll('-', '.');
-                const { screens } = body;
-                await updateDisplays(ip, screens);
+                const { refreshTime, screens } = body;
+                await cs.echoSettings.updateOne(
+                    { ip },
+                    { $set: { screens: { refreshTime, screens } } },
+                    { upsert: true }
+                );
+            },
+        },
+        get: {
+            handler: async ({ params, body }) => {
+                const ip = params.ip.replaceAll('-', '.');
+                return (await cs.echoSettings.findOne({ ip }))?.screens ?? {};
             },
         },
     },

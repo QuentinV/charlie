@@ -633,7 +633,7 @@ void ESP32HomeAssistant::_displayStatusOnScreenTask(void *arg) {
 void ESP32HomeAssistant::_updateDisplay(int key, JsonArray texts ) {
     if (key >= this->_displays.size()) return;
     
-    this->_tcaSelect(key);
+    this->_tcaSelect(this->_cfg.displays[key].channel);
 
     Adafruit_SSD1306* display = this->_displays[key];
     display->clearDisplay();
@@ -643,7 +643,7 @@ void ESP32HomeAssistant::_updateDisplay(int key, JsonArray texts ) {
         int cx = text["cx"] | 0;
         int cy = text["cy"] | 0;
         String t = text["v"] | "";
-        int r = text["r"] | 0;
+        int r = text["r"] | 0;  
         Serial.printf("ts: %d", ts);
         Serial.printf("v: %s \n", t);
 
