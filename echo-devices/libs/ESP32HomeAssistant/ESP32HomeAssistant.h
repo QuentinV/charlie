@@ -17,7 +17,6 @@
 #include <Adafruit_SSD1306.h>
 #include <vector>
 #include <Adafruit_AHTX0.h>
-#include <SoftwareWire.h>
 
 #define WS_PORT 9303
 
@@ -41,10 +40,10 @@
 #define MAX_SAMPLES_PLAYBACK 640000
 
 struct I2CScreen {
-  int sda;
-  int scl;
-  uint8_t w;
-  uint8_t h;
+    uint8_t w;
+    uint8_t h;
+    uint8_t r;   
+    uint8_t channel; 
 };
 
 struct HAConfig {
@@ -78,8 +77,12 @@ struct HAConfig {
     std::vector<I2CScreen> displays;
 
     // Temp
-    gpio_num_t TEMP_SDA = GPIO_NUM_39;
-    gpio_num_t TEMP_SCL = GPIO_NUM_14;
+    gpio_num_t TEMP_SDA = GPIO_NUM_41;
+    gpio_num_t TEMP_SCL = GPIO_NUM_42;
+
+    // Default screen
+    gpio_num_t OLED_SDA = GPIO_NUM_17;
+    gpio_num_t OLED_SCL = GPIO_NUM_18;    
 
     bool feedbackScreenEnabled = false;
     bool tempSensorEnabled = false;
@@ -115,6 +118,7 @@ private:
     void _setWakeUpWordAccuracy(float accuracy);
     void _setServerIp(String serverip);
     void _setupWiFi();
+    void _tcaSelect(uint8_t channel); // multiplexer i2s
     void _setupDisplays();
     void _setupTempSensor();
 
@@ -136,7 +140,6 @@ private:
     Adafruit_NeoPixel*  _pixels = nullptr;    
 
     std::vector<Adafruit_SSD1306*> _displays;
-    TwoWire* _w2;
 
     Adafruit_AHTX0 _tempSensor;
 

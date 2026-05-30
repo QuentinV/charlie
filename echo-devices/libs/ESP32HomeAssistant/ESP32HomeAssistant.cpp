@@ -108,29 +108,41 @@ void ESP32HomeAssistant::_setupWiFi() {
     Serial.printf("serverIp: %s, wakeUpWordAccuracy: %f", this->serverip, this->wakeUpWordAccuracy);
 }
 
+void ESP32HomeAssistant::_tcaSelect(uint8_t channel) {
+    if (channel > 7) return;
+
+    //Serial.printf("Select channel %d \n", channel);
+    Wire1.beginTransmission(0x70);
+    Wire1.write(1 << channel); // Send bitmask to enable the specific channel
+    uint8_t error = Wire1.endTransmission();
+  
+    if (error != 0) {
+        Serial.printf("Error selecting TCA channel %d (Code: %d)\n", channel, error);
+    }
+}
+
 void ESP32HomeAssistant::_setupDisplays() {
     if (this->_cfg.displays.size() == 0) return;
-   
-    //TwoWire* w0 = &Wire1;
-    //this->_w2 = new TwoWire(2);
     
-    Serial.printf("Configure screens %d", this->_cfg.displays.size());
-    for (int i = 0; i < this->_cfg.displays.size(); ++i) {
-        // TwoWire* w = i == 0 ? w0 : this->_w2;
-        SoftwareWire* s = new SoftwareWire(this->_cfg.displays[i].sda, this->_cfg.displays[i].scl);
-        s->begin();
-        
-        Adafruit_SSD1306* display = new Adafruit_SSD1306(this->_cfg.displays[i].w, this->_cfg.displays[i].h, s, OLED_RESET);
-        this->_displays.push_back(display);
+    Serial.printf("Configure screens %d \n", this->_cfg.displays.size());
+    if (!Wire1.begin(this->_cfg.OLED_SDA, this->_cfg.OLED_SCL)) {
+        Serial.println("i2s screen not initialized correctly");
+        return;
+    }
+    Wire1.setClock(100000);
+    delay(100);
 
+    int size = this->_cfg.displays.size();
+    for (int i = 0; i < this->_cfg.displays.size(); ++i) {
+        if (size > 1) {
+            this->_tcaSelect(this->_cfg.displays[i].channel);
+        }
         
-        //if (i > 1) {
-        //    w->remap(this->_cfg.displays[i].sda, this->_cfg.displays[i].scl);
-        //} else {
-        //    w->begin(this->_cfg.displays[i].sda, this->_cfg.displays[i].scl);
-        //}
+        Adafruit_SSD1306* display = new Adafruit_SSD1306(this->_cfg.displays[i].w, this->_cfg.displays[i].h, &Wire1, OLED_RESET);
+        this->_displays.push_back(display);
         if (display->begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
             display->clearDisplay();
+            display->setRotation(this->_cfg.displays[i].r);
             display->setTextColor(SSD1306_WHITE);
             display->setTextSize(2);            
             display->setCursor(10, 10);          
@@ -139,15 +151,13 @@ void ESP32HomeAssistant::_setupDisplays() {
             
             Serial.printf("\nBegin screen %d", i);
         }
-        
-        //if (i > 0) w->end();
     }
 }
 
 void ESP32HomeAssistant::_setupTempSensor() {
     if (!this->_cfg.tempSensorEnabled) return;
-    pinMode(14, INPUT_PULLUP);
-    pinMode(39, INPUT_PULLUP);
+    //pinMode(this->_cfg.TEMP_SDA, INPUT_PULLUP);
+    //pinMode(this->_cfg.TEMP_SCL, INPUT_PULLUP);
     Wire.begin(this->_cfg.TEMP_SDA, this->_cfg.TEMP_SCL, 100000);
 
     if (!this->_tempSensor.begin(&Wire)) {
@@ -533,6 +543,10 @@ void ESP32HomeAssistant::displayFeedback(String msg) {
         return;
     }
 
+    if (this->_cfg.displays.size() > 1) {
+        this->_tcaSelect(0);
+    }
+
     Adafruit_SSD1306* display = this->_displays[0];
     display->clearDisplay();
     display->setTextSize(1);
@@ -550,6 +564,10 @@ void ESP32HomeAssistant::_drawListeningScreen() {
         return;
     }
 
+    if (this->_cfg.displays.size() > 1) {
+        this->_tcaSelect(0);
+    }
+
     Adafruit_SSD1306* display = this->_displays[0];
     display->clearDisplay();
     display->fillRoundRect(56, 10, 16, 28, 4, WHITE);
@@ -565,6 +583,10 @@ void ESP32HomeAssistant::_displayStatusOnScreenTask(void *arg) {
     while(true) {
         time_t t = time(NULL);
         struct tm *timeinfo = localtime(&t);
+
+        if (this->_cfg.displays.size() > 1) {
+            this->_tcaSelect(0);
+        }
 
         display->clearDisplay();
         
@@ -611,12 +633,9 @@ void ESP32HomeAssistant::_displayStatusOnScreenTask(void *arg) {
 void ESP32HomeAssistant::_updateDisplay(int key, JsonArray texts ) {
     if (key >= this->_displays.size()) return;
     
+    this->_tcaSelect(key);
+
     Adafruit_SSD1306* display = this->_displays[key];
-    Serial.println("update display");
-    this->_w2->setPins(this->_cfg.displays[key].sda, this->_cfg.displays[key].scl);
-    //this->_w2->begin(this->_cfg.displays[key].sda, this->_cfg.displays[key].scl);
-    delayMicroseconds(50);
-    Serial.println("clear display");
     display->clearDisplay();
 
     for (JsonObject text : texts) {
@@ -683,6 +702,8 @@ void ESP32HomeAssistant::setLed(uint8_t r, uint8_t g, uint8_t b) {
 
 void ESP32HomeAssistant::begin() {
     delay(5000);
+
+    Serial.println("Hello");
 
     // NeoPixel init
     this->_pixels = new Adafruit_NeoPixel(

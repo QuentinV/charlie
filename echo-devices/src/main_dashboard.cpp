@@ -5,6 +5,10 @@ ESP32HomeAssistant* assistant = nullptr;
 void setup() {
     Serial.begin(115200); 
 
+    while (!Serial) { 
+        delay(10); 
+    }
+
     HAConfig cfg;
     cfg.apName = "CharlieEcho";    
     cfg.apPassword = "CharlieEcho123";
@@ -20,11 +24,11 @@ void setup() {
     cfg.WAKE_UP_WORD_ACCURACY = 0.65f;
 
     cfg.displays = { 
-        { 1, 2, 128, 32 }
-        ,{ 8, 7, 128, 64 }, 
-        { 10, 9, 128, 64 },
-        //{ 21, 47, 128, 64 },
-        { 42, 41, 128, 64 }
+        { 128, 32, 90, 0 },
+        { 128, 64, 0, 1 },
+        { 128, 64, 0, 2 },
+        { 128, 64, 0, 3 },
+        { 128, 64, 0, 4 }
     };
 
     delay(2000);
