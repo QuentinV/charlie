@@ -20,7 +20,7 @@ void setup() {
     cfg.I2S_SPK_BCLK = GPIO_NUM_5;
     cfg.I2S_SPK_DIN = GPIO_NUM_6;
     cfg.feedbackScreenEnabled = true;
-    cfg.tempSensorEnabled = true;
+    cfg.displayScreenTime = true;
     cfg.WAKE_UP_WORD_ACCURACY = 0.65f;
 
     cfg.displays = { 

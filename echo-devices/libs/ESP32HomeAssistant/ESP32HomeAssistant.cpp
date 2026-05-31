@@ -514,6 +514,8 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                     silenceStart = 0;
                     startTime = time(NULL);
 
+                    this->_drawListeningScreen();
+
                     // this->printMemoryUsage();
                     memcpy(this->bufferCaptureAudio, this->inference_window, window * sizeof(int16_t));
                     this->totalRecordedSamples = window;
@@ -549,7 +551,7 @@ void ESP32HomeAssistant::displayFeedback(String msg) {
 
     Adafruit_SSD1306* display = this->_displays[0];
     display->clearDisplay();
-    display->setTextSize(1);
+    display->setTextSize(2);
 
     int16_t x, y;
     uint16_t w, h;
@@ -570,10 +572,15 @@ void ESP32HomeAssistant::_drawListeningScreen() {
 
     Adafruit_SSD1306* display = this->_displays[0];
     display->clearDisplay();
-    display->fillRoundRect(56, 10, 16, 28, 4, WHITE);
-    display->fillCircle(64, 10, 10, WHITE);
-    display->drawLine(64, 38, 64, 50, WHITE);
-    display->drawLine(54, 50, 74, 50, WHITE);
+
+    display->drawCircle(20, 16, 10, WHITE);
+    display->fillCircle(20, 16, 5, WHITE);
+
+    display->setTextSize(1);
+    display->setTextColor(WHITE);
+    display->setCursor(48, 12); 
+    display->print(F("LISTENING..."));
+
     display->display();
 }
 
@@ -606,7 +613,7 @@ void ESP32HomeAssistant::_displayStatusOnScreenTask(void *arg) {
         }   
 
         // Middle centered
-        display->setTextSize(3);
+        display->setTextSize(4);
         char timestr[16];
         strftime(timestr, sizeof(timestr), "%H:%M", timeinfo);
         int16_t x, y;
@@ -741,7 +748,7 @@ void ESP32HomeAssistant::begin() {
     delay(10000);
     xTaskCreatePinnedToCore( listenAndSendTask, "ListenAndSend", 1024 * 16, NULL, 10, &this->listenAndSendHandle, 1 );
     
-    if (this->_cfg.feedbackScreenEnabled) {
+    if (this->_cfg.displayScreenTime) {
         xTaskCreate( displayStatusOnScreenTask, "ScreenDisplay", 4096, NULL, 1, &this->screenHandle );
     }
 }

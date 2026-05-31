@@ -85,6 +85,7 @@ struct HAConfig {
     gpio_num_t OLED_SCL = GPIO_NUM_18;    
 
     bool feedbackScreenEnabled = false;
+    bool displayScreenTime = false;
     bool tempSensorEnabled = false;
 };
 
