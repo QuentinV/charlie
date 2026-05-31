@@ -1,4 +1,5 @@
 import { cs } from '../core/db';
+import { getDeviceState } from '../devices';
 import { log } from '../manager/services/activities';
 import { connectedEchos } from './listen';
 import { updateDisplays } from './service';
@@ -16,6 +17,10 @@ async function resolveScripting(v: string): Promise<string> {
     let match;
     let result = v;
 
+    // Cache device states keyed by device name to avoid reloading state
+    // when a device is referenced multiple times in the same string.
+    const deviceStateCache = new Map<string, any>();
+
     while ((match = regex.exec(v)) !== null) {
         const [fullMatch, deviceName, propertyPath] = match;
 
@@ -27,6 +32,11 @@ async function resolveScripting(v: string): Promise<string> {
             });
 
             if (device) {
+                // Only load device state once per device per resolveScripting call
+                if (!deviceStateCache.has(device.name)) {
+                    await getDeviceState(device._id);
+                    deviceStateCache.set(device.name, true);
+                }
                 const resolvedValue = resolvePropertyPath(device, propertyPath);
                 if (resolvedValue !== undefined && resolvedValue !== null) {
                     result = result.replace(fullMatch, String(resolvedValue));
