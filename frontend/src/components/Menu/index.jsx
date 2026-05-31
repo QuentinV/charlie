@@ -72,8 +72,8 @@ export const Menu = () => {
                             onClick={() => navigate('/')}
                         >
                             <img
-                                src="/dark_icon.png"
-                                width="30"
+                                src="/dark_icon_short.png"
+                                width="35"
                                 style={{ marginRight: '10px' }}
                             />
                             Charlie

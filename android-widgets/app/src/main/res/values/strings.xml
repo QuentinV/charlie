@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Charlie Widgets</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_host_label">Server Host</string>
+    <string name="settings_host_hint">e.g., 192.168.1.100</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_saved">Settings saved</string>
+    <string name="widget_single_config_title">Select Device</string>
+    <string name="widget_multi_config_title">Select Devices</string>
+    <string name="widget_single_name">Charlie Device</string>
+    <string name="widget_multi_name">Charlie Devices</string>
+    <string name="config_loading">Loading devices…</string>
+    <string name="config_no_devices">No devices found</string>
+    <string name="config_configured">Widget configured</string>
+    <string name="toggle_label">Toggle</string>
+    <string name="refresh_label">Refresh</string>
+    <string name="state_on">On</string>
+    <string name="state_off">Off</string>
+    <string name="host_not_configured">Server host not configured. Please open the app and configure
+        it.</string>
+</resources>
