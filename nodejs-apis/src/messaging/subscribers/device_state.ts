@@ -13,7 +13,7 @@ export default {
             { $set: { state: { power, level } } }
         );
 
-        await logDeviceState(externalId);
+        await logDeviceState({ externalId });
     },
     'shelly/events/rpc': async (data: string) => {
         const { src, method, params } = JSON.parse(data);
@@ -30,7 +30,7 @@ export default {
 
         if (Object.keys($set).length) {
             await cs.devices.updateOne({ externalId: src }, { $set });
-            await logDeviceState(src);
+            await logDeviceState({ externalId: src });
         }
     },
 };

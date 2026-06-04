@@ -36,7 +36,7 @@ async function resolveScripting(v: string): Promise<string> {
                 // Only load device state once per device per resolveScripting call
                 if (!deviceStateCache.has(device.name)) {
                     await getDeviceState(device._id);
-                    await logDeviceState(device._id);
+                    await logDeviceState({ deviceId: device._id });
                     deviceStateCache.set(device.name, true);
                 }
                 const resolvedValue = resolvePropertyPath(device, propertyPath);
