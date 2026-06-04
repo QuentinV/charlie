@@ -26,8 +26,16 @@ export const DevicesList = ({ devices }) => {
             <List dense>
                 {devicesState.map((device, index) => (
                     <Box key={device.name}>
-                        <ListItem
-                            secondaryAction={
+                        <ListItem>
+                            <ListItemIcon>
+                                <DeviceIcon type={device.type} />
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={device.name}
+                                onClick={() => setSelected(device)}
+                                sx={{ cursor: 'pointer' }}
+                            />
+                            <ListItemText sx={{ maxWidth: '10rem' }}>
                                 <DeviceToggle
                                     deviceId={device._id}
                                     power={device.state?.power}
@@ -38,16 +46,7 @@ export const DevicesList = ({ devices }) => {
                                         setDevicesState([...devices]);
                                     }}
                                 />
-                            }
-                        >
-                            <ListItemIcon>
-                                <DeviceIcon type={device.type} />
-                            </ListItemIcon>
-                            <ListItemText
-                                primary={device.name}
-                                onClick={() => setSelected(device)}
-                                sx={{ cursor: 'pointer' }}
-                            />
+                            </ListItemText>
                         </ListItem>
                         {index < devices.length - 1 && <Divider />}
                     </Box>
