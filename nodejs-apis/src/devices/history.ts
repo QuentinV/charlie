@@ -1,7 +1,16 @@
 import { cs } from '../core/db';
 
-export const logDeviceState = async (deviceId: string) => {
-    const device = await cs.devices.findOne({ deviceId });
+export const logDeviceState = async ({
+    externalId,
+    deviceId,
+}: {
+    externalId?: string;
+    deviceId?: string;
+}) => {
+    if (!externalId && !deviceId) return;
+    const device = await cs.devices.findOne(
+        externalId ? { externalId } : { _id: deviceId }
+    );
     if (device) {
         const { _id, ...res } = device;
         cs.states.insertOne({
