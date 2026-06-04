@@ -63,18 +63,24 @@ class SingleDeviceWidget : AppWidgetProvider() {
                 val host = PreferencesManager.getHost(context) ?: return@Thread
                 val deviceId = PreferencesManager.getSingleDeviceId(context, appWidgetId) ?: return@Thread
 
-                val device = CharlieApi.getDevice(host, deviceId)
-                val views = RemoteViews(context.packageName, R.layout.widget_single_device)
+val device = CharlieApi.getDevice(host, deviceId)
+val views = RemoteViews(context.packageName, R.layout.widget_single_device)
 
-                DeviceRenderer.applyDeviceView(
-                    context, views, device!!,
-                    R.id.widget_device_name, R.id.widget_device_state, R.id.widget_toggle_button,
-                    SingleDeviceWidget::class.java, appWidgetId
-                )
-                DeviceRenderer.setOnClickOpenFrontend(
-                    context, views, R.id.widget_device_name,
-                    SingleDeviceWidget::class.java, appWidgetId
-                )
+if (device != null) {
+    DeviceRenderer.applyDeviceView(
+        context, views, device,
+        R.id.widget_device_name, R.id.widget_device_state, R.id.widget_toggle_button,
+        SingleDeviceWidget::class.java, appWidgetId
+    )
+    DeviceRenderer.setOnClickOpenFrontend(
+        context, views, R.id.widget_device_name,
+        SingleDeviceWidget::class.java, appWidgetId    )
+} else {
+    // Device not found, show placeholder
+    views.setTextViewText(R.id.widget_device_name, "Unavailable")
+    views.setTextViewText(R.id.widget_device_state, "Tap to configure")
+    views.setViewVisibility(R.id.widget_toggle_button, android.view.View.GONE)
+}
 
                 Handler(Looper.getMainLooper()).post {
                     appWidgetManager.updateAppWidget(appWidgetId, views)

@@ -27,10 +27,11 @@ export default function LogViewer() {
     const [expanded, setExpanded] = useState(null);
 
     const loadLogs = useCallback(
-        async (reset = false) => {
+        async (pag, reset = false) => {
+            setPagination(pag);
             const res = await fetchActivities({
                 ...filters,
-                ...pagination,
+                ...pag,
             });
 
             setTotal(res.total);
@@ -41,20 +42,15 @@ export default function LogViewer() {
                 setLogs((prev) => [...prev, ...res.data]);
             }
         },
-        [filters, pagination]
+        [filters, setPagination]
     );
 
     useEffect(() => {
-        setPagination({ limit: 30, first: 0 });
-        loadLogs(true);
+        loadLogs({ limit: 30, first: 0 }, true);
     }, [filters]);
 
     const handleLoadMore = () => {
-        setPagination((prev) => {
-            const updated = { ...prev, first: prev.first + prev.limit };
-            loadLogs();
-            return updated;
-        });
+        loadLogs({ ...pagination, first: pagination.first + pagination.limit });
     };
 
     const toggleExpand = (id) => {

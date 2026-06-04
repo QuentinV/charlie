@@ -20,7 +20,7 @@
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
-            android:text="Device" />
+            android:text="" />
 
         <TextView
             android:id="@+id/widget_device_state"
