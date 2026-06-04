@@ -1,17 +1,6 @@
 import { cs } from '../../core/db';
+import { logDeviceState } from '../../devices/history';
 import { log } from '../../manager/services/activities';
-
-const logState = async (externalId: string) => {
-    const device = await cs.devices.findOne({ externalId });
-    if (device) {
-        const { _id, ...res } = device;
-        cs.states.insertOne({
-            timestamp: Date.now(),
-            deviceId: _id,
-            ...res,
-        });
-    }
-};
 
 export default {
     'device/state': async (data: string) => {
@@ -24,7 +13,7 @@ export default {
             { $set: { state: { power, level } } }
         );
 
-        await logState(externalId);
+        await logDeviceState(externalId);
     },
     'shelly/events/rpc': async (data: string) => {
         const { src, method, params } = JSON.parse(data);
@@ -41,7 +30,7 @@ export default {
 
         if (Object.keys($set).length) {
             await cs.devices.updateOne({ externalId: src }, { $set });
-            await logState(src);
+            await logDeviceState(src);
         }
     },
 };

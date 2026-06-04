@@ -1,5 +1,6 @@
 import { cs } from '../core/db';
 import { getDeviceState } from '../devices';
+import { logDeviceState } from '../devices/history';
 import { log } from '../manager/services/activities';
 import { connectedEchos } from './listen';
 import { updateDisplays } from './service';
@@ -35,6 +36,7 @@ async function resolveScripting(v: string): Promise<string> {
                 // Only load device state once per device per resolveScripting call
                 if (!deviceStateCache.has(device.name)) {
                     await getDeviceState(device._id);
+                    await logDeviceState(device._id);
                     deviceStateCache.set(device.name, true);
                 }
                 const resolvedValue = resolvePropertyPath(device, propertyPath);
