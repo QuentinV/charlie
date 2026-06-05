@@ -153,3 +153,5 @@ demo
 nodejs-apis/recordings
 python-apis/qwen_models
 llm/models
+
+asr
