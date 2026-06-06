@@ -10,6 +10,7 @@ import { DevicesDiscoveryPage } from './pages/DevicesDiscovery';
 import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
 import { AiPage } from './pages/AiPage';
+import { DashboardPage } from './pages/Dashboard';
 import { useUnit } from 'effector-react';
 import { ActivitiesPage } from './pages/Activities';
 import { EchoPage } from './pages/Echo';
@@ -80,6 +81,10 @@ export default function App() {
                                         path="/echos"
                                         element={<EchoPage />}
                                     />{' '}
+                                    <Route
+                                        path="/dashboard"
+                                        element={<DashboardPage />}
+                                    />
                                     <Route
                                         path="/musics"
                                         element={<MusicsPage />}

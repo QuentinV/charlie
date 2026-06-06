@@ -35,6 +35,7 @@ export const Menu = () => {
     const echosMenu = useSetting('echos.menu.enabled', true);
 
     const navItems = [{ label: 'Home', route: '/' }];
+    navItems.push({ label: 'Dashboard', route: '/dashboard' });
     enableAddRoutine &&
         navItems.push({ label: 'Routines', route: '/routines' });
     devicesDiscovery &&
