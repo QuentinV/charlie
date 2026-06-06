@@ -15,8 +15,15 @@ void setup() {
     cfg.I2S_SPK_LRC = GPIO_NUM_4;
     cfg.I2S_SPK_BCLK = GPIO_NUM_5;
     cfg.I2S_SPK_DIN = GPIO_NUM_6;
-    cfg.screenEnabled = true;
+    cfg.OLED_SDA = GPIO_NUM_1;
+    cfg.OLED_SCL = GPIO_NUM_2;
+    cfg.feedbackScreenEnabled = true;
+    cfg.displayScreenTime = true;
     cfg.WAKE_UP_WORD_ACCURACY = 0.65f;
+
+    cfg.displays = { 
+        { 128, 32, 90, 0 }
+    };
 
     delay(2000);
     assistant = new ESP32HomeAssistant(cfg);

@@ -107,6 +107,9 @@ TORRENT_DELUGE_HOST=                    # optional
 TORRENT_DELUGE_PASSWORD=                # optional
 
 ECHO_CONTINOUS_AUDIO_TEST=true          # optional
+
+ASR_MODEL_SIZE=large                    # optional: large | small
+ASR_MODEL_PATH=./asr/models             # optional
 ```
 
 ### 🎤 ASR

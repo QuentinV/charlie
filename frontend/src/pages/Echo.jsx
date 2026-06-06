@@ -1,8 +1,9 @@
-import { Box, Link, MenuItem, Select, Typography } from '@mui/material';
+import { Box, Link, MenuItem, Paper, Select, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { EchoSettings } from '../components/EchoSettings';
 import { api } from '../api/charlie';
 import { EchoChangelogs } from '../components/EchoChangelogs';
+import { EchoScreenSetting } from '../components/EchoScreenSetting';
 
 export const EchoPage = () => {
     const [selectedEcho, setSelectedEcho] = useState('');
@@ -44,16 +45,21 @@ export const EchoPage = () => {
                     </Select>
                 </Box>
             )}
-            {!!selectedEcho && <EchoSettings ip={selectedEcho} />}
+            {!!selectedEcho && (
+                <Paper elevation={3} sx={{ p: 3 }}>
+                    <EchoSettings ip={selectedEcho} />
+                    <EchoScreenSetting ip={selectedEcho} />
+                </Paper>
+            )}
             {!!changelogs?.length && (
-                <Box>
-                    <Typography variant="h6" sx={{ marginTop: 2 }}>
-                        Available versions
-                    </Typography>
-                    <Box sx={{ overflow: 'auto', maxHeight: '300px' }}>
-                        <EchoChangelogs data={changelogs} />
+                <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
+                    <Box>
+                        <Typography variant="h6">Available versions</Typography>
+                        <Box sx={{ overflow: 'auto', maxHeight: '300px' }}>
+                            <EchoChangelogs data={changelogs} />
+                        </Box>
                     </Box>
-                </Box>
+                </Paper>
             )}
         </Box>
     );

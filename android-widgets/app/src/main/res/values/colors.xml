@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#1976D2</color>
+    <color name="primary_dark">#1565C0</color>
+    <color name="accent">#FF9800</color>
+    <color name="widget_background">#FFFFFF</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="sensor_on">#FFEB3B</color>
+    <color name="sensor_off">#F44336</color>
+    <color name="divider">#E0E0E0</color>
+</resources>

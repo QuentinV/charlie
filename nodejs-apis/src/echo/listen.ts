@@ -3,6 +3,10 @@ import { stt } from './stt';
 import { tts } from '../ai/tts';
 import { ask } from '../ai/flow';
 import { logEcho } from './logs';
+import {
+    clearScreenUpdatesForIp,
+    startScreenUpdatesForIp,
+} from './screensUpdates';
 
 const VERIFY_TEXT = ['charlie, ', 'charlie ', 'charlie. '];
 
@@ -45,7 +49,7 @@ function sendPCMInChunks(ws, buffer, chunkSize = 8192) {
         const chunk = buffer.slice(i, i + chunkSize);
         ws.send(chunk, { binary: true });
     }
-    ws.send('playAudio');
+    ws.send(JSON.stringify({ c: 'playAudio' }));
 }
 
 function verify(text: string) {
@@ -66,6 +70,7 @@ export function setupEchoListen() {
         const log = (message: string) => logEcho(ip, message);
         connectedEchos[ip] = ws;
         log('Device connected');
+        startScreenUpdatesForIp(ip);
 
         //ws.on('ping', () => {
         //    log('ping');
@@ -75,10 +80,13 @@ export function setupEchoListen() {
         ws.on('error', (err) => {
             log('WebSocket error:' + err.message);
             delete connectedEchos[ip];
+            clearScreenUpdatesForIp(ip);
         });
 
         ws.on('close', () => {
+            log('connection closed');
             delete connectedEchos[ip];
+            clearScreenUpdatesForIp(ip);
         });
 
         ws.on('message', async (msg, isBinary) => {
@@ -118,7 +126,9 @@ export function setupEchoListen() {
                                       ? `Pas possible`
                                       : 'Ok';
 
-                            ws.send(shortText);
+                            ws.send(
+                                JSON.stringify({ c: 'feedback', v: shortText })
+                            );
 
                             const longText =
                                 typeof result === 'string'

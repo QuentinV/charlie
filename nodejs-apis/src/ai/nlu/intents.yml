@@ -43,7 +43,7 @@ intents:
 
     turnOffDevice:
         starts:
-            - éteins
+            - étein
             - coupe
             - désactive
             - ferme

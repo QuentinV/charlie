@@ -1,4 +1,4 @@
-import { Button, Switch, Typography } from '@mui/material';
+import { Box, Button, Switch, Typography } from '@mui/material';
 import React, { useState } from 'react';
 import { api } from '../../api/charlie';
 import { DeviceType } from './constants';
@@ -25,19 +25,19 @@ export const DeviceToggle = ({
         setLoading(false);
     };
 
-    return (
-        <>
-            {type === DeviceType.sensor ? (
-                <Typography
-                    sx={{
-                        marginRight: '20px',
-                        textAlign: 'center',
-                        color: power === 'on' ? 'yellow' : 'red',
-                    }}
-                >
-                    {level ?? power}
-                </Typography>
-            ) : type === DeviceType.button ? (
+    const renderLevel = () => (
+        <Typography sx={{ color: power === 'on' ? 'yellow' : 'red' }}>
+            {level ?? power}
+        </Typography>
+    );
+
+    const render = () => {
+        if (type === DeviceType.sensor) {
+            return <Box sx={{ marginRight: '20px' }}>{renderLevel()}</Box>;
+        }
+
+        if (type === DeviceType.button) {
+            return (
                 <Button
                     endIcon={<ToggleOffIcon />}
                     size="small"
@@ -47,14 +47,31 @@ export const DeviceToggle = ({
                 >
                     Toggle
                 </Button>
-            ) : (
+            );
+        }
+
+        return (
+            <>
+                {level !== undefined && renderLevel()}
                 <Switch
                     checked={power === 'on'}
                     onChange={toggleState}
                     color="primary"
                     disabled={loading}
                 />
-            )}
-        </>
+            </>
+        );
+    };
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'end',
+            }}
+        >
+            {render()}
+        </Box>
     );
 };

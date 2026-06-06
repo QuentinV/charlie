@@ -65,7 +65,7 @@ export const EchoSettings = ({ ip }) => {
                 <br />
                 Echo led should be Cyan{' '}
             </Button>
-            <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
+            <Paper elevation={1} sx={{ p: 3, my: 2 }}>
                 <Stack spacing={4}>
                     <TextField
                         label="Server ip"

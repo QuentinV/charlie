@@ -35,6 +35,7 @@ export const Menu = () => {
     const echosMenu = useSetting('echos.menu.enabled', true);
 
     const navItems = [{ label: 'Home', route: '/' }];
+    navItems.push({ label: 'Dashboard', route: '/dashboard' });
     enableAddRoutine &&
         navItems.push({ label: 'Routines', route: '/routines' });
     devicesDiscovery &&
@@ -72,8 +73,8 @@ export const Menu = () => {
                             onClick={() => navigate('/')}
                         >
                             <img
-                                src="/dark_icon.png"
-                                width="30"
+                                src="/dark_icon_short.png"
+                                width="35"
                                 style={{ marginRight: '10px' }}
                             />
                             Charlie

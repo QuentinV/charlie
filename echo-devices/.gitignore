@@ -9,3 +9,5 @@
 !.pio/build/echo-zero/firmware.bin
 !.pio/build/echo-zero-screen
 !.pio/build/echo-zero-screen/firmware.bin
+!.pio/build/echo-dashboard
+!.pio/build/echo-dashboard/firmware.bin
