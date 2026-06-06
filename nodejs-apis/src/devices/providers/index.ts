@@ -8,6 +8,7 @@ import default_custom from './default_custom';
 import shelly from './shelly';
 import custom_gate from './custom_gate';
 import custom_relays from './custom_relays';
+import tizen_smart_tv from './tizen_smart_tv';
 
 export default {
     ikea,
@@ -20,4 +21,5 @@ export default {
     shelly,
     custom_gate,
     custom_relays,
+    tizen_smart_tv,
 };
