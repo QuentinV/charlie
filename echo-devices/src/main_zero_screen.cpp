@@ -18,6 +18,7 @@ void setup() {
     cfg.OLED_SDA = GPIO_NUM_1;
     cfg.OLED_SCL = GPIO_NUM_2;
     cfg.feedbackScreenEnabled = true;
+    cfg.displayScreenTime = true;
     cfg.WAKE_UP_WORD_ACCURACY = 0.65f;
 
     cfg.displays = { 
