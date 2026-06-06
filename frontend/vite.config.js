@@ -20,10 +20,6 @@ export default defineConfig({
         host: true,
         port: 3000,
         allowedHosts: true,
-        /*https: {
-            key: fs.readFileSync('../certs/private.pem'),
-            cert: fs.readFileSync('../certs/public.pem'),
-        },*/
         proxy: {
             '/api': {
                 target: apihost,
