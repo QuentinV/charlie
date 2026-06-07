@@ -60,6 +60,21 @@ export default function SettingsPage() {
                 >
                     Restart server
                 </Button>
+                <Button
+                    sx={{ mb: 1, ml: 2 }}
+                    onClick={() =>
+                        api('notifications', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                type: 'push',
+                                title: 'TEST',
+                                body: 'This is a test',
+                            }),
+                        })
+                    }
+                >
+                    Test push notification
+                </Button>
                 <Form
                     schema={schemas}
                     validator={validator}
