@@ -4,6 +4,7 @@ import { Routine, TriggerKind } from '../types';
 import { log } from '../manager/services/activities';
 import { ask } from '../ai/flow';
 import { sendPushNotifcation } from '../core/notifications';
+import { formatDateTime } from '../core/formatDate';
 
 const cache: { [key: string]: any[] } = {};
 
@@ -20,7 +21,7 @@ export async function execRoutine(r: Routine): Promise<ExecRoutineResult> {
     const lastRun = new Date();
     sendPushNotifcation({
         title: 'Routines',
-        body: `${r.name} has started at ${lastRun.toLocaleTimeString()}`,
+        body: `${r.name} has started at ${formatDateTime(lastRun)}`,
     });
     for (let i = 0; i < r.actions.length; ++i) {
         try {
@@ -40,7 +41,7 @@ export async function execRoutine(r: Routine): Promise<ExecRoutineResult> {
     );
     sendPushNotifcation({
         title: 'Routines',
-        body: `${r.name} has ended ${new Date().toLocaleTimeString()}`,
+        body: `${r.name} has ended ${formatDateTime(new Date())}`,
     });
     return { lastRun };
 }
