@@ -6,7 +6,7 @@ import { NotFoundPage } from './pages/NotFound';
 import { Box, CircularProgress, ThemeProvider } from '@mui/material';
 import { Menu } from './components/Menu';
 import { Footer } from './components/Footer';
-import { DevicesDiscoveryPage } from './pages/DevicesDiscovery';
+import { DiscoveryPage } from './pages/Discovery';
 import { ProvidersPage } from './pages/Providers';
 import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
@@ -59,7 +59,7 @@ export default function App() {
                                     <Route path="/" element={<HomePage />} />
                                     <Route
                                         path="/discovery"
-                                        element={<DevicesDiscoveryPage />}
+                                        element={<DiscoveryPage />}
                                     />
                                     <Route
                                         path="/room/:id"
