@@ -7,6 +7,7 @@ import { Box, CircularProgress, ThemeProvider } from '@mui/material';
 import { Menu } from './components/Menu';
 import { Footer } from './components/Footer';
 import { DevicesDiscoveryPage } from './pages/DevicesDiscovery';
+import { ProvidersPage } from './pages/Providers';
 import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
 import { AiPage } from './pages/AiPage';
@@ -92,6 +93,10 @@ export default function App() {
                                     <Route
                                         path="/settings"
                                         element={<SettingsPage />}
+                                    />
+                                    <Route
+                                        path="/providers"
+                                        element={<ProvidersPage />}
                                     />
                                     <Route
                                         path="*"

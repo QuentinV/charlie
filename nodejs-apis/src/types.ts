@@ -79,6 +79,7 @@ export enum DeviceTypes {
     sprinkler = 'sprinkler',
     tv = 'tv',
     sensor = 'sensor',
+    thermostat = 'thermostat',
     button = 'button',
     unknown = 'unknown',
 }
@@ -90,10 +91,13 @@ export interface Room {
     devices?: string[];
 }
 
+export type ProviderType = 'gateway' | 'direct' | 'cloud';
+
 export interface Provider {
     _id?: string;
     name: string;
     codesource: string;
+    type?: ProviderType;
     mac?: string;
     host?: string;
     user?: string;
@@ -123,9 +127,22 @@ export interface ProviderApiMetaInfo {
     provider: Provider;
 }
 
+export interface DiscoveredDevice {
+    name: string;
+    type: string;
+    externalId?: string;
+    mac?: string;
+    host?: string;
+}
+
+export interface DiscoveryResult {
+    devices: DiscoveredDevice[];
+}
+
 export interface ProviderApi {
     init?: (provider: Provider) => Promise<boolean>;
-    discover?: (provider: Provider) => Promise<object[]>;
+    discover?: (provider: Provider) => Promise<DiscoveryResult>;
+    publicDiscover?: () => Promise<DiscoveryResult>;
     changeDeviceState?: (
         meta: ProviderApiMetaInfo,
         params: DeviceState

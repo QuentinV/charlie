@@ -1,5 +1,9 @@
 import Bravia from 'bravia';
-import { ProviderFunctionDef, ProvidersApis } from '../../types';
+import {
+    ProviderFunctionDef,
+    ProvidersApis,
+    DiscoveryResult,
+} from '../../types';
 import { NotFoundError } from '../../errors';
 
 interface ExtendedProviderFunctionDef extends ProviderFunctionDef {
@@ -88,7 +92,17 @@ function getClient({ host, password }: { host?: string; password?: string }) {
 
 const apis: ProvidersApis = {
     api: {
-        discover: async () => Bravia.discover(5000),
+        publicDiscover: async (): Promise<DiscoveryResult> => {
+            const result = await Bravia.discover(5000);
+            return {
+                devices: ((result as any[]) ?? []).map((tv) => ({
+                    name: tv.friendlyName ?? tv.id,
+                    type: 'tv',
+                    host: tv.host,
+                    mac: tv.mac,
+                })),
+            };
+        },
         changeDeviceState: async ({ provider }, { power }) => {
             console.log('tv change device state', power);
             try {

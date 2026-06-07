@@ -1,5 +1,10 @@
 import { NotFoundError } from '../../errors';
-import { ProviderFunctionDef, ProvidersApis } from '../../types';
+import {
+    ProviderFunctionDef,
+    ProvidersApis,
+    DiscoveryResult,
+} from '../../types';
+import { Bonjour } from 'bonjour-service';
 
 interface ProviderFunctionDefExec extends ProviderFunctionDef {
     exec: (url: string, params: any) => Promise<any>;
@@ -23,6 +28,32 @@ const functions: ProviderFunctionDefExec[] = [
             ).json(),
     },
 ];
+
+async function discoverNanoleafDevices(): Promise<DiscoveryResult> {
+    return new Promise((resolve) => {
+        const bonjour = new Bonjour();
+        const devices: DiscoveryResult['devices'] = [];
+        const browser = bonjour.find({ type: 'nanoleaf', protocol: 'tcp' });
+
+        browser.on('up', (service) => {
+            const host = service.host ?? service.referer?.address;
+            if (host) {
+                devices.push({
+                    name: service.name,
+                    type: 'light',
+                    host: host as string,
+                    mac: service.txt?.mac as string | undefined,
+                });
+            }
+        });
+
+        setTimeout(() => {
+            browser.stop();
+            bonjour.destroy();
+            resolve({ devices });
+        }, 5000);
+    });
+}
 
 const apis: ProvidersApis = {
     api: {
@@ -55,10 +86,12 @@ const apis: ProvidersApis = {
         },
         getFunctions: async () => functions,
         callFunction: async ({ provider }, { name, params }) => {
-            if (!functions[name]) throw new NotFoundError();
+            const func = functions.find((f) => f.name === name);
+            if (!func) throw new NotFoundError();
             const url = `http://${provider.host}:16021/api/v1/${provider.password}`;
-            return functions[name].exec(url, params);
+            return func.exec(url, params);
         },
+        publicDiscover: discoverNanoleafDevices,
     },
 };
 

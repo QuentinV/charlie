@@ -39,7 +39,8 @@ export const Menu = () => {
     enableAddRoutine &&
         navItems.push({ label: 'Routines', route: '/routines' });
     devicesDiscovery &&
-        navItems.push({ label: 'Discover', route: '/discover' });
+        navItems.push({ label: 'Discover', route: '/discovery' });
+    navItems.push({ label: 'Providers', route: '/providers' });
     showAiAsk && navItems.push({ label: 'AI', route: '/ai' });
     useSetting('musics.show') &&
         navItems.push({ label: 'Musics', route: '/musics' });

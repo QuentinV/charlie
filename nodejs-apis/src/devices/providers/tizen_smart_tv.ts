@@ -3,7 +3,11 @@ import {
     Keys,
     getAwakeSamsungDevices,
 } from 'samsung-tv-remote';
-import { ProviderFunctionDef, ProvidersApis } from '../../types';
+import {
+    DiscoveryResult,
+    ProviderFunctionDef,
+    ProvidersApis,
+} from '../../types';
 import { NotFoundError } from '../../errors';
 
 interface ExtendedProviderFunctionDef extends ProviderFunctionDef {
@@ -74,17 +78,20 @@ async function isTvAwake(host: string, mac?: string): Promise<boolean> {
 
 const apis: ProvidersApis = {
     api: {
-        discover: async () => {
+        publicDiscover: async (): Promise<DiscoveryResult> => {
             try {
                 const devices = await getAwakeSamsungDevices();
-                return devices.map((device) => ({
-                    host: device.ip,
-                    name: device.friendlyName || `Samsung TV ${device.ip}`,
-                    mac: device.mac,
-                }));
+                return {
+                    devices: devices.map((device) => ({
+                        host: device.ip,
+                        name: device.friendlyName || `Samsung TV ${device.ip}`,
+                        mac: device.mac,
+                        type: 'direct',
+                    })),
+                };
             } catch (e) {
                 console.log('Failed to discover Samsung TVs:', e);
-                return [];
+                return { devices: [] };
             }
         },
 

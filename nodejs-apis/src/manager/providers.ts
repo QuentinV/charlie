@@ -2,8 +2,12 @@ import { cs } from '../core/db';
 import { getMacAddress } from '../core/ipscan';
 import { RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
+import defaultProviders from '../devices/providers';
 
 const routes: RestApis = {
+    'providers/codesources': {
+        get: async () => Object.keys(defaultProviders),
+    },
     'providers/:id': {
         get: async () => {},
         delete: async () => {},
@@ -20,6 +24,7 @@ const routes: RestApis = {
                 password,
                 codesource,
                 multidevices,
+                type,
             } = body;
             const uuid = _id || uuidV4();
 
@@ -44,6 +49,7 @@ const routes: RestApis = {
                         password,
                         codesource,
                         multidevices,
+                        type: type || 'gateway',
                     },
                 },
                 { upsert: true }
