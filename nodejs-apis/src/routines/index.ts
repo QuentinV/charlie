@@ -3,6 +3,7 @@ import cron from 'node-cron';
 import { Routine, TriggerKind } from '../types';
 import { log } from '../manager/services/activities';
 import { ask } from '../ai/flow';
+import { sendPushNotifcation } from '../core/notifications';
 
 const cache: { [key: string]: any[] } = {};
 
@@ -17,6 +18,10 @@ export async function stopRoutine(rid: string) {
 
 export async function execRoutine(r: Routine): Promise<ExecRoutineResult> {
     const lastRun = new Date();
+    sendPushNotifcation({
+        title: 'Routines',
+        body: `${r.name} has started at ${lastRun.toLocaleTimeString()}`,
+    });
     for (let i = 0; i < r.actions.length; ++i) {
         try {
             const action = r.actions[i];
@@ -33,6 +38,10 @@ export async function execRoutine(r: Routine): Promise<ExecRoutineResult> {
             },
         }
     );
+    sendPushNotifcation({
+        title: 'Routines',
+        body: `${r.name} has ended ${new Date().toLocaleTimeString()}`,
+    });
     return { lastRun };
 }
 
