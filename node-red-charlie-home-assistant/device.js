@@ -1,5 +1,6 @@
 const { conf, isReady, apiUrl, mqttHost } = require('./shared');
 const mqtt = require('mqtt');
+const http = require('http');
 
 module.exports = function (RED) {
     function MyNode(config) {
@@ -14,24 +15,63 @@ module.exports = function (RED) {
 
             await isReady();
 
-            // register device
-            await fetch(`${apiUrl()}/api/devices`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
+            await new Promise((resolve, reject) => {
+                const payload = JSON.stringify({
                     name: config.name,
                     externalId: config.externalId,
                     provider: conf.provider.id,
                     type: config.deviceType,
-                }),
+                });
+                const req = http.request(
+                    new URL(`${apiUrl()}/api/devices`),
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Content-Length': Buffer.byteLength(payload),
+                        },
+                    },
+                    (res) => {
+                        let data = '';
+                        res.on('data', (chunk) => (data += chunk));
+                        res.on('end', () => {
+                            if (res.statusCode >= 200 && res.statusCode < 300) {
+                                resolve(data);
+                            } else {
+                                reject(
+                                    new Error(`HTTP ${res.statusCode}: ${data}`)
+                                );
+                            }
+                        });
+                    }
+                );
+
+                req.on('error', reject);
+                req.write(payload);
+                req.end();
             });
 
             client = mqtt.connect(mqttHost());
 
             client.on('connect', () => {
+                node.log(`MQTT connected for device ${config.externalId}`);
                 client.subscribe(`device/${config.externalId}/state`);
+            });
+
+            client.on('error', (err) => {
+                node.warn(
+                    `MQTT error for device ${config.externalId}: ${err.message}`
+                );
+            });
+
+            client.on('close', () => {
+                node.log(
+                    `MQTT connection closed for device ${config.externalId}`
+                );
+            });
+
+            client.on('reconnect', () => {
+                node.log(`MQTT reconnecting for device ${config.externalId}`);
             });
 
             client.on('message', (topic, payload) => {

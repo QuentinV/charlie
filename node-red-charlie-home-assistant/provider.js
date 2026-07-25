@@ -1,4 +1,6 @@
 const { conf, apiUrl } = require('./shared');
+const http = require('http');
+const https = require('https');
 
 module.exports = function (RED) {
     function MyNode(config) {
@@ -12,22 +14,47 @@ module.exports = function (RED) {
         (async () => {
             if (!conf?.provider?.charlieHost) return;
             try {
-                const res = await fetch(`${apiUrl()}/api/providers`, {
+                const targetUrl = new URL(`${apiUrl()}/api/providers`);
+                const postData = JSON.stringify({
+                    _id: config.providerId,
+                    name: config.name,
+                    codesource: 'default_custom',
+                });
+
+                const options = {
+                    hostname: targetUrl.hostname,
+                    port:
+                        targetUrl.port ||
+                        (targetUrl.protocol === 'https:' ? 443 : 80),
+                    path: targetUrl.pathname,
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(postData),
                     },
-                    body: JSON.stringify({
-                        _id: config.providerId,
-                        name: config.name,
-                        codesource: 'default_custom',
-                    }),
+                };
+
+                const lib = targetUrl.protocol === 'https:' ? https : http;
+
+                const json = await new Promise((resolve, reject) => {
+                    const req = lib.request(options, (res) => {
+                        let data = '';
+                        res.on('data', (chunk) => (data += chunk));
+                        res.on('end', () => {
+                            try {
+                                resolve(JSON.parse(data));
+                            } catch (err) {
+                                reject(err);
+                            }
+                        });
+                    });
+
+                    req.on('error', reject);
+                    req.write(postData);
+                    req.end();
                 });
 
-                const json = await res.json();
-
                 conf.provider.id = json.uuid;
-
                 conf.ready = true;
             } catch (e) {
                 node.warn('Charlie provider server host not configured');
