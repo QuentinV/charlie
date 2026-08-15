@@ -10,9 +10,9 @@
     "url": "git+https://github.com/QuentinV/charlie.git"
   },
   "author": "Quentin Vanhauteghem",
-  "devDependencies": {
+  "dependencies": {
     "express": "^5.1.0"
   },
-  "dependencies": {},
+  "devDependencies": {},
   "type": "module"
 }
