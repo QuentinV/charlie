@@ -3,9 +3,17 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { theme } from './theme';
 import { HomePage } from './pages/Home';
 import { NotFoundPage } from './pages/NotFound';
-import { Box, CircularProgress, ThemeProvider } from '@mui/material';
+import {
+    Box,
+    CircularProgress,
+    ThemeProvider,
+    CssBaseline,
+    useMediaQuery,
+    useTheme,
+} from '@mui/material';
 import { Menu } from './components/Menu';
 import { Footer } from './components/Footer';
+import { BottomNav } from './components/BottomNav';
 import { DiscoveryPage } from './pages/Discovery';
 import { ProvidersPage } from './pages/Providers';
 import { RoutinesPage } from './pages/Routines';
@@ -29,99 +37,108 @@ export default function App() {
 
     return (
         <ThemeProvider theme={theme}>
+            <CssBaseline />
             <Router>
-                {loadingSettings && <CircularProgress aria-label="Loading…" />}
-                {!loadingSettings && (
+                {loadingSettings && (
                     <Box
                         sx={{
-                            flexGrow: 1,
+                            height: '100vh',
                             display: 'flex',
-                            flexDirection: 'column',
-                            height: '100%',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                         }}
                     >
-                        <Box sx={{ flexGrow: 0 }}>
-                            <Menu />
-                        </Box>
-                        <Box
-                            sx={{
-                                p: 1,
-                                paddingTop: 1,
-                                flexGrow: 1,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                overflow: 'auto',
-                            }}
-                            className="overlay"
-                        >
-                            <Box sx={{ height: '100%' }}>
-                                <Routes>
-                                    <Route path="/" element={<HomePage />} />
-                                    <Route
-                                        path="/discovery"
-                                        element={<DiscoveryPage />}
-                                    />
-                                    <Route
-                                        path="/room/:id"
-                                        element={<RoomPage />}
-                                    />
-                                    <Route
-                                        path="/routines"
-                                        element={<RoutinesPage />}
-                                    />
-                                    <Route
-                                        path="/routine/:id"
-                                        element={<RoutineEditPage />}
-                                    />
-                                    <Route path="/ai" element={<AiPage />} />
-                                    <Route
-                                        path="/activities"
-                                        element={<ActivitiesPage />}
-                                    />
-                                    <Route
-                                        path="/echos"
-                                        element={<EchoPage />}
-                                    />{' '}
-                                    <Route
-                                        path="/dashboard"
-                                        element={<DashboardPage />}
-                                    />
-                                    <Route
-                                        path="/musics"
-                                        element={<MusicsPage />}
-                                    />
-                                    <Route
-                                        path="/settings"
-                                        element={<SettingsPage />}
-                                    />
-                                    <Route
-                                        path="/providers"
-                                        element={<ProvidersPage />}
-                                    />
-                                    <Route
-                                        path="*"
-                                        element={<NotFoundPage />}
-                                    />
-                                </Routes>
-                            </Box>
-                        </Box>
-                        {showAiAsk && (
-                            <Box
-                                sx={{
-                                    flexGrow: 0,
-                                    marginTop: 'auto',
-                                    height: '50px',
-                                    color: 'white',
-                                    display: 'flex',
-                                    width: '100%',
-                                }}
-                            >
-                                <Footer />
-                            </Box>
-                        )}
+                        <CircularProgress
+                            aria-label="Loading..."
+                            size={48}
+                            thickness={4}
+                        />
                     </Box>
                 )}
+                {!loadingSettings && <AppLayout showAiAsk={showAiAsk} />}
             </Router>
         </ThemeProvider>
+    );
+}
+
+/** @param {{ showAiAsk?: boolean }} props */
+function AppLayout({ showAiAsk }) {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+    return (
+        <Box
+            sx={{
+                flexGrow: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                minHeight: 0,
+            }}
+        >
+            <Box sx={{ flexGrow: 0 }}>
+                <Menu />
+            </Box>
+            <Box
+                sx={{
+                    px: { xs: 1.5, sm: 2, md: 3 },
+                    py: { xs: 1.5, sm: 2 },
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'auto',
+                    minHeight: 0,
+                    minWidth: 0,
+                    maxWidth: { md: '1200px', lg: '1400px' },
+                    mx: 'auto',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    pb: { xs: 2, sm: 2, md: 3 },
+                }}
+                className="overlay smooth-scroll"
+            >
+                <Box sx={{ flexGrow: 1, minHeight: 0 }} className="page-enter">
+                    <Routes>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/discovery" element={<DiscoveryPage />} />
+                        <Route path="/room/:id" element={<RoomPage />} />
+                        <Route path="/routines" element={<RoutinesPage />} />
+                        <Route
+                            path="/routine/:id"
+                            element={<RoutineEditPage />}
+                        />
+                        <Route path="/ai" element={<AiPage />} />
+                        <Route
+                            path="/activities"
+                            element={<ActivitiesPage />}
+                        />
+                        <Route path="/echos" element={<EchoPage />} />
+                        <Route path="/dashboard" element={<DashboardPage />} />
+                        <Route path="/musics" element={<MusicsPage />} />
+                        <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="/providers" element={<ProvidersPage />} />
+                        <Route path="*" element={<NotFoundPage />} />
+                    </Routes>
+                </Box>
+            </Box>
+            {showAiAsk && (
+                <Box
+                    sx={{
+                        flexGrow: 0,
+                        marginTop: 'auto',
+                        display: 'flex',
+                        width: '100%',
+                        px: { xs: 2, sm: 3 },
+                        pb: { xs: 1, sm: 2 },
+                        boxSizing: 'border-box',
+                    }}
+                >
+                    <Box sx={{ width: '100%', maxWidth: 1400, mx: 'auto' }}>
+                        <Footer />
+                    </Box>
+                </Box>
+            )}
+            {isMobile && <BottomNav />}
+        </Box>
     );
 }

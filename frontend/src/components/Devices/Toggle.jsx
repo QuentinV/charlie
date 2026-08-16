@@ -10,6 +10,7 @@ export const DeviceToggle = ({
     power,
     level,
     onStateChange,
+    compact = false,
 }) => {
     const [loading, setLoading] = useState(false);
 
@@ -26,14 +27,24 @@ export const DeviceToggle = ({
     };
 
     const renderLevel = () => (
-        <Typography sx={{ color: power === 'on' ? 'yellow' : 'red' }}>
+        <Typography
+            variant={compact ? 'caption' : 'body2'}
+            sx={{
+                color: power === 'on' ? 'primary.main' : 'error.main',
+                fontWeight: 600,
+            }}
+        >
             {level ?? power}
         </Typography>
     );
 
     const render = () => {
         if (type === DeviceType.sensor) {
-            return <Box sx={{ marginRight: '20px' }}>{renderLevel()}</Box>;
+            return (
+                <Box sx={{ marginRight: compact ? '12px' : '20px' }}>
+                    {renderLevel()}
+                </Box>
+            );
         }
 
         if (type === DeviceType.button) {
@@ -44,6 +55,10 @@ export const DeviceToggle = ({
                     variant="contained"
                     onClick={toggleState}
                     loading={loading}
+                    sx={{
+                        px: compact ? 1.5 : 2,
+                        py: compact ? 0.5 : 1,
+                    }}
                 >
                     Toggle
                 </Button>
@@ -58,6 +73,7 @@ export const DeviceToggle = ({
                     onChange={toggleState}
                     color="primary"
                     disabled={loading}
+                    size={compact ? 'small' : 'medium'}
                 />
             </>
         );

@@ -1,64 +1,74 @@
 import React, { useEffect, useState } from 'react';
-import {
-    Box,
-    List,
-    ListItem,
-    ListItemText,
-    Divider,
-    Chip,
-    ListItemIcon,
-} from '@mui/material';
+import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
 import FullScreenDialog from '../FullScreenDialog';
 import { ViewDevice } from './View';
-import { DeviceIcon } from '../DeviceIcon';
-import { DeviceToggle } from './Toggle';
+import { DeviceCard } from './Card';
 
-export const DevicesList = ({ devices }) => {
-    const [selected, setSelected] = useState(null);
-    const [devicesState, setDevicesState] = useState(devices);
+/**
+ * @param {{
+ *   devices: any[];
+ *   favoriteDeviceIds?: string[];
+ *   onToggleFavorite?: (device: any) => void;
+ * }} props
+ */
+export const DevicesList = ({
+    devices,
+    favoriteDeviceIds = [],
+    onToggleFavorite,
+}) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [selected, setSelected] = useState(/** @type {any} */ (null));
+    const [devicesState, setDevicesState] = useState(devices ?? []);
 
     useEffect(() => {
-        setDevicesState(devices);
+        setDevicesState(devices ?? []);
     }, [devices]);
+
+    /**
+     * @param {any} device
+     */
+    const handleStateChange = (device) => {
+        setDevicesState((prev) =>
+            prev.map((d) => (d._id === device._id ? device : d))
+        );
+    };
 
     return (
         <>
-            <List dense>
-                {devicesState.map((device, index) => (
-                    <Box key={device.name}>
-                        <ListItem>
-                            <ListItemIcon>
-                                <DeviceIcon type={device.type} />
-                            </ListItemIcon>
-                            <ListItemText
-                                primary={device.name}
-                                onClick={() => setSelected(device)}
-                                sx={{ cursor: 'pointer' }}
-                            />
-                            <ListItemText sx={{ maxWidth: '10rem' }}>
-                                <DeviceToggle
-                                    deviceId={device._id}
-                                    power={device.state?.power}
-                                    type={device.type}
-                                    level={device.state?.level}
-                                    onStateChange={(newState) => {
-                                        device.state = newState;
-                                        setDevicesState([...devices]);
-                                    }}
-                                />
-                            </ListItemText>
-                        </ListItem>
-                        {index < devices.length - 1 && <Divider />}
-                    </Box>
+            <Grid
+                container
+                spacing={isMobile ? 1 : { sm: 1.5, md: 2 }}
+                sx={{ width: '100%', m: 0, mt: 0 }}
+            >
+                {devicesState.map((device) => (
+                    <Grid
+                        key={device?._id ?? device?.name}
+                        size={isMobile ? { xs: 6 } : { sm: 6, md: 4, lg: 3 }}
+                        sx={{ pt: '0 !important', mt: 0 }}
+                    >
+                        <DeviceCard
+                            device={device}
+                            compact={isMobile}
+                            favorite={favoriteDeviceIds.includes(device?._id)}
+                            onToggleFavorite={onToggleFavorite}
+                            onSelect={(d) => {
+                                handleStateChange(d);
+                                setSelected(d);
+                            }}
+                        />
+                    </Grid>
                 ))}
-            </List>
+            </Grid>
             {!!selected && (
                 <FullScreenDialog
                     open={!!selected}
                     handleClose={() => setSelected(null)}
-                    title="Devices"
+                    title={selected?.name ?? 'Devices'}
                 >
-                    <ViewDevice deviceId={selected._id} />
+                    <Box sx={{ p: 2 }}>
+                        <ViewDevice deviceId={selected._id} />
+                    </Box>
                 </FullScreenDialog>
             )}
         </>

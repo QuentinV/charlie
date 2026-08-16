@@ -1,16 +1,18 @@
 import { Box, SpeedDial, SpeedDialAction, SpeedDialIcon } from '@mui/material';
 import React from 'react';
 
-export const SpeedDialAdd = ({ actions }) => {
+export const SpeedDialAdd = ({ actions = [] }) => {
     return (
         <Box
             sx={{
                 position: 'relative',
                 height: '3rem',
+                display: 'flex',
+                justifyContent: 'flex-end',
             }}
         >
             <SpeedDial
-                ariaLabel="SpeedDial basic example"
+                ariaLabel="Quick actions"
                 sx={{
                     position: 'absolute',
                     top: 0,
@@ -18,6 +20,9 @@ export const SpeedDialAdd = ({ actions }) => {
                 }}
                 icon={<SpeedDialIcon />}
                 direction="down"
+                FabProps={{
+                    size: 'medium',
+                }}
             >
                 {actions.map((action) => (
                     <SpeedDialAction
@@ -26,6 +31,7 @@ export const SpeedDialAdd = ({ actions }) => {
                         slotProps={{
                             tooltip: {
                                 title: action.name,
+                                placement: 'left',
                             },
                         }}
                         onClick={() => action.click?.()}
