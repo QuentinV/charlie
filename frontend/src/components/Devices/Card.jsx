@@ -8,6 +8,7 @@ import {
     useTheme,
 } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
+import BoltIcon from '@mui/icons-material/Bolt';
 import { DeviceIcon } from '../DeviceIcon';
 import { DeviceToggle } from './Toggle';
 import { DeviceType } from './constants';
@@ -43,11 +44,6 @@ export const DeviceCard = ({
     const theme = useTheme();
     const isOn = device?.state?.power === 'on';
     const color = TYPE_COLORS[device?.type] ?? theme.palette.text.secondary;
-    const rawState = device?.state?.level ?? device?.state?.power;
-    const stateValue =
-        typeof rawState === 'string'
-            ? rawState.charAt(0).toUpperCase() + rawState.slice(1)
-            : rawState;
 
     /** @type {React.MutableRefObject<boolean>} */
     const suppressClickRef = React.useRef(false);
@@ -112,7 +108,7 @@ export const DeviceCard = ({
                         flexShrink: 0,
                     }}
                 >
-                    <DeviceIcon type={device?.type} />
+                    <DeviceIcon type={device?.type} color={color} />
                 </Box>
 
                 {/* Right: name (line 1) + state & toggle (line 2) */}
@@ -167,18 +163,17 @@ export const DeviceCard = ({
                             minWidth: 0,
                         }}
                     >
-                        <Typography
-                            variant={compact ? 'caption' : 'body2'}
-                            noWrap
+                        <BoltIcon
                             sx={{
-                                color: isOn ? color : 'text.secondary',
-                                fontWeight: 500,
-                                flex: 1,
-                                minWidth: 0,
+                                fontSize: compact ? 16 : 18,
+                                color: isOn ? color : 'text.disabled',
+                                opacity: isOn ? 1 : 0.5,
+                                flexShrink: 0,
+                                filter: isOn
+                                    ? `drop-shadow(0 0 4px ${alpha(color, 0.6)})`
+                                    : 'none',
                             }}
-                        >
-                            {stateValue ?? '\u00A0'}
-                        </Typography>
+                        />
                         <Box sx={{ flexShrink: 0 }}>
                             <DeviceToggle
                                 deviceId={device?._id}
