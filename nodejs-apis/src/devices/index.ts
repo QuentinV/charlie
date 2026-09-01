@@ -17,7 +17,7 @@ import defaultProviders from './providers';
 
 type ProvidersApisByName = { [name: string]: ProvidersApis };
 
-type ProvidersDevicesApis = {
+export type ProvidersDevicesApis = {
     provider: Provider;
     api: ProviderApi;
 };

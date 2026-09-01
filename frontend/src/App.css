@@ -1,3 +1,8 @@
+/* ============================================================
+   CHARLIE — GLOBAL STYLES
+   Modern gold-on-black ambient design
+   ============================================================ */
+
 html,
 body,
 #root {
@@ -9,55 +14,132 @@ body,
 body {
     margin: 0;
     padding: 0;
-    background-color: #0d0d0d;
-    font-family: 'Roboto Condensed', 'Arial Narrow', sans-serif;
+    background-color: #0a0a0b;
+    background-image: radial-gradient(
+        ellipse at 50% -10%,
+        rgba(255, 215, 0, 0.12) 0%,
+        rgba(255, 215, 0, 0.04) 45%,
+        transparent 70%
+    );
+    font-family:
+        'Roboto Condensed', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     position: relative;
+    color: #f5f5dc;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
+/* ── Ambient gold aura ────────────────────────────────────
+   A subtle, breathing radial glow behind the app.   */
 body::before {
     content: '';
     position: fixed;
     top: 50%;
     left: 50%;
-    width: 150vw;
-    height: 150vw;
+    width: 120vmax;
+    height: 120vmax;
     transform: translate(-50%, -50%);
     border-radius: 50%;
     background: radial-gradient(
         circle,
-        rgba(255, 215, 0, 0.15) 40%,
+        rgba(255, 215, 0, 0.14) 0%,
+        rgba(255, 215, 0, 0.07) 35%,
         transparent 70%
     );
     box-shadow:
-        0 0 120px rgba(255, 215, 0, 0.3),
-        0 0 240px rgba(255, 215, 0, 0.2),
-        0 0 360px rgba(255, 215, 0, 0.1);
-    animation: pulse 12s ease-in-out infinite;
+        0 0 120px rgba(255, 215, 0, 0.2),
+        0 0 240px rgba(255, 215, 0, 0.12),
+        0 0 360px rgba(255, 215, 0, 0.06);
     z-index: 0;
     pointer-events: none;
+    animation: charliePulse 16s ease-in-out infinite;
 }
 
-@keyframes pulse {
+/* ── Secondary cool vignette for depth ──────────────── */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(
+        ellipse at 20% -10%,
+        rgba(255, 215, 0, 0.04) 0%,
+        transparent 50%
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+@keyframes charliePulse {
     0% {
+        opacity: 0.6;
         transform: translate(-50%, -50%) scale(1);
-        opacity: 0.7;
     }
     50% {
-        transform: translate(-50%, -50%) scale(1.4);
-        opacity: 0.3;
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.15);
     }
     100% {
+        opacity: 0.6;
         transform: translate(-50%, -50%) scale(1);
-        opacity: 0.7;
     }
 }
 
-#root {
-    height: 100%;
+/* ── Frosted overlay for page scroll container ─────── */
+.overlay {
+    background: rgba(10, 10, 11, 0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
-.overlay {
-    background: rgba(255, 255, 255, 0.2); /* soft white tint */
-    backdrop-filter: blur(8px); /* frosted glass effect */
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+/* ── Safe-area support (iPhone notch / bottom bar) ── */
+@supports (padding: env(safe-area-inset-bottom)) {
+    .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom) !important;
+    }
+    .safe-top {
+        padding-top: env(safe-area-inset-top) !important;
+    }
+}
+
+/* ── Utility: smooth scroll for inner containers ──── */
+.smooth-scroll {
+    scroll-behavior: smooth;
+}
+
+/* ── Global focus visibility (accessibility) ─────── */
+:focus-visible {
+    outline: 2px solid rgba(255, 215, 0, 0.7);
+    outline-offset: 2px;
+}
+
+/* ── Page transition helper ───────────────────────── */
+.page-enter {
+    animation: pageFade 0.25s ease;
+}
+
+@keyframes pageFade {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Device card glow when ON ─────────────────────── */
+.card-on {
+    border-color: rgba(255, 215, 0, 0.35) !important;
+    box-shadow:
+        0 0 0 1px rgba(255, 215, 0, 0.18),
+        0 8px 32px -8px rgba(255, 215, 0, 0.2) !important;
+}
+
+/* ── Prevent text selection on interactive tiles ─── */
+.no-select {
+    user-select: none;
+    -webkit-user-select: none;
 }

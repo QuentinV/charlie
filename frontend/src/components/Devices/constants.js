@@ -1,10 +1,11 @@
 export const DeviceType = {
     light: 'light',
     switch: 'switch',
-    button: 'button',
     shutter: 'shutter',
-    sensor: 'sensor',
     sprinkler: 'sprinkler',
+    tv: 'tv',
+    sensor: 'sensor',
     thermostat: 'thermostat',
-    other: 'other',
+    button: 'button',
+    unknown: 'unknown',
 };

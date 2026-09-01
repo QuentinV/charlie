@@ -1,4 +1,5 @@
-import { ProvidersApis } from '../../types';
+import { ProvidersApis, DiscoveryResult } from '../../types';
+import { Bonjour } from 'bonjour-service';
 
 async function getDeviceState({ host }: { host: string }) {
     const res = await fetch(`http://${host}/rpc/Switch.GetStatus?id=0`);
@@ -25,6 +26,32 @@ async function setDeviceState({
     return true;
 }
 
+async function discoverShellyDevices(): Promise<DiscoveryResult> {
+    return new Promise((resolve) => {
+        const bonjour = new Bonjour();
+        const devices: DiscoveryResult['devices'] = [];
+        const browser = bonjour.find({ type: 'shelly', protocol: 'tcp' });
+
+        browser.on('up', (service) => {
+            const host = service.host ?? service.referer?.address;
+            if (host) {
+                devices.push({
+                    name: service.name,
+                    type: 'switch',
+                    host: host as string,
+                    mac: service.txt?.mac as string | undefined,
+                });
+            }
+        });
+
+        setTimeout(() => {
+            browser.stop();
+            bonjour.destroy();
+            resolve({ devices });
+        }, 5000);
+    });
+}
+
 const apis: ProvidersApis = {
     api: {
         changeDeviceState: async ({ provider: { host } }, { power }) =>
@@ -36,6 +63,7 @@ const apis: ProvidersApis = {
                 additional: state,
             };
         },
+        publicDiscover: discoverShellyDevices,
     },
 };
 

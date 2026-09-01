@@ -14,7 +14,7 @@ const emailTransporter = createTransport({
     },
 });
 
-const subscriptions: PushSubscription[] = [];
+let subscriptions: PushSubscription[] = [];
 
 export function registerNotificationApi(app: any) {
     if (!hasConfig) {
@@ -30,7 +30,22 @@ export function registerNotificationApi(app: any) {
     // Save subscription
     app.post(`/api/notifications/subscribe`, (req: any, res: any) => {
         const subscription: PushSubscription = req.body;
-        subscriptions.push(subscription);
+
+        const exists = subscriptions.some(
+            (sub) => sub.endpoint === subscription.endpoint
+        );
+
+        if (!exists) {
+            subscriptions.push(subscription);
+            console.log(
+                `Successfully added new subscription. Total count: ${subscriptions.length}`
+            );
+        } else {
+            console.log(
+                'Subscription already exists, skipping duplicate addition.'
+            );
+        }
+
         res.status(201).json({});
     });
 
@@ -41,9 +56,26 @@ export function registerNotificationApi(app: any) {
 
         try {
             await Promise.all(
-                subscriptions.map((sub) =>
-                    webpush.sendNotification(sub, payload)
-                )
+                subscriptions.map(async (sub) => {
+                    try {
+                        await webpush.sendNotification(sub, payload);
+                    } catch (err: any) {
+                        // If the browser service provider says the subscription expired/unsubscribed (410 or 404)
+                        if (err.statusCode === 410 || err.statusCode === 404) {
+                            console.log(
+                                `Subscription expired or removed by browser vendor. Removing from server.`
+                            );
+                            subscriptions = subscriptions.filter(
+                                (s) => s.endpoint !== sub.endpoint
+                            );
+                        } else {
+                            console.error(
+                                `Failed to send notification to ${sub.endpoint}:`,
+                                err
+                            );
+                        }
+                    }
+                })
             );
             res.json({ success: true });
         } catch (err) {

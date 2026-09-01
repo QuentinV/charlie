@@ -4,29 +4,15 @@ import {
     changeDeviceState,
     getDeviceState,
     getProviderFunctions,
-    getProvidersApis,
     toggleDeviceState,
 } from '../devices';
+import { discoverDevices } from '../devices/discover';
 import { Device, RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
-import { manageDeviceRoom } from './services/rooms';
 
 const routes: RestApis = {
     'devices/discover': {
-        get: async () => {
-            const apis = await getProvidersApis();
-
-            const res = await Promise.allSettled(
-                apis.map(async (a) => {
-                    await a.api?.init?.(a.provider);
-                    return {
-                        provider: a.provider.name,
-                        data: await a.api?.discover?.(a.provider),
-                    };
-                })
-            );
-            return res.map((s: any) => s.value);
-        },
+        get: async () => discoverDevices(),
     },
     'devices/:id/functions': {
         get: {

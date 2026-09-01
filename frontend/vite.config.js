@@ -8,6 +8,31 @@ console.log(apihost);
 export default defineConfig({
     base: '/',
     plugins: [react()],
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    react: ['react', 'react-dom', 'react-router-dom'],
+                    mui: [
+                        '@mui/material',
+                        '@mui/icons-material',
+                        '@mui/lab',
+                        '@emotion/react',
+                        '@emotion/styled',
+                    ],
+                    charts: ['@mui/x-charts'],
+                    three: ['three', 'gaussian-splat-renderer-for-lam'],
+                    state: ['effector', 'effector-react'],
+                    forms: [
+                        '@rjsf/core',
+                        '@rjsf/mui',
+                        '@rjsf/utils',
+                        '@rjsf/validator-ajv8',
+                    ],
+                },
+            },
+        },
+    },
     server: {
         host: true,
         port: 3000,
