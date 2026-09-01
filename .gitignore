@@ -153,3 +153,4 @@ python-apis/qwen_models
 llm/models
 asr
 .clinerules
+IDEA_NLU.md
