@@ -2,6 +2,7 @@ import { cs } from '../core/db';
 import {
     callDeviceFunction,
     changeDeviceState,
+    getDeviceCapabilities,
     getDeviceState,
     getProviderFunctions,
     toggleDeviceState,
@@ -13,6 +14,13 @@ import { v4 as uuidV4 } from 'uuid';
 const routes: RestApis = {
     'devices/discover': {
         get: async () => discoverDevices(),
+    },
+    'devices/:id/capabilities': {
+        get: {
+            handler: async ({ params }) => getDeviceCapabilities(params.id),
+            description:
+                'Get capabilities (state schema + functions) of a device',
+        },
     },
     'devices/:id/functions': {
         get: {
