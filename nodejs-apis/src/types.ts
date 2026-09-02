@@ -107,10 +107,12 @@ export interface Provider {
 
 export type PowerType = 'on' | 'off' | 'pause';
 
+export type PropertyValue = string | number | boolean;
+
 export interface DeviceState {
     power?: PowerType;
     level?: number;
-    additional?: object;
+    properties?: Record<string, PropertyValue>;
 }
 
 export interface ProviderFunction {
@@ -120,6 +122,13 @@ export interface ProviderFunction {
 
 export interface ProviderFunctionDef extends ProviderFunction {
     returns?: object;
+    inputSchema?: any;
+    description?: string;
+}
+
+export interface DeviceCapabilities {
+    stateSchema?: any;
+    functions?: ProviderFunctionDef[];
 }
 
 export interface ProviderApiMetaInfo {
@@ -137,20 +146,23 @@ export interface DiscoveredDevice {
 
 export interface DiscoveryResult {
     devices: DiscoveredDevice[];
+    // public: DiscoveredDevice[]
+    // private: DiscoveredDevice[]
 }
 
 export interface ProviderApi {
     init?: (provider: Provider) => Promise<boolean>;
-    discover?: (provider: Provider) => Promise<DiscoveryResult>;
+    // discover?: (provider: Provider) => Promise<DiscoveryResult>; // TODO just keep one function, can remove publicDiscover
+    discover?: (provider?: Provider) => Promise<DiscoveryResult>;
     publicDiscover?: () => Promise<DiscoveryResult>;
     changeDeviceState?: (
         meta: ProviderApiMetaInfo,
         params: DeviceState
     ) => Promise<DeviceState | boolean>;
     getDeviceState?: (meta: ProviderApiMetaInfo) => Promise<DeviceState>;
-    getFunctions?: (
+    getCapabilities?: (
         meta: ProviderApiMetaInfo
-    ) => Promise<ProviderFunctionDef[]>;
+    ) => Promise<DeviceCapabilities>;
     callFunction?: (
         meta: ProviderApiMetaInfo,
         fnt: ProviderFunction

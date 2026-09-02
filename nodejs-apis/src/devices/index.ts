@@ -2,6 +2,7 @@ import { cs } from '../core/db';
 import { NotFoundError } from '../errors';
 import {
     Device,
+    DeviceCapabilities,
     DeviceState,
     Provider,
     ProviderApi,
@@ -121,14 +122,39 @@ async function call(
     }
 }
 
+// In-memory capabilities cache, kept until server restart
+const capabilitiesCache = new Map<string, DeviceCapabilities>();
+
+export async function getDeviceCapabilities(
+    deviceId: string
+): Promise<DeviceCapabilities | undefined> {
+    const cached = capabilitiesCache.get(deviceId);
+    if (cached) return cached;
+
+    log('devices', 'getDeviceCapabilities', { context: { deviceId } });
+
+    const capabilities = await call(
+        deviceId,
+        async ({ device, api, provider }) => {
+            if (api.getCapabilities) {
+                return api.getCapabilities({ device, provider });
+            }
+            return undefined;
+        }
+    );
+
+    if (capabilities) {
+        capabilitiesCache.set(deviceId, capabilities);
+    }
+    return capabilities;
+}
+
 export async function getProviderFunctions(
     deviceId: string
 ): Promise<ProviderFunctionDef[]> {
     log('devices', 'getProviderFunctions', { context: { deviceId } });
-    return call(deviceId, ({ device, api, provider }) => {
-        if (!api.getFunctions) throw new NotFoundError();
-        return api.getFunctions({ device, provider });
-    });
+    const capabilities = await getDeviceCapabilities(deviceId);
+    return capabilities?.functions ?? [];
 }
 
 export async function changeDeviceState(
