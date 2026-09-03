@@ -70,6 +70,26 @@ Starts on **port 9308** with a UI available on [http://localhost:9308](http://lo
 
 The orchestration logic is done through nodejs therefore no tools can be called from this UI.
 
+### 🏠 Home Assistant — background device-provider layer
+
+Since v2 there is no need to maintain my own device providers: a headless
+**Home Assistant** instance (folder `homeassistant/`, port `:8123`, loopback
+only) provides the device integrations. Charlie keeps its brain and frontend,
+and talks to HA:
+
+- **Zero-touch auth** — the brain auto-onboards HA once (creates a single
+  owner) and then logs in through HA's `trusted_networks` provider from inside
+  the Docker internal network. No tokens to generate, no browser step.
+- **Configure integrations from Charlie** — Providers page → Home Assistant →
+  Integrations renders HA's config-flow wizard natively (no HA UI needed).
+- **Discovery** — entities appear in the Discovery page; you select which ones
+  become Charlie devices.
+- **State/history** — HA `state_changed` events update existing Charlie devices.
+
+See [`homeassistant/README.md`](homeassistant/README.md) and
+[`plans/home-assistant-background-provider.md`](plans/home-assistant-background-provider.md)
+for details.
+
 ### 🟢 Orchestrator `nodejs-apis`
 
 Node.js backend providing:
@@ -110,6 +130,17 @@ ECHO_CONTINOUS_AUDIO_TEST=true          # optional
 
 ASR_MODEL_SIZE=large                    # optional: large | small
 ASR_MODEL_PATH=./asr/models             # optional
+
+# Home Assistant (background device-provider layer) — all optional
+HA_HOST=localhost                       # default: homeassistant (compose service name)
+HA_PORT=8123
+HA_TOKEN=                               # optional: explicit long-lived token (skips bootstrap)
+# HA_AUTO_PROVISION=true
+# HA_TRUSTED_NETWORKS=172.16.0.0/12,127.0.0.1   # HA container env (comma CIDRs)
+# HA_ONBOARD_USERNAME=charlie           # owner user created on first HA boot
+# HA_ONBOARD_PASSWORD=charlie
+# HA_LOCATION_NAME=Charlie Home
+# HA_TIME_ZONE=Europe/Paris
 ```
 
 ### 🎤 ASR
