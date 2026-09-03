@@ -1,0 +1,29 @@
+# Home Assistant Core secrets and local state that must not be committed.
+secrets.yaml
+.storage/
+.HA_RESTORE*
+
+# Databases and logs
+*.db
+*.db-shm
+*.db-wal
+home-assistant.log
+home-assistant.log.*
+home-assistant_v2.db
+home-assistant_v2.db-shm
+home-assistant_v2.db-wal
+
+# Temporary / cache / runtime
+.cloud/
+.deps/
+deps/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Custom component cache / local testing
+custom_components/*/__pycache__/
+
+# IDE
+.vscode/
+.idea/

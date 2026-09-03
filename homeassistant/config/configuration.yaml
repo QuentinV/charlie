@@ -1,0 +1,38 @@
+# Charlie — Home Assistant (background device-provider layer)
+#
+# Instance name Charlie, metric units, Europe/Paris timezone.
+#
+# Authentication:
+#   - 'homeassistant' provider: creates the single owner user during the first
+#     boot (done automatically by the Charlie brain, see
+#     nodejs-apis/src/core/haBootstrap.ts).
+#   - 'trusted_networks' provider: the Charlie brain logs in WITHOUT a password
+#     from inside the Docker internal network (allow_bypass_login). The HA UI is
+#     never opened by users; integrations are configured from the Charlie
+#     frontend Providers page via the config-flow REST API.
+#
+# The trusted_networks list can be overridden at deployment time with the
+# HA_TRUSTED_NETWORKS env var (comma-separated CIDRs) — configure-auth.py
+# rewrites this file before HA boots.
+
+homeassistant:
+    name: Charlie
+    unit_system: metric
+    time_zone: Europe/Paris
+
+auth_providers:
+    - type: homeassistant
+    - type: trusted_networks
+      trusted_networks:
+          - 172.16.0.0/12
+          - 127.0.0.1
+      allow_bypass_login: true
+
+# REST + WebSocket API consumed by the Charlie brain.
+api:
+
+# Enables the config-flow REST API used by the integration wizard.
+default_config:
+
+logger:
+    default: info
