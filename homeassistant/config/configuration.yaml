@@ -11,6 +11,9 @@
 #     never opened by users; integrations are configured from the Charlie
 #     frontend Providers page via the config-flow REST API.
 #
+# NOTE: auth_providers MUST be nested under `homeassistant:` (it is part of the
+# CORE_CONFIG_SCHEMA); a top-level `auth_providers:` key is silently ignored.
+#
 # The trusted_networks list can be overridden at deployment time with the
 # HA_TRUSTED_NETWORKS env var (comma-separated CIDRs) — configure-auth.py
 # rewrites this file before HA boots.
@@ -19,14 +22,13 @@ homeassistant:
     name: Charlie
     unit_system: metric
     time_zone: Europe/Paris
-
-auth_providers:
-    - type: homeassistant
-    - type: trusted_networks
-      trusted_networks:
-          - 172.16.0.0/12
-          - 127.0.0.1
-      allow_bypass_login: true
+    auth_providers:
+        - type: homeassistant
+        - type: trusted_networks
+          trusted_networks:
+              - 172.16.0.0/12
+              - 127.0.0.1
+          allow_bypass_login: true
 
 # REST + WebSocket API consumed by the Charlie brain.
 api:

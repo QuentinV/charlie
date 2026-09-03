@@ -2,9 +2,11 @@
 """Rewrite Home Assistant auth_providers from the HA_TRUSTED_NETWORKS env var.
 
 Called by entrypoint.sh before HA starts. When HA_TRUSTED_NETWORKS is set
-(comma-separated CIDRs) the trusted_networks auth provider is re-generated so
-users never edit YAML by hand. When unset, the shipped configuration.yaml is
-left untouched (so host bind-mounted user edits are not clobbered).
+(comma-separated CIDRs) the trusted_networks auth provider is re-generated
+inside the `homeassistant:` block (auth_providers is part of CORE_CONFIG_SCHEMA
+and MUST be nested — a top-level key is ignored by HA). When unset, the shipped
+configuration.yaml is left untouched (so host bind-mounted user edits are not
+clobbered).
 """
 
 import os
@@ -29,10 +31,15 @@ def main() -> int:
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f) or {}
 
+    ha_block = config.get("homeassistant")
+    if not isinstance(ha_block, dict):
+        ha_block = {}
+        config["homeassistant"] = ha_block
+
     # Keep the 'homeassistant' provider, drop any previous trusted_networks.
     auth_providers = [
         provider
-        for provider in config.get("auth_providers", [])
+        for provider in ha_block.get("auth_providers", [])
         if provider.get("type") != "trusted_networks"
     ]
     auth_providers.append(
@@ -42,7 +49,7 @@ def main() -> int:
             "allow_bypass_login": True,
         }
     )
-    config["auth_providers"] = auth_providers
+    ha_block["auth_providers"] = auth_providers
 
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         yaml.safe_dump(
