@@ -81,6 +81,20 @@ services:
             - MONGO_INITDB_ROOT_PASSWORD=
         networks:
             - internal
+    homeassistant:
+        build: ./homeassistant
+        container_name: charlie-homeassistant
+        environment:
+            - TZ=Europe/Paris
+            # - HA_TRUSTED_NETWORKS=172.16.0.0/12,127.0.0.1  # optional override
+        volumes:
+            - ./homeassistant/config:/config
+        ports:
+            #    - '127.0.0.1:8123:8123' # loopback only (device-provider layer)
+            - '8123:8123'
+        restart: unless-stopped
+        networks:
+            - internal
     frontend:
         build: ./frontend
         container_name: charlie-frontend
