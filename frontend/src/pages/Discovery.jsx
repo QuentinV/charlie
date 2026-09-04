@@ -48,6 +48,145 @@ const getTypeColor = (type) => {
     }
 };
 
+/** Turn a machine category (`tradfri`, `grid-2`) into display text (`Tradfri`). */
+const prettyCategory = (cat) =>
+    cat
+        ? cat
+              .split(/[_-]/)
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(' ')
+        : 'Other';
+
+/** Render a grid of discovered device cards (for a whole group or one category). */
+const DeviceCards = ({ provider, devices, addingDevice, onAdd }) => (
+    <Grid container spacing={2}>
+        {devices.map(
+            /** @param {any} device */ (device) => (
+                <Grid
+                    size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
+                    key={`${device.externalId}:${device.host}`}
+                >
+                    <Card
+                        variant="outlined"
+                        sx={{
+                            position: 'relative',
+                            opacity: device.alreadyRegistered ? 0.7 : 1,
+                            borderColor: device.alreadyRegistered
+                                ? 'rgba(255,255,255,0.06)'
+                                : 'rgba(255,215,0,0.12)',
+                            '&:hover': {
+                                boxShadow: device.alreadyRegistered
+                                    ? 0
+                                    : '0 8px 32px -8px rgba(255,215,0,0.2)',
+                            },
+                        }}
+                    >
+                        <CardContent>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            color:
+                                                getTypeColor(device.type) +
+                                                '.main',
+                                            display: 'flex',
+                                        }}
+                                    >
+                                        {deviceIcons[device.type] || (
+                                            <DeviceUnknownIcon />
+                                        )}
+                                    </Box>
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight="medium"
+                                    >
+                                        {device.name}
+                                    </Typography>
+                                </Box>
+                            </Box>
+
+                            {device.host && (
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    {device.host}
+                                </Typography>
+                            )}
+                            {device.mac && (
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    display="block"
+                                >
+                                    MAC: {device.mac}
+                                </Typography>
+                            )}
+                        </CardContent>
+                        <CardActions>
+                            <Box
+                                sx={{
+                                    width: '100%',
+                                    display: 'flex',
+                                    justifyContent: 'flex-end',
+                                }}
+                            >
+                                {device.alreadyRegistered ? (
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 0.5,
+                                        }}
+                                    >
+                                        <CheckCircleOutlineIcon
+                                            fontSize="small"
+                                            color="success"
+                                        />
+                                        Added
+                                    </Typography>
+                                ) : (
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={() => onAdd(provider, device)}
+                                        disabled={
+                                            addingDevice?.externalId ===
+                                                device?.externalId &&
+                                            addingDevice?.host === device?.host
+                                        }
+                                        loading={
+                                            addingDevice?.externalId ===
+                                                device?.externalId &&
+                                            addingDevice?.host === device?.host
+                                        }
+                                    >
+                                        <AddIcon />
+                                    </Button>
+                                )}
+                            </Box>
+                        </CardActions>
+                    </Card>
+                </Grid>
+            )
+        )}
+    </Grid>
+);
+
 export const DiscoveryPage = () => {
     const [discoveredDevices, setDiscoveredDevices] = useState(
         /** @type {any[]} */ ([])
@@ -207,159 +346,54 @@ export const DiscoveryPage = () => {
                         />
                     </Box>
 
-                    {group.devices.length === 0 ? (
+                    {group.error ? (
+                        <Alert
+                            severity="warning"
+                            icon={false}
+                            sx={{ ml: 1, mb: 1 }}
+                        >
+                            {group.error}
+                        </Alert>
+                    ) : group.devices.length === 0 ? (
                         <Typography
                             color="text.secondary"
                             sx={{ ml: 1, mb: 1 }}
                         >
                             No devices found
                         </Typography>
-                    ) : (
-                        <Grid container spacing={2}>
-                            {group.devices.map(
-                                /** @param {any} device */ (device) => (
-                                    <Grid
-                                        size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
-                                        key={`${device.externalId}:${device.host}`}
+                    ) : group.devices.some((d) => d.category) ? (
+                        <Box>
+                            {Object.entries(
+                                group.devices.reduce((acc, d) => {
+                                    const cat = d.category || 'Other';
+                                    (acc[cat] = acc[cat] || []).push(d);
+                                    return acc;
+                                }, {})
+                            ).map(([cat, devices]) => (
+                                <Box key={cat} sx={{ mb: 2 }}>
+                                    <Typography
+                                        variant="subtitle2"
+                                        color="text.secondary"
+                                        sx={{ ml: 0.5, mb: 1 }}
                                     >
-                                        <Card
-                                            variant="outlined"
-                                            sx={{
-                                                position: 'relative',
-                                                opacity:
-                                                    device.alreadyRegistered
-                                                        ? 0.7
-                                                        : 1,
-                                                borderColor:
-                                                    device.alreadyRegistered
-                                                        ? 'rgba(255,255,255,0.06)'
-                                                        : 'rgba(255,215,0,0.12)',
-                                                '&:hover': {
-                                                    boxShadow:
-                                                        device.alreadyRegistered
-                                                            ? 0
-                                                            : '0 8px 32px -8px rgba(255,215,0,0.2)',
-                                                },
-                                            }}
-                                        >
-                                            <CardContent>
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent:
-                                                            'space-between',
-                                                    }}
-                                                >
-                                                    <Box
-                                                        sx={{
-                                                            display: 'flex',
-                                                            alignItems:
-                                                                'center',
-                                                            gap: 1,
-                                                        }}
-                                                    >
-                                                        <Box
-                                                            sx={{
-                                                                color:
-                                                                    getTypeColor(
-                                                                        device.type
-                                                                    ) + '.main',
-                                                                display: 'flex',
-                                                            }}
-                                                        >
-                                                            {deviceIcons[
-                                                                device.type
-                                                            ] || (
-                                                                <DeviceUnknownIcon />
-                                                            )}
-                                                        </Box>
-                                                        <Typography
-                                                            variant="subtitle1"
-                                                            fontWeight="medium"
-                                                        >
-                                                            {device.name}
-                                                        </Typography>
-                                                    </Box>
-                                                </Box>
-
-                                                {device.host && (
-                                                    <Typography
-                                                        variant="body2"
-                                                        color="text.secondary"
-                                                    >
-                                                        {device.host}
-                                                    </Typography>
-                                                )}
-                                                {device.mac && (
-                                                    <Typography
-                                                        variant="caption"
-                                                        color="text.secondary"
-                                                        display="block"
-                                                    >
-                                                        MAC: {device.mac}
-                                                    </Typography>
-                                                )}
-                                            </CardContent>
-                                            <CardActions>
-                                                <Box
-                                                    sx={{
-                                                        width: '100%',
-                                                        display: 'flex',
-                                                        justifyContent:
-                                                            'flex-end',
-                                                    }}
-                                                >
-                                                    {device.alreadyRegistered ? (
-                                                        <Typography
-                                                            variant="body2"
-                                                            color="text.secondary"
-                                                            sx={{
-                                                                display: 'flex',
-                                                                alignItems:
-                                                                    'center',
-                                                                gap: 0.5,
-                                                            }}
-                                                        >
-                                                            <CheckCircleOutlineIcon
-                                                                fontSize="small"
-                                                                color="success"
-                                                            />
-                                                            Added
-                                                        </Typography>
-                                                    ) : (
-                                                        <Button
-                                                            variant="contained"
-                                                            size="small"
-                                                            onClick={() =>
-                                                                handleAddDevice(
-                                                                    group.provider,
-                                                                    device
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                addingDevice?.externalId ===
-                                                                    device?.externalId &&
-                                                                addingDevice?.host ===
-                                                                    device?.host
-                                                            }
-                                                            loading={
-                                                                addingDevice?.externalId ===
-                                                                    device?.externalId &&
-                                                                addingDevice?.host ===
-                                                                    device?.host
-                                                            }
-                                                        >
-                                                            <AddIcon />
-                                                        </Button>
-                                                    )}
-                                                </Box>
-                                            </CardActions>
-                                        </Card>
-                                    </Grid>
-                                )
-                            )}
-                        </Grid>
+                                        {prettyCategory(cat)} ({devices.length})
+                                    </Typography>
+                                    <DeviceCards
+                                        provider={group.provider}
+                                        devices={devices}
+                                        addingDevice={addingDevice}
+                                        onAdd={handleAddDevice}
+                                    />
+                                </Box>
+                            ))}
+                        </Box>
+                    ) : (
+                        <DeviceCards
+                            provider={group.provider}
+                            devices={group.devices}
+                            addingDevice={addingDevice}
+                            onAdd={handleAddDevice}
+                        />
                     )}
                 </Box>
             ))}

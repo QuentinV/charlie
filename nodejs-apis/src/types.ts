@@ -142,6 +142,7 @@ export interface DiscoveredDevice {
     externalId?: string;
     mac?: string;
     host?: string;
+    category?: string;
 }
 
 export interface DiscoveryResult {
