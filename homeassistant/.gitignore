@@ -27,3 +27,6 @@ custom_components/*/__pycache__/
 # IDE
 .vscode/
 .idea/
+
+
+.ha_run.lock
