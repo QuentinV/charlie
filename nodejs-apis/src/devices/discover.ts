@@ -74,6 +74,27 @@ export async function discoverDevices() {
             })
         )
     )
-        .map((s: any) => s.value)
-        .filter((r: any) => r && r.devices?.length > 0);
+        .map((s: any, i: number) => {
+            // If a provider rejects (init/discover failed), surface it as an
+            // errored group instead of silently dropping it.
+            if (s.status === 'rejected') {
+                const entry = apis[i];
+                return {
+                    provider: entry?.provider,
+                    publicDiscovery: entry?.provider?._id?.startsWith(
+                        'virtual-'
+                    ),
+                    devices: [],
+                    error: s.reason?.message ?? 'Discovery failed',
+                };
+            }
+            const result = s.value;
+            return {
+                provider: result?.provider,
+                publicDiscovery: result?.publicDiscovery,
+                devices: result?.devices ?? [],
+                error: undefined,
+            };
+        })
+        .filter((r: any) => r && (r.devices?.length > 0 || r.error));
 }
