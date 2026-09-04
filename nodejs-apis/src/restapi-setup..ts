@@ -41,7 +41,12 @@ export async function setupRestApi() {
                     }
                 } catch (e) {
                     if (e instanceof HttpError) {
-                        res.send(e.httpStatus, e.message);
+                        res.status(e.httpStatus).json({
+                            message: e.message,
+                            ...((e as any).errors
+                                ? { errors: (e as any).errors }
+                                : {}),
+                        });
                         return;
                     }
                     res.sendStatus(500);
