@@ -1,5 +1,33 @@
+import Bonjour from 'bonjour-service';
 import { log } from '../../manager/services/activities';
-import { ProvidersApis } from '../../types';
+import { DiscoveryResult, ProvidersApis } from '../../types';
+
+async function publicDiscover(): Promise<DiscoveryResult> {
+    return new Promise((resolve) => {
+        const bonjour = new Bonjour();
+
+        const devices: DiscoveryResult['devices'] = [];
+        const browser = bonjour.find({ type: 'http' });
+        browser.on('up', (service: any) => {
+            const host = String(service.host || '').replace(/\.local$/, '');
+            if (!host.startsWith('esp-light-')) return;
+
+            devices.push({
+                name: host,
+                type: 'light',
+                externalId: host,
+                host: service.addresses[0],
+                mac: service.txt?.mac as string | undefined,
+            });
+        });
+
+        setTimeout(() => {
+            browser.stop();
+            bonjour.destroy();
+            resolve({ devices });
+        }, 5000);
+    });
+}
 
 const apis: ProvidersApis = {
     api: {
@@ -50,6 +78,7 @@ const apis: ProvidersApis = {
             }
             return { power: 'off' };
         },
+        publicDiscover,
     },
 };
 
