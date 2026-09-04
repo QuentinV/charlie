@@ -3,12 +3,8 @@ import 'dotenv/config';
 import { cs } from '../core/db';
 import { HA_HOSTNAME } from '../core/ha';
 import {
-    getHaToken,
-    getHaRefreshToken,
     isHaConfigured,
-    setHaRefreshToken,
-    setHaToken,
-    setHaTokenPersistence,
+    setHaReprovision,
     haSubscribeEvents,
 } from '../core/ha';
 import { haBootstrap } from '../core/haBootstrap';
@@ -20,13 +16,13 @@ import {
     HA_DEVICE_DOMAINS,
     haDomainToDeviceType,
     haStateToDeviceState,
-} from './providers/home_assistant';
+} from './providers/homeassistant';
 
 // =====================================================================
-// Home Assistant sync — SLIM.
+// Home Assistant sync — SLIM, network auth only.
 // ---------------------------------------------------------------
-//  * Resolves the HA token (HA_TOKEN env -> stored Mongo tokens ->
-//    trusted-networks bootstrap).
+//  * Resolves the ephemeral HA session via trusted-networks auto-provision
+//    (haBootstrap). No token is configured, stored or persisted anywhere.
 //  * Seeds the single provider row (idempotent) so Discovery groups the
 //    entities under it.
 //  * Subscribes to state_changed and only updates EXISTING Charlie devices
@@ -36,47 +32,9 @@ import {
 
 const PROVIDER_CODESOURCE = 'homeassistant';
 
-// ===== Token persistence (Mongo settings.ha, redacted from API) =====
-
-export async function persistHaTokens(
-    access: string,
-    refresh: string
-): Promise<void> {
-    await cs.settings.updateOne(
-        { type: 'global' },
-        {
-            $set: {
-                'settings.ha.access': access,
-                'settings.ha.refresh': refresh,
-            },
-        },
-        { upsert: true }
-    );
-}
-
-async function loadStoredHaTokens(): Promise<boolean> {
-    if (isHaConfigured()) return true;
-    const global = await cs.settings.findOne({ type: 'global' });
-    const stored = global?.settings?.ha;
-    if (stored?.access) {
-        setHaToken(stored.access);
-        if (stored.refresh) setHaRefreshToken(stored.refresh);
-        return true;
-    }
-    return false;
-}
-
 async function resolveHaToken(): Promise<boolean> {
-    if (isHaConfigured()) return true; // HA_TOKEN env
-    if (await loadStoredHaTokens()) return true; // persisted refresh token
-
-    // Fresh install: trusted-networks bootstrap.
-    const ok = await haBootstrap();
-    if (ok) {
-        await persistHaTokens(getHaToken(), getHaRefreshToken());
-        return true;
-    }
-    return false;
+    if (isHaConfigured()) return true;
+    return haBootstrap();
 }
 
 async function getOrCreateProvider(): Promise<Provider | null> {
@@ -114,8 +72,8 @@ function isEnabled(): boolean {
 
 // ===== State-events subscription =====
 
-export function setupHaEventSync(): (() => void) | undefined {
-    if (!isEnabled()) return undefined;
+export function setupHaEventSync(provider: Provider): (() => void) | undefined {
+    if (!provider || !isEnabled()) return undefined;
 
     return haSubscribeEvents('state_changed', async (event: any) => {
         const entity = event?.data?.new_state ?? event?.data?.newState;
@@ -126,11 +84,6 @@ export function setupHaEventSync(): (() => void) | undefined {
         if (!HA_DEVICE_DOMAINS.has(domain)) return;
 
         try {
-            const provider = await cs.providers.findOne({
-                codesource: PROVIDER_CODESOURCE,
-            });
-            if (!provider) return;
-
             // Only update devices that already exist — never auto-create.
             const device = await cs.devices.findOne({
                 externalId: entityId,
@@ -165,20 +118,21 @@ export async function setupHomeAssistant(): Promise<void> {
         return;
     }
 
-    // Persist tokens into Mongo whenever ha.ts refreshes them.
-    setHaTokenPersistence(persistHaTokens);
+    // Self-healing: on a 401 (REST or WebSocket), ha.ts re-provisions the
+    // ephemeral session by re-running the trusted-networks bootstrap.
+    setHaReprovision(() => haBootstrap());
 
     const configured = await resolveHaToken();
     if (!configured) {
         console.log(
-            '[Home Assistant] no token available. Set HA_TOKEN or let the trusted-networks bootstrap provision one.'
+            '[Home Assistant] no HA session available — check the trusted network (the brain must reach HA from a trusted_networks CIDR).'
         );
         return;
     }
 
     try {
-        await getOrCreateProvider();
-        setupHaEventSync();
+        const provider = await getOrCreateProvider();
+        await setupHaEventSync(provider);
         log('homeassistant', 'Home Assistant sync enabled');
     } catch (e) {
         log('homeassistant', 'Home Assistant setup failed', {

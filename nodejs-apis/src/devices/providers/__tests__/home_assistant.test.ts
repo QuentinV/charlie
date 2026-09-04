@@ -1,4 +1,8 @@
-import { haDomainToDeviceType, haStateToDeviceState } from '../home_assistant';
+import {
+    haDomainToDeviceType,
+    haEntitiesToDevices,
+    haStateToDeviceState,
+} from '../homeassistant';
 
 describe('homeassistant provider', () => {
     test('haDomainToDeviceType maps HA domains to charlie types', () => {
@@ -91,5 +95,83 @@ describe('homeassistant provider', () => {
         });
         expect(state.properties.friendly_name).toBeUndefined();
         expect(state.properties.rgb_color).toBeUndefined();
+    });
+
+    test('haEntitiesToDevices surfaces all same-host entities without a host field', () => {
+        // This is the exact failure mode seen in production: many HA entities
+        // share one gateway host. If they carried `host`, discover.ts's
+        // host-dedup would collapse all of them to the first entity.
+        const entities = [
+            { entity_id: 'sensor.backup_backup_manager_state', state: 'idle', attributes: { friendly_name: 'Backup' } },
+            { entity_id: 'light.ampoule_2', state: 'off', attributes: { friendly_name: 'Ampoule 2' } },
+            { entity_id: 'light.tradfri_bulb_3', state: 'off', attributes: { friendly_name: 'Bulb 3' } },
+            { entity_id: 'sensor.tradfri_remote_control_battery', state: '100', attributes: {} },
+            { entity_id: 'sun.sun', state: 'above_horizon', attributes: {} }, // excluded domain
+            { entity_id: 'persistent_notification.config_entry_discovery', state: 'notifying', attributes: {} }, // excluded
+        ];
+
+        const devices = haEntitiesToDevices(entities);
+
+        expect(devices).toHaveLength(4);
+        // every HA entity must be present — none collapsed by host
+        expect(devices.map((d) => d.externalId)).toEqual([
+            'sensor.backup_backup_manager_state',
+            'light.ampoule_2',
+            'light.tradfri_bulb_3',
+            'sensor.tradfri_remote_control_battery',
+        ]);
+        // no `host` field at all (otherwise dedup drops all but the first)
+        for (const d of devices) {
+            expect(d.host).toBeUndefined();
+        }
+        // types mapped correctly
+        expect(devices[1].type).toBe('light');
+        expect(devices[3].type).toBe('sensor');
+    });
+
+    test('haEntitiesToDevices skips entities without a valid entity_id', () => {
+        const devices = haEntitiesToDevices([
+            { entity_id: 'light.salon', attributes: {} },
+            { entity_id: 'no-domain', attributes: {} },
+            {},
+            null,
+        ]);
+        expect(devices).toHaveLength(1);
+        expect(devices[0].externalId).toBe('light.salon');
+    });
+
+    test('haEntitiesToDevices adds category from the entity registry map', () => {
+        const entities = [
+            { entity_id: 'light.ampoule_2', state: 'off', attributes: {} },
+            { entity_id: 'light.tradfri_bulb_3', state: 'off', attributes: {} },
+            { entity_id: 'sensor.backup_state', state: 'idle', attributes: {} },
+        ];
+        const categories = new Map<string, string>([
+            ['light.ampoule_2', 'tradfri'],
+            ['light.tradfri_bulb_3', 'tradfri'],
+            ['sensor.backup_state', 'backup'],
+        ]);
+
+        const devices = haEntitiesToDevices(entities, categories);
+
+        expect(devices.map((d) => d.category)).toEqual([
+            'tradfri',
+            'tradfri',
+            'backup',
+        ]);
+    });
+
+    test('haEntitiesToDevices leaves category undefined when map absent/unknown', () => {
+        const entities = [
+            { entity_id: 'light.ampoule_2', state: 'off', attributes: {} },
+        ];
+
+        // no map at all
+        const noMap = haEntitiesToDevices(entities);
+        expect(noMap[0].category).toBeUndefined();
+
+        // map without this entity
+        const unknown = haEntitiesToDevices(entities, new Map([['other', 'x']]));
+        expect(unknown[0].category).toBeUndefined();
     });
 });

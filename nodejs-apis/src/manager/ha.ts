@@ -11,7 +11,10 @@ import {
     haGetStates,
 } from '../core/ha';
 import { cs } from '../core/db';
-import { HA_DEVICE_DOMAINS, haStateToDeviceState } from '../devices/providers/home_assistant';
+import {
+    HA_DEVICE_DOMAINS,
+    haStateToDeviceState,
+} from '../devices/providers/homeassistant';
 import { logDeviceState } from '../devices/history';
 
 // =====================================================================
@@ -20,9 +23,40 @@ import { logDeviceState } from '../devices/history';
 // remove device integrations without ever opening the HA UI.
 // =====================================================================
 
+/** Extract HA status + detail from an haRequest failure into an HttpError. */
+function asHttpError(e: any, fallbackStatus = 502): HttpError {
+    if (e?.isHaError) {
+        let detail = e.detail ?? e.message;
+        let errors: any;
+        try {
+            const parsed =
+                typeof detail === 'string' ? JSON.parse(detail) : detail;
+            if (parsed) {
+                if (parsed.message && !errors) detail = parsed.message;
+                if (parsed.errors) {
+                    errors = parsed.errors;
+                    // Prefer a readable base error if present.
+                    const base = Array.isArray(parsed.errors.base)
+                        ? parsed.errors.base[0]
+                        : parsed.errors.base;
+                    if (typeof base === 'string') detail = base;
+                }
+            }
+        } catch {
+            /* detail is plain text */
+        }
+        const err = new HttpError(e.status ?? fallbackStatus, detail);
+        (err as any).errors = errors;
+        return err;
+    }
+    return new HttpError(fallbackStatus, e?.message ?? 'Home Assistant error');
+}
+
 /** Re-apply current HA states to existing Charlie devices (state + history). */
 async function resyncDevices(): Promise<{ updated: number }> {
-    const provider = await cs.providers.findOne({ codesource: 'homeassistant' });
+    const provider = await cs.providers.findOne({
+        codesource: 'homeassistant',
+    });
     if (!provider) return { updated: 0 };
 
     const states = (await haGetStates()) ?? [];
@@ -51,7 +85,8 @@ const routes: RestApis = {
     'ha/integrations': {
         get: {
             handler: async () => haListFlowHandlers(),
-            description: 'List available Home Assistant integrations (flow handlers)',
+            description:
+                'List available Home Assistant integrations (flow handlers)',
         },
         post: {
             handler: async ({ body }) => {
@@ -59,7 +94,11 @@ const routes: RestApis = {
                 if (!handler || typeof handler !== 'string') {
                     throw new HttpError(400, 'Missing handler');
                 }
-                return haStartFlow(handler);
+                try {
+                    return await haStartFlow(handler);
+                } catch (e) {
+                    throw asHttpError(e);
+                }
             },
             description: 'Start a Home Assistant integration config flow',
         },
@@ -71,26 +110,51 @@ const routes: RestApis = {
         },
         post: {
             handler: async ({ params, body }) => {
+                // HA's REST flow endpoint validates the whole body against the
+                // current step's data_schema, so `step_id` must NOT be sent.
+                // Strip it if a legacy client includes it.
                 const { step_id, ...userData } = body ?? {};
-                if (!step_id) throw new HttpError(400, 'Missing step_id');
-                return haAdvanceFlow(params.flow_id, step_id, userData);
+                try {
+                    return await haAdvanceFlow(params.flow_id, userData);
+                } catch (e) {
+                    throw asHttpError(e);
+                }
             },
             description: 'Advance an integration config flow step',
         },
         delete: {
-            handler: async ({ params }) => haAbortFlow(params.flow_id),
+            handler: async ({ params }) => {
+                try {
+                    return await haAbortFlow(params.flow_id);
+                } catch (e) {
+                    throw asHttpError(e);
+                }
+            },
             description: 'Cancel an in-progress integration config flow',
         },
     },
     'ha/integrations/entry': {
         get: {
-            handler: async () => haListEntries(),
-            description: 'List installed Home Assistant integrations (config entries)',
+            handler: async () => {
+                try {
+                    return await haListEntries();
+                } catch (e) {
+                    throw asHttpError(e);
+                }
+            },
+            description:
+                'List installed Home Assistant integrations (config entries)',
         },
     },
     'ha/integrations/entry/:entry_id': {
         delete: {
-            handler: async ({ params }) => haDeleteEntry(params.entry_id),
+            handler: async ({ params }) => {
+                try {
+                    return await haDeleteEntry(params.entry_id);
+                } catch (e) {
+                    throw asHttpError(e);
+                }
+            },
             description: 'Remove a Home Assistant integration (config entry)',
         },
     },
