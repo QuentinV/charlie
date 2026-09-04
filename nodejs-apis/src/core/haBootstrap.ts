@@ -9,7 +9,6 @@ import {
     haPostOnboardingUsers,
     haTokenPost,
     setHaClientId,
-    setHaRefreshToken,
     setHaToken,
 } from './ha';
 
@@ -19,19 +18,20 @@ import {
 // The brain authenticates to HA exclusively via the `trusted_networks`
 // auth provider (allow_bypass_login). There is intentionally NO
 // username/password login fallback: if the request does not come from a
-// trusted network, we fail with a clear message (set HA_TOKEN to override).
+// trusted network, we fail with a clear message.
 //
-// Flow (idempotent):
+// Flow (idempotent, access token is IN-MEMORY only):
 //   1. wait for HA API readiness (retry loop)
 //   2. GET /api/onboarding -> done steps
 //   3. if "user" not done: POST /api/onboarding/users to create the SINGLE
 //      owner user (guarantees allow_bypass_login has exactly one user).
 //   4. POST /auth/login_flow (handler trusted_networks) -> create_entry with
 //      an auth_code (no credentials required from a trusted network).
-//   5. POST /auth/token (authorization_code grant) -> {access, refresh}.
+//   5. POST /auth/token (authorization_code grant) -> access token.
 //   6. Complete remaining onboarding steps (core_config, analytics,
 //      integration) idempotently.
-//   7. Persist the refresh token in Mongo (settings.ha, redacted).
+//   7. The token is only kept in memory (ha.ts). On the next boot — or on
+//      a 401 — this runs again. Nothing is stored or persisted.
 // =====================================================================
 
 export const haBootstrapConfig = {
@@ -104,7 +104,7 @@ async function trustedNetworksLogin(): Promise<string> {
 
     throw new Error(
         '[HA] trusted_networks login failed — is the brain on the trusted network? ' +
-            `Set HA_TOKEN to override. (${JSON.stringify(res ?? null)})`
+            `(Response: ${JSON.stringify(res ?? null)})`
     );
 }
 
@@ -154,7 +154,7 @@ export async function haBootstrap(): Promise<boolean> {
         return false;
     }
     if (getHaToken()) {
-        console.log('[HA] token already configured, skipping bootstrap');
+        console.log('[HA] session already provisioned, skipping bootstrap');
         return true;
     }
 
@@ -173,7 +173,7 @@ export async function haBootstrap(): Promise<boolean> {
 
         const code = await trustedNetworksLogin();
         const cfg = haBootstrapConfig;
-        const { access_token, refresh_token } = await haTokenPost({
+        const { access_token } = await haTokenPost({
             client_id: cfg.clientId,
             grant_type: 'authorization_code',
             code,
@@ -184,7 +184,6 @@ export async function haBootstrap(): Promise<boolean> {
         }
 
         setHaToken(access_token);
-        if (refresh_token) setHaRefreshToken(refresh_token);
 
         // Re-derive remaining steps (user creation may have flipped 'done').
         const freshDone = await getDoneSteps();

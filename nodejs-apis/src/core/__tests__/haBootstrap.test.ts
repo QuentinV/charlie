@@ -1,11 +1,6 @@
 import { haBootstrap, haBootstrapConfig } from '../haBootstrap';
-import {
-    getHaRefreshToken,
-    getHaToken,
-    isHaConfigured,
-    setHaRefreshToken,
-    setHaToken,
-} from '../ha';
+import { getHaToken, isHaConfigured, setHaToken } from '../ha';
+import { haRequest, setHaReprovision } from '../ha';
 
 // Mock global.fetch to simulate a fresh HA instance + trusted-network auth.
 const fetchMock = jest.fn();
@@ -13,7 +8,6 @@ const originalFetch = global.fetch;
 
 const AUTH_CODE = 'test-auth-code';
 const ACCESS_TOKEN = 'test-access-token';
-const REFRESH_TOKEN = 'test-refresh-token';
 
 function jsonResponse(body: any, status = 200) {
     return {
@@ -54,10 +48,7 @@ function mockFreshInstance() {
             if (url.endsWith('/auth/token')) {
                 const form = init?.body?.toString() ?? '';
                 if (form.includes('authorization_code')) {
-                    return jsonResponse({
-                        access_token: ACCESS_TOKEN,
-                        refresh_token: REFRESH_TOKEN,
-                    });
+                    return jsonResponse({ access_token: ACCESS_TOKEN });
                 }
                 return jsonResponse({}, 400);
             }
@@ -79,7 +70,6 @@ beforeEach(() => {
     (global as any).fetch = fetchMock;
     fetchMock.mockReset();
     setHaToken('');
-    setHaRefreshToken('');
     haBootstrapConfig.enabled = true;
 });
 
@@ -95,7 +85,6 @@ describe('haBootstrap (trusted-network auth)', () => {
 
         expect(ok).toBe(true);
         expect(getHaToken()).toBe(ACCESS_TOKEN);
-        expect(getHaRefreshToken()).toBe(REFRESH_TOKEN);
         expect(isHaConfigured()).toBe(true);
 
         const urls = fetchMock.mock.calls.map(
@@ -132,12 +121,66 @@ describe('haBootstrap (trusted-network auth)', () => {
         expect(isHaConfigured()).toBe(false);
     });
 
-    test('skips bootstrap when a token is already configured', async () => {
-        setHaToken('env-token');
+    test('skips bootstrap when an in-memory session is already present', async () => {
+        setHaToken(ACCESS_TOKEN);
         mockFreshInstance();
 
         const ok = await haBootstrap();
         expect(ok).toBe(true);
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    test('haRequest self-heals a 401 by re-provisioning (trusted net)', async () => {
+        // Session is stale; /api/states rejects until the token is refreshed.
+        fetchMock.mockImplementation(
+            async (input: RequestInfo, init?: RequestInit) => {
+                const url = urlFrom(input);
+                if (url.endsWith('/api/onboarding')) {
+                    return jsonResponse([
+                        { step: 'user', done: true },
+                        { step: 'core_config', done: true },
+                        { step: 'analytics', done: true },
+                        { step: 'integration', done: true },
+                    ]);
+                }
+                if (url.endsWith('/auth/login_flow')) {
+                    return jsonResponse({
+                        type: 'create_entry',
+                        flow_id: 'flow-2',
+                        result: AUTH_CODE,
+                    });
+                }
+                if (url.endsWith('/auth/token')) {
+                    return jsonResponse({ access_token: ACCESS_TOKEN });
+                }
+                if (url.endsWith('/api/states')) {
+                    const headers = (init?.headers ?? {}) as Record<
+                        string,
+                        string
+                    >;
+                    if (headers.Authorization === `Bearer ${ACCESS_TOKEN}`) {
+                        return jsonResponse([
+                            { entity_id: 'light.salon', state: 'on' },
+                        ]);
+                    }
+                    return jsonResponse({}, 401);
+                }
+                return jsonResponse({}, 404);
+            }
+        );
+
+        setHaReprovision(() => haBootstrap());
+        setHaToken('stale-token');
+
+        const states = await haRequest('/api/states');
+
+        expect(states[0].entity_id).toBe('light.salon');
+        expect(getHaToken()).toBe(ACCESS_TOKEN);
+
+        // Ensure the stale session caused a re-provision round-trip.
+        const urls = fetchMock.mock.calls.map(
+            ([input]: [RequestInfo]) => urlFrom(input)
+        );
+        expect(urls.filter((u) => u.endsWith('/auth/token'))).toHaveLength(1);
     });
 });

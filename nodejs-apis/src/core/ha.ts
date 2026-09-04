@@ -7,12 +7,12 @@ import WebSocket from 'ws';
 // Environment:
 //   HA_HOST  - HA host (default: homeassistant — the compose service name)
 //   HA_PORT  - HA port (default: 8123)
-//   HA_TOKEN - Optional long-lived access token. When absent, the brain
-//              authenticates via haBootstrap.ts (trusted_networks + refresh
-//              token persisted in Mongo).
 //
-// The access token is mutable at runtime (setHaToken); on 401 the client
-// transparently refreshes it via the stored refresh token.
+// The brain authenticates to HA exclusively via the `trusted_networks`
+// auth provider. The Bearer access token is ephemeral: it lives only in
+// memory and is re-provisioned automatically by haBootstrap.ts (on boot
+// and on 401). Nothing is configured, stored or persisted — zero user
+// involvement.
 // =====================================================================
 
 const HA_HOST = process.env.HA_HOST ?? 'homeassistant';
@@ -24,17 +24,21 @@ export const HA_HOSTNAME = HA_HOST;
 export const HA_CLIENT_ID = 'https://charlie.local/';
 export const HA_REDIRECT_URI = 'https://charlie.local/auth/callback';
 
-let haAccessToken = process.env.HA_TOKEN ?? '';
-let haRefreshToken = '';
+// Bearer access token, ephemeral (in-memory only).
+let haAccessToken = '';
 let haClientId = HA_CLIENT_ID;
 
-type TokenPersist = (access: string, refresh: string) => Promise<void>;
+type Reprovision = () => Promise<boolean>;
 
-let persistTokens: TokenPersist = async () => {};
+let reprovision: Reprovision | null = null;
 
-/** Register the Mongo persistence callback (done by haSync at boot). */
-export function setHaTokenPersistence(cb: TokenPersist): void {
-    persistTokens = cb;
+/**
+ * Register the session re-provision callback. haSync sets this to `haBootstrap`
+ * so that on a 401 the brain silently mints a fresh ephemeral token again
+ * from the trusted network (no refresh token, no persistence anywhere).
+ */
+export function setHaReprovision(cb: Reprovision): void {
+    reprovision = cb;
 }
 
 export function setHaClientId(clientId: string): void {
@@ -49,48 +53,21 @@ export function setHaToken(token: string): void {
     haAccessToken = token;
 }
 
-export function getHaRefreshToken(): string {
-    return haRefreshToken;
-}
-
-export function setHaRefreshToken(token: string): void {
-    haRefreshToken = token;
-}
-
 export function isHaConfigured(): boolean {
     return !!haAccessToken;
 }
 
-async function persist(): Promise<void> {
+/**
+ * Force a fresh session from the trusted network. Clears the stale token
+ * first so `haBootstrap` actually re-runs (its fast path skips when a token
+ * is already present).
+ */
+export async function ensureHaSession(): Promise<boolean> {
+    if (!reprovision) return false;
+    haAccessToken = '';
     try {
-        await persistTokens(haAccessToken, haRefreshToken);
-    } catch (e) {
-        // Persistence must never break a device call.
-        console.error('[HA] failed to persist tokens:', (e as any)?.message ?? e);
-    }
-}
-
-// ===== Token refresh =====
-
-export async function haRefreshTokens(): Promise<boolean> {
-    if (!haRefreshToken) return false;
-    try {
-        const res = await fetch(`${haBaseUrl}/auth/token`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                client_id: haClientId,
-                grant_type: 'refresh_token',
-                refresh_token: haRefreshToken,
-            }).toString(),
-        });
-        if (!res.ok) return false;
-        const data = await res.json();
-        if (!data?.access_token) return false;
-        haAccessToken = data.access_token;
-        if (data.refresh_token) haRefreshToken = data.refresh_token;
-        await persist();
-        return true;
+        const ok = await reprovision();
+        return ok && !!haAccessToken;
     } catch (e) {
         return false;
     }
@@ -133,22 +110,29 @@ export async function haRequest(
         );
     }
 
-    if (res.status === 401 && useAuth && !retried && haRefreshToken) {
-        if (await haRefreshTokens()) {
+    if (res.status === 401 && useAuth && !retried) {
+        // Trusted-network auth: re-provision an ephemeral session on the fly.
+        if (await ensureHaSession()) {
             return haRequest(path, init, { useAuth, retried: true });
         }
     }
 
     if (res.status === 401) {
         throw new Error(
-            'Home Assistant authentication failed. Set HA_TOKEN or let the bootstrap (re)provision tokens.'
+            'Home Assistant authentication failed — ensure the brain can reach HA from the trusted network to re-provision its session.'
         );
     }
     if (res.status === 404) return null;
     if (res.status === 204) return undefined;
     if (!res.ok) {
         const text = await res.text();
-        throw new Error(`Home Assistant request failed (${res.status}): ${text}`);
+        const err: any = new Error(
+            `Home Assistant request failed (${res.status})`
+        );
+        err.status = res.status;
+        err.detail = text;
+        err.isHaError = true;
+        throw err;
     }
 
     const text = await res.text();
@@ -305,8 +289,8 @@ export async function haWsConnect(): Promise<void> {
                 ws.close();
                 wsClient = null;
                 wsConnected = null;
-                // The access token may have expired: refresh once then retry.
-                haRefreshTokens()
+                // The ephemeral session expired: re-provision then retry once.
+                ensureHaSession()
                     .then((ok) => {
                         if (ok) return haWsConnect();
                         reject(new Error('[HA] WebSocket auth invalid'));
@@ -388,10 +372,10 @@ export const haStartFlow = (handler: string, context?: object) =>
 export const haGetFlow = (flowId: string) =>
     haRequest(`/api/config/config_entries/flow/${flowId}`);
 
-export const haAdvanceFlow = (flowId: string, stepId: string, userData: any) =>
+export const haAdvanceFlow = (flowId: string, userData: any) =>
     haRequest(`/api/config/config_entries/flow/${flowId}`, {
         method: 'POST',
-        body: JSON.stringify({ step_id: stepId, ...(userData ?? {}) }),
+        body: JSON.stringify(userData ?? {}),
     });
 
 export const haAbortFlow = (flowId: string) =>
