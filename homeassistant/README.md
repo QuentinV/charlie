@@ -24,12 +24,9 @@ activities, Mongo history) and its **frontend**. The Home Assistant UI is
 2. The brain then logs in through the `trusted_networks` provider: because the
    request comes from inside the trusted Docker network and there is exactly
    one owner user, HA returns an auth code with **no credentials**.
-3. `POST /auth/token` exchanges the code for an access token + refresh token.
-   The access token is kept in memory; the refresh token is persisted in Mongo
-   (`settings.ha`, redacted from the API) and auto-refreshed.
-
-If anything breaks, an admin can set `HA_TOKEN=<long-lived token>` in
-`nodejs-apis/.env` as an explicit override.
+3. `POST /auth/token` exchanges the code for an access token. The token is
+   **ephemeral**: it lives only in the brain's memory and is re-provisioned
+   automatically on every boot (and on a 401). Nothing is stored anywhere.
 
 ## Environment
 
@@ -37,7 +34,6 @@ If anything breaks, an admin can set `HA_TOKEN=<long-lived token>` in
 | --- | --- | --- |
 | `HA_TRUSTED_NETWORKS` | `172.16.0.0/12,127.0.0.1` | Comma-separated CIDRs rewired into `auth_providers` before HA boots |
 
-See `nodejs-apis/.env` for the brain-side `HA_HOST` / `HA_PORT` / `HA_TOKEN`.
 
 ## Adding device integrations
 
@@ -48,7 +44,6 @@ the **Discovery** page where you select which ones become Charlie devices.
 ## Troubleshooting
 
 - **"trusted_networks login failed"** in the api logs → the brain is not
-  reaching HA from a trusted IP. Check the compose network, or set `HA_TOKEN`.
 - **`allow_bypass_login` prompt** → more than one non-system user exists in HA.
   Keep a single owner (or remove extra users) for fully automatic login.
 - **HA unreachable** → confirm the `homeassistant` container is up and on the
