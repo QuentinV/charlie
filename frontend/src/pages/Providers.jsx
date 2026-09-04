@@ -27,9 +27,11 @@ import {
     Alert,
 } from '@mui/material';
 import { api } from '../api/charlie';
+import { IntegrationManager } from '../components/IntegrationManager';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 const PROVIDER_TYPES = [
     { value: 'gateway', label: 'Gateway' },
@@ -57,6 +59,7 @@ export const ProvidersPage = () => {
         severity: 'success',
     });
     const [codesources, setCodesources] = useState([]);
+    const [haOpen, setHaOpen] = useState(false);
 
     const fetchProviders = async () => {
         try {
@@ -267,6 +270,19 @@ export const ProvidersPage = () => {
                                                     : 'No'}
                                             </TableCell>
                                             <TableCell align="right">
+                                                {provider.codesource ===
+                                                    'homeassistant' && (
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        title="Configure Home Assistant integrations"
+                                                        onClick={() =>
+                                                            setHaOpen(true)
+                                                        }
+                                                    >
+                                                        <SettingsIcon />
+                                                    </IconButton>
+                                                )}
                                                 <IconButton
                                                     size="small"
                                                     onClick={() =>
@@ -403,6 +419,11 @@ export const ProvidersPage = () => {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+
+            <IntegrationManager
+                open={haOpen}
+                onClose={() => setHaOpen(false)}
+            />
         </Box>
     );
 };
