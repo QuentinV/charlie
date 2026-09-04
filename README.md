@@ -134,7 +134,6 @@ ASR_MODEL_PATH=./asr/models             # optional
 # Home Assistant (background device-provider layer) — all optional
 HA_HOST=localhost                       # default: homeassistant (compose service name)
 HA_PORT=8123
-HA_TOKEN=                               # optional: explicit long-lived token (skips bootstrap)
 # HA_AUTO_PROVISION=true
 # HA_TRUSTED_NETWORKS=172.16.0.0/12,127.0.0.1   # HA container env (comma CIDRs)
 # HA_ONBOARD_USERNAME=charlie           # owner user created on first HA boot
