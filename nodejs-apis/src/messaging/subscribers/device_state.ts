@@ -15,22 +15,4 @@ export default {
 
         await logDeviceState({ externalId });
     },
-    'shelly/events/rpc': async (data: string) => {
-        const { src, method, params } = JSON.parse(data);
-        if (method !== 'NotifyStatus' || !params['switch:0']) return;
-        const s = params['switch:0'];
-        const $set = {};
-
-        if (s.output !== undefined) {
-            $set['state.power'] = s.output ? 'on' : 'off';
-        }
-        if (s.apower !== undefined) {
-            $set['state.level'] = s.apower;
-        }
-
-        if (Object.keys($set).length) {
-            await cs.devices.updateOne({ externalId: src }, { $set });
-            await logDeviceState({ externalId: src });
-        }
-    },
 };
