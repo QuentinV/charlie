@@ -40,15 +40,24 @@ const apis: ProvidersApis = {
                 })
             ),
         }),
-        changeDeviceState: async ({ device: { externalId } }, { power }) =>
-            !!client?.operateLight(client?.devices?.[externalId], {
+        changeDeviceState: async (
+            { device: { externalId } },
+            { power, properties }
+        ) => {
+            const brightness = properties?.brightness ?? properties?.level;
+            return !!client?.operateLight(client?.devices?.[externalId], {
                 onOff: power === 'on',
-            }),
+                ...(brightness !== undefined && { dimmer: brightness }),
+            });
+        },
         getDeviceState: async ({ device: { externalId } }) => {
             const state = client?.devices[externalId]?.lightList[0];
             return {
                 power: state?.onOff ? 'on' : 'off',
                 level: state?.dimmer ?? 100,
+                properties: {
+                    brightness: state?.dimmer ?? 100,
+                },
             };
         },
         isInitialized: async () => initialized,
