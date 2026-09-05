@@ -1,6 +1,6 @@
-import { haBootstrap, haBootstrapConfig } from '../haBootstrap';
-import { getHaToken, isHaConfigured, setHaToken } from '../ha';
-import { haRequest, setHaReprovision } from '../ha';
+import { haBootstrap, haBootstrapConfig } from '../bootstrap';
+import { getHaToken, isHaConfigured, setHaToken } from '../client';
+import { haRequest, setHaReprovision } from '../client';
 
 // Mock global.fetch to simulate a fresh HA instance + trusted-network auth.
 const fetchMock = jest.fn();

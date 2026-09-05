@@ -69,20 +69,30 @@ export async function getProvidersTools(): Promise<Tools> {
 
 export async function getProvidersRestApis(): Promise<RestApis> {
     const pa = await providersApis();
-    return (await cs.providers.find().toArray()).reduce(
-        (prev: RestApis, p: Provider) => {
-            const def = pa[p.codesource]?.restApi;
-            if (!def) return prev;
 
-            const basePath = p.name.trim().replace(' ', '-').toLowerCase();
-            Object.entries(def).forEach(([key, api]) => {
-                prev[`${basePath}/${key}`] = api;
-            });
+    // Module-defined base paths: providers that own their REST surface get
+    // mounted regardless of whether a provider row exists yet (e.g.
+    // Home Assistant → restApiBasePath 'ha' → /api/ha/integrations).
+    const prev: RestApis = {};
+    Object.values(pa).forEach((mod) => {
+        if (!mod?.restApiBasePath || !mod.restApi) return;
+        Object.entries(mod.restApi).forEach(([key, api]) => {
+            prev[`${mod.restApiBasePath}/${key}`] = api;
+        });
+    });
 
-            return prev;
-        },
-        {}
-    );
+    // Legacy name-based paths, per provider row (e.g. ikea/discoverGateway).
+    (await cs.providers.find().toArray()).forEach((p: Provider) => {
+        const mod = pa[p.codesource];
+        if (!mod?.restApi || mod.restApiBasePath) return;
+
+        const basePath = p.name.trim().replace(' ', '-').toLowerCase();
+        Object.entries(mod.restApi).forEach(([key, api]) => {
+            prev[`${basePath}/${key}`] = api;
+        });
+    });
+
+    return prev;
 }
 
 async function call(

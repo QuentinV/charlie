@@ -175,7 +175,17 @@ export interface ProvidersApis {
     api: ProviderApi;
     restApi?: RestApis;
     tools?: Tools;
+    /** REST base path override (default: lowercased provider-row name).
+     *  Lets a provider mount its routes even before a provider row exists /
+     *  with a stable path (e.g. Home Assistant → 'ha'). */
+    restApiBasePath?: string;
+    /** Startup hook invoked by init.ts (fire-and-forget). Providers define
+     *  their own listeners here (event subscriptions, row seeding, MQTT…). */
+    onBoot?: () => Promise<void>;
 }
+
+/** A topic subscriber registered by a provider / module. */
+export type MqttSubscriber = (data: string) => Promise<void> | void;
 
 export interface ProvidersApisPlugin {
     name: string;

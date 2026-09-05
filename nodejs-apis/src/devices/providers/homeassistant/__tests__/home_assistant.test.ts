@@ -2,7 +2,7 @@ import {
     haDomainToDeviceType,
     haEntitiesToDevices,
     haStateToDeviceState,
-} from '../homeassistant';
+} from '../provider';
 
 describe('homeassistant provider', () => {
     test('haDomainToDeviceType maps HA domains to charlie types', () => {
