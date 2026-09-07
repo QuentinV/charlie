@@ -44,6 +44,16 @@ const schema: JSONSchema7 = {
             title: 'Enable discovery of devices',
             tags: ['Devices', 'Experimental'],
         },
+        'devices.providers.homeassistant.enabled': {
+            type: 'boolean',
+            title: 'Enable Home Assistant provider (background device layer)',
+            tags: ['Devices', 'restart'],
+        },
+        'devices.providers.homeassistant.history': {
+            type: 'boolean',
+            title: 'Log Home Assistant device state history',
+            tags: ['Devices'],
+        },
         'musics.show': {
             type: 'boolean',
             title: 'Enable music assistant iframe',
