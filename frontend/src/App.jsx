@@ -18,6 +18,7 @@ import { DiscoveryPage } from './pages/Discovery';
 import { ProvidersPage } from './pages/Providers';
 import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
+import { DevicePage } from './pages/Device';
 import { AiPage } from './pages/AiPage';
 import { DashboardPage } from './pages/Dashboard';
 import { useUnit } from 'effector-react';
@@ -102,6 +103,7 @@ function AppLayout({ showAiAsk }) {
                         <Route path="/" element={<HomePage />} />
                         <Route path="/discovery" element={<DiscoveryPage />} />
                         <Route path="/room/:id" element={<RoomPage />} />
+                        <Route path="/device/:id" element={<DevicePage />} />
                         <Route path="/routines" element={<RoutinesPage />} />
                         <Route
                             path="/routine/:id"

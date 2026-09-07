@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
-import FullScreenDialog from '../FullScreenDialog';
-import { ViewDevice } from './View';
+import { Grid, useMediaQuery, useTheme } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { DeviceCard } from './Card';
 
 /**
@@ -18,7 +17,7 @@ export const DevicesList = ({
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const [selected, setSelected] = useState(/** @type {any} */ (null));
+    const navigate = useNavigate();
     const [devicesState, setDevicesState] = useState(devices ?? []);
 
     useEffect(() => {
@@ -35,40 +34,27 @@ export const DevicesList = ({
     };
 
     return (
-        <>
-            <Grid
-                container
-                spacing={isMobile ? 1 : { sm: 1.5, md: 2 }}
-                sx={{ width: '100%', m: 0, mt: 0 }}
-            >
-                {devicesState.map((device) => (
-                    <Grid
-                        key={device?._id ?? device?.name}
-                        size={isMobile ? { xs: 6 } : { sm: 6, md: 4, lg: 3 }}
-                        sx={{ pt: '0 !important', mt: 0 }}
-                    >
-                        <DeviceCard
-                            device={device}
-                            compact={isMobile}
-                            favorite={favoriteDeviceIds.includes(device?._id)}
-                            onToggleFavorite={onToggleFavorite}
-                            onStateChange={handleStateChange}
-                            onSelect={(d) => setSelected(d)}
-                        />
-                    </Grid>
-                ))}
-            </Grid>
-            {!!selected && (
-                <FullScreenDialog
-                    open={!!selected}
-                    handleClose={() => setSelected(null)}
-                    title={selected?.name ?? 'Devices'}
+        <Grid
+            container
+            spacing={isMobile ? 1 : { sm: 1.5, md: 2 }}
+            sx={{ width: '100%', m: 0, mt: 0 }}
+        >
+            {devicesState.map((device) => (
+                <Grid
+                    key={device?._id ?? device?.name}
+                    size={isMobile ? { xs: 6 } : { sm: 6, md: 4, lg: 3 }}
+                    sx={{ pt: '0 !important', mt: 0 }}
                 >
-                    <Box sx={{ p: 2 }}>
-                        <ViewDevice deviceId={selected._id} />
-                    </Box>
-                </FullScreenDialog>
-            )}
-        </>
+                    <DeviceCard
+                        device={device}
+                        compact={isMobile}
+                        favorite={favoriteDeviceIds.includes(device?._id)}
+                        onToggleFavorite={onToggleFavorite}
+                        onStateChange={handleStateChange}
+                        onSelect={(d) => navigate(`/device/${d._id}`)}
+                    />
+                </Grid>
+            ))}
+        </Grid>
     );
 };

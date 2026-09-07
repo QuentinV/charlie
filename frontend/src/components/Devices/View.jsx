@@ -21,8 +21,8 @@ import { DeviceDetailControls, hasCustomControl } from '../DeviceControls';
 
 let timeout = null;
 
-export const ViewDevice = ({ deviceId }) => {
-    const [data, setData] = useState(null);
+export const ViewDevice = ({ device }) => {
+    const [data, setData] = useState(device);
     const [state, setState] = useState(null);
     const [stateLoading, setStateLoading] = useState(true);
     const [roomId, setRoomId] = useState(null);
@@ -30,11 +30,15 @@ export const ViewDevice = ({ deviceId }) => {
     const [providers, setProviders] = useState([]);
     const [capabilities, setCapabilities] = useState(null);
 
-    useEffect(() => {
-        (async () => {
-            const device = await api(`devices/${deviceId}`);
-            setData(device ?? null);
+    const deviceId = device?._id;
 
+    useEffect(() => {
+        setData(device);
+    }, [device]);
+
+    useEffect(() => {
+        if (!deviceId) return;
+        (async () => {
             const caps = await api(`devices/${deviceId}/capabilities`).catch(
                 () => null
             );
@@ -78,29 +82,26 @@ export const ViewDevice = ({ deviceId }) => {
     const codesource = providers?.find((p) => p._id === provider)?.codesource;
 
     const hasFunctions = (capabilities?.functions?.length ?? 0) > 0;
-    const controlsFirst =
-        hasCustomControl(type, codesource) || hasFunctions;
-
-    const controlsCard = !!codesource ? (
-        <Card>
-            <CardContent>
-                <DeviceDetailControls
-                    device={data}
-                    codesource={codesource}
-                    capabilities={capabilities}
-                    state={state}
-                    loading={stateLoading}
-                    onStateChange={(newState) =>
-                        newState && setState(newState)
-                    }
-                />
-            </CardContent>
-        </Card>
-    ) : null;
+    //const controlsFirst = hasCustomControl(type, codesource) || hasFunctions;
 
     return (
         <Stack spacing={2}>
-            {controlsFirst && controlsCard}
+            {hasFunctions && (
+                <Card>
+                    <CardContent>
+                        <DeviceDetailControls
+                            device={data}
+                            codesource={codesource}
+                            capabilities={capabilities}
+                            state={state}
+                            loading={stateLoading}
+                            onStateChange={(newState) =>
+                                newState && setState(newState)
+                            }
+                        />
+                    </CardContent>
+                </Card>
+            )}
             <Card>
                 <CardContent>
                     <Grid container spacing={2} sx={{ alignItems: 'center' }}>
@@ -241,7 +242,6 @@ export const ViewDevice = ({ deviceId }) => {
                     </Grid>
                 </CardContent>
             </Card>
-            {!controlsFirst && controlsCard}
             <Card>
                 <HistoricalDeviceChart deviceId={_id} />
             </Card>
