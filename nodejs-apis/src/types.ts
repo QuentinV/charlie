@@ -89,6 +89,7 @@ export interface Room {
     name: string;
     internalId: string;
     devices?: string[];
+    icon?: string;
 }
 
 export type ProviderType = 'gateway' | 'direct' | 'cloud';

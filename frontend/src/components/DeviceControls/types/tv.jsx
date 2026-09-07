@@ -7,7 +7,7 @@ import { SECTION_LABEL, TYPE_COLORS } from './typeStyles';
 
 /**
  * Default `tv` control panel: power button + volume slider
- * (`properties.volumeLevel` when exposed by the provider).
+ * (`properties.volume_level` when exposed by the provider).
  * Richer vendor panels (e.g. `sony_bravia_tv`) take precedence via
  * `CUSTOM_CONTROLS` in the DeviceControls registry.
  */
@@ -16,8 +16,8 @@ export const TVDefaultControls = ({ device, onStateChange }) => {
     const props = state?.properties ?? {};
     const power = state?.power === 'on';
     const volume =
-        props.volumeLevel !== undefined
-            ? props.volumeLevel
+        props.volume_level !== undefined
+            ? props.volume_level
             : (state?.level ?? 0);
 
     const setPower = (on) =>
@@ -25,7 +25,7 @@ export const TVDefaultControls = ({ device, onStateChange }) => {
     const setVolume = (next) =>
         updateState(
             device,
-            { properties: { ...props, volumeLevel: next } },
+            { properties: { ...props, volume_level: next / 100 } },
             onStateChange
         );
 
@@ -38,7 +38,7 @@ export const TVDefaultControls = ({ device, onStateChange }) => {
         >
             <Typography sx={SECTION_LABEL}>Volume</Typography>
             <DebouncedSlider
-                value={power ? volume : 0}
+                value={power ? volume * 100 : 0}
                 min={0}
                 max={100}
                 step={1}
@@ -53,7 +53,7 @@ export const TVDefaultControls = ({ device, onStateChange }) => {
                 sx={{ color: 'text.secondary', mt: 0.5 }}
             >
                 {power
-                    ? `Volume réglé à ${volume}%`
+                    ? `Volume réglé à ${volume * 100}%`
                     : 'Allumez le téléviseur pour régler le volume.'}
             </Typography>
         </TypePanel>

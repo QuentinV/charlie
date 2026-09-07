@@ -17,6 +17,8 @@ import {
     useMediaQuery,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import LoginIcon from '@mui/icons-material/Login';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/charlie';
 import { useLongPress } from '../../hooks/useLongPress';
 
@@ -29,6 +31,7 @@ import { useLongPress } from '../../hooks/useLongPress';
  *   favoriteDeviceIds?: string[];
  *   onToggleFavorite?: (device: any) => void;
  *   onEditRoom: (room: any) => void;
+ *   onEnterRoom: (room: any) => void;
  * }} props
  */
 function RoomCard({
@@ -39,6 +42,7 @@ function RoomCard({
     favoriteDeviceIds = [],
     onToggleFavorite,
     onEditRoom,
+    onEnterRoom,
 }) {
     const theme = useTheme();
     const onCount = room.devices?.filter(
@@ -110,7 +114,7 @@ function RoomCard({
                         fontSize: isMobile ? '1.25rem' : '1.5rem',
                     }}
                 >
-                    {room._id ? '🏠' : '🏡'}
+                    {room._id ? (room.icon ?? '🏠') : '🏡'}
                 </Box>
 
                 {/* Name + device summary */}
@@ -157,6 +161,24 @@ function RoomCard({
                     </Box>
                 </Box>
 
+                {/* Open room view */}
+                {isRealRoom && (
+                    <IconButton
+                        size="small"
+                        aria-label={`Open ${room.name} room`}
+                        title="Open room"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onEnterRoom(room);
+                        }}
+                        sx={{
+                            color: 'text.secondary',
+                        }}
+                    >
+                        <LoginIcon />
+                    </IconButton>
+                )}
+
                 {/* Expand/collapse chevron */}
                 <IconButton
                     size="small"
@@ -194,6 +216,7 @@ function RoomCard({
 }
 
 export const RoomsList = ({ favoriteDeviceIds = [], onToggleFavorite }) => {
+    const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [rooms, setRooms] = useState(/** @type {any[]} */ ([]));
@@ -220,6 +243,7 @@ export const RoomsList = ({ favoriteDeviceIds = [], onToggleFavorite }) => {
                 room.devices =
                     room.devices
                         ?.map((d) => devices[d])
+                        ?.filter((/** @type {any} */ d) => Boolean(d?._id))
                         ?.sort((a, b) => (a?.name > b?.name ? 1 : -1)) ?? [];
             });
 
@@ -299,6 +323,7 @@ export const RoomsList = ({ favoriteDeviceIds = [], onToggleFavorite }) => {
                         favoriteDeviceIds={favoriteDeviceIds}
                         onToggleFavorite={onToggleFavorite}
                         onEditRoom={handleOpenEdit}
+                        onEnterRoom={(room) => navigate(`/room/${room._id}`)}
                     />
                 );
             })}
