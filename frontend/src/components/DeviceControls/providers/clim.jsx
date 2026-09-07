@@ -546,9 +546,4 @@ export const ACControls = ({ device, onStateChange }) => {
     );
 };
 
-// This control already exposes all its declared functions directly in the
-// panel (operation mode, fan speed, target temperature) — suppress the
-// external "Fonctions" section rendered by DeviceDetailControls.
-ACControls.HIDES_FUNCTIONS = true;
-
 export default ACControls;

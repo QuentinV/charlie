@@ -1,4 +1,7 @@
 import {
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
     Card,
     CardContent,
     Divider,
@@ -8,16 +11,14 @@ import {
     MenuItem,
     Select,
     Stack,
-    Switch,
     TextField,
     Typography,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { api } from '../../api/charlie';
-import { DeviceToggle } from './Toggle';
 import { DeviceType } from './constants';
 import HistoricalDeviceChart from '../DeviceStateChart';
-import { DeviceDetailControls, hasCustomControl } from '../DeviceControls';
+import { DeviceDetailControls } from '../DeviceControls';
 
 let timeout = null;
 
@@ -81,48 +82,35 @@ export const ViewDevice = ({ device }) => {
     const { _id, name, externalId, provider, type } = data;
     const codesource = providers?.find((p) => p._id === provider)?.codesource;
 
-    const hasFunctions = (capabilities?.functions?.length ?? 0) > 0;
-    //const controlsFirst = hasCustomControl(type, codesource) || hasFunctions;
-
     return (
         <Stack spacing={2}>
-            {hasFunctions && (
-                <Card>
-                    <CardContent>
-                        <DeviceDetailControls
-                            device={data}
-                            codesource={codesource}
-                            capabilities={capabilities}
-                            state={state}
-                            loading={stateLoading}
-                            onStateChange={(newState) =>
-                                newState && setState(newState)
-                            }
-                        />
-                    </CardContent>
-                </Card>
-            )}
             <Card>
                 <CardContent>
-                    <Grid container spacing={2} sx={{ alignItems: 'center' }}>
-                        <Typography variant="h6" gutterBottom>
-                            {name}
-                        </Typography>
-
-                        <div>
-                            <DeviceToggle
-                                deviceId={deviceId}
-                                power={state?.power}
-                                type={type}
-                                level={state?.level}
-                                disabled={stateLoading}
-                                onStateChange={(newState) =>
-                                    newState && setState(newState)
-                                }
-                            />
-                        </div>
-                    </Grid>
-
+                    <DeviceDetailControls
+                        device={data}
+                        codesource={codesource}
+                        capabilities={capabilities}
+                        state={state}
+                        loading={stateLoading}
+                        onStateChange={(newState) =>
+                            newState && setState(newState)
+                        }
+                    />
+                </CardContent>
+            </Card>
+            <Accordion
+                defaultExpanded={false}
+                sx={{
+                    boxShadow: 'none',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                }}
+            >
+                <AccordionSummary>
+                    <Typography variant="h6">Propriétés</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
                     <Grid container direction="column" spacing={1}>
                         <Grid>
                             <TextField
@@ -240,8 +228,8 @@ export const ViewDevice = ({ device }) => {
                             </FormControl>
                         </Grid>
                     </Grid>
-                </CardContent>
-            </Card>
+                </AccordionDetails>
+            </Accordion>
             <Card>
                 <HistoricalDeviceChart deviceId={_id} />
             </Card>

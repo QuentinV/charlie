@@ -636,6 +636,4 @@ export const TVControls = ({ device, onStateChange }) => {
     );
 };
 
-TVControls.HIDES_FUNCTIONS = true;
-
 export default TVControls;

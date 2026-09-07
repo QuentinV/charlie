@@ -6,12 +6,12 @@ import {
     InputLabel,
     MenuItem,
     Select,
-    Slider,
     Switch,
     TextField,
     Typography,
 } from '@mui/material';
 import { updateState } from './utils';
+import { DebouncedSlider } from './DebouncedSlider';
 
 /**
  * Debounced text/number input that commits on blur or Enter.
@@ -108,7 +108,7 @@ export const SchemaField = ({ field, value, onChange, disabled = false }) => {
                         {field.label}: {value ?? field.min}
                         {field.unit ? ` ${field.unit}` : ''}
                     </Typography>
-                    <Slider
+                    <DebouncedSlider
                         value={value ?? field.min}
                         min={field.min ?? 0}
                         max={field.max ?? 100}
@@ -116,7 +116,7 @@ export const SchemaField = ({ field, value, onChange, disabled = false }) => {
                         size="small"
                         disabled={disabled}
                         valueLabelDisplay="auto"
-                        onChangeCommitted={(event, next) => onChange(next)}
+                        onChangeCommitted={onChange}
                     />
                 </Box>
             );

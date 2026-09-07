@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Box, CircularProgress, Stack, Typography } from '@mui/material';
 import { api } from '../../api/charlie';
 import GenericControls from './GenericControls';
-import FunctionControls from './FunctionControls';
 import { ACControls } from './providers/clim';
 import { TVControls } from './providers/sony_bravia_tv';
+import { TYPE_CONTROLS } from './types';
 
 /**
  * Registry of hand-authored provider-specific renderers, keyed by
  * `(deviceType)/(providerCode)`. Providers without an entry fall back to the
- * generic `capabilities.state[]` renderer. Each provider module is kept
+ * per-type default control (`TYPE_CONTROLS`), then to the generic
+ * `capabilities.state[]` renderer. Each provider module is kept
  * self-contained so it can later be externalised (schema + renderer together).
  */
 const CUSTOM_CONTROLS = {
@@ -17,16 +18,21 @@ const CUSTOM_CONTROLS = {
     'tv/sony_bravia_tv': TVControls,
 };
 
+/**
+ * Resolution order: provider override → type default → generic renderer.
+ */
 const resolveControl = (type, codesource) =>
-    CUSTOM_CONTROLS[`${type}/${codesource}`] ?? null;
+    CUSTOM_CONTROLS[`${type}/${codesource}`] ??
+    TYPE_CONTROLS[type] ??
+    null;
 
 /**
- * Whether a hand-authored custom control exists for the given
+ * Whether a hand-authored provider-specific control exists for the given
  * `(deviceType, providerCode)` couple. Used by parent layouts to decide
  * whether the controls section should be promoted ahead of general config.
  */
 export const hasCustomControl = (type, codesource) =>
-    !!resolveControl(type, codesource);
+    !!CUSTOM_CONTROLS[`${type}/${codesource}`];
 
 export const DeviceControls = ({
     device,
@@ -71,7 +77,8 @@ export const DeviceControls = ({
 
 /**
  * Detail-view wrapper: fetches the device capabilities once, then renders the
- * resolved control panel plus the "Fonctions" (typed functions) section.
+ * resolved control panel (provider-specific custom → per-type default →
+ * generic capability renderer).
  */
 export const DeviceDetailControls = ({
     device,
@@ -91,11 +98,6 @@ export const DeviceDetailControls = ({
             .catch(() => setFetchedCapabilities(null));
     }, [device?._id, capabilitiesProp]);
 
-    const Custom = resolveControl(device?.type, codesource);
-    const showFunctions =
-        !(Custom?.HIDES_FUNCTIONS ?? false) &&
-        (capabilities?.functions?.length ?? 0) > 0;
-
     return (
         <Stack spacing={2} sx={{ p: 1 }}>
             <DeviceControls
@@ -106,12 +108,6 @@ export const DeviceDetailControls = ({
                 state={state}
                 loading={loading}
             />
-            {showFunctions && (
-                <FunctionControls
-                    device={device}
-                    functions={capabilities?.functions ?? []}
-                />
-            )}
             {!capabilities && (
                 <Typography variant="body2" color="text.secondary">
                     Aucune capacité déclarée pour cet appareil.
