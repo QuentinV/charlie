@@ -1,5 +1,4 @@
 import {
-    Box,
     Card,
     CardContent,
     Divider,
@@ -8,6 +7,7 @@ import {
     InputLabel,
     MenuItem,
     Select,
+    Stack,
     Switch,
     TextField,
     Typography,
@@ -17,19 +17,34 @@ import { api } from '../../api/charlie';
 import { DeviceToggle } from './Toggle';
 import { DeviceType } from './constants';
 import HistoricalDeviceChart from '../DeviceStateChart';
+import { DeviceDetailControls, hasCustomControl } from '../DeviceControls';
 
 let timeout = null;
 
 export const ViewDevice = ({ deviceId }) => {
     const [data, setData] = useState(null);
+    const [state, setState] = useState(null);
+    const [stateLoading, setStateLoading] = useState(true);
     const [roomId, setRoomId] = useState(null);
     const [rooms, setRooms] = useState([]);
     const [providers, setProviders] = useState([]);
+    const [capabilities, setCapabilities] = useState(null);
 
     useEffect(() => {
         (async () => {
             const device = await api(`devices/${deviceId}`);
             setData(device ?? null);
+
+            const caps = await api(`devices/${deviceId}/capabilities`).catch(
+                () => null
+            );
+            setCapabilities(caps ?? null);
+
+            const stateRes = await api(`devices/${deviceId}/state`).catch(
+                () => null
+            );
+            setState(stateRes?.state ?? null);
+            setStateLoading(false);
 
             const rooms = await api('rooms');
             setRooms(rooms ?? []);
@@ -59,10 +74,33 @@ export const ViewDevice = ({ deviceId }) => {
     };
 
     if (!data) return null;
-    const { _id, name, externalId, provider, type, state } = data;
+    const { _id, name, externalId, provider, type } = data;
+    const codesource = providers?.find((p) => p._id === provider)?.codesource;
+
+    const hasFunctions = (capabilities?.functions?.length ?? 0) > 0;
+    const controlsFirst =
+        hasCustomControl(type, codesource) || hasFunctions;
+
+    const controlsCard = !!codesource ? (
+        <Card>
+            <CardContent>
+                <DeviceDetailControls
+                    device={data}
+                    codesource={codesource}
+                    capabilities={capabilities}
+                    state={state}
+                    loading={stateLoading}
+                    onStateChange={(newState) =>
+                        newState && setState(newState)
+                    }
+                />
+            </CardContent>
+        </Card>
+    ) : null;
 
     return (
-        <Box>
+        <Stack spacing={2}>
+            {controlsFirst && controlsCard}
             <Card>
                 <CardContent>
                     <Grid container spacing={2} sx={{ alignItems: 'center' }}>
@@ -76,9 +114,9 @@ export const ViewDevice = ({ deviceId }) => {
                                 power={state?.power}
                                 type={type}
                                 level={state?.level}
+                                disabled={stateLoading}
                                 onStateChange={(newState) =>
-                                    newState &&
-                                    setData({ ...data, state: newState })
+                                    newState && setState(newState)
                                 }
                             />
                         </div>
@@ -203,9 +241,10 @@ export const ViewDevice = ({ deviceId }) => {
                     </Grid>
                 </CardContent>
             </Card>
+            {!controlsFirst && controlsCard}
             <Card>
                 <HistoricalDeviceChart deviceId={_id} />
             </Card>
-        </Box>
+        </Stack>
     );
 };

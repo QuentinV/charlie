@@ -97,21 +97,41 @@ export default function HistoricalDeviceChart({
     const [viewRange, setViewRange] = useState(() =>
         getViewRange(period, periodOffset)
     );
+    const [capabilities, setCapabilities] = useState(null);
+    const [activeProperty, setActiveProperty] = useState('');
 
     useEffect(() => {
         setPeriodOffset(rangeDays);
     }, [rangeDays]);
 
     useEffect(() => {
+        if (!deviceId) {
+            setCapabilities(null);
+            setActiveProperty('');
+            return;
+        }
+        api(`devices/${deviceId}/capabilities`)
+            .then((res) => setCapabilities(res ?? null))
+            .catch(() => setCapabilities(null));
+    }, [deviceId]);
+
+    useEffect(() => {
         setViewRange(getViewRange(period, periodOffset));
     }, [period, periodOffset, deviceId]);
 
-    const aggregateData = (rows) => {
-        const normalized = rows.map((r) => ({
-            timestamp: new Date(r.timestamp),
-            level: r.level,
-            power: r.power === 'on' ? 2 : r.power === 'pause' ? 1 : 0,
-        }));
+    const aggregateData = (rows, propKey) => {
+        const trackProp = !!propKey;
+        const normalized = rows.map((r) => {
+            const point = {
+                timestamp: new Date(r.timestamp),
+                level: r.level,
+                power: r.power === 'on' ? 2 : r.power === 'pause' ? 1 : 0,
+            };
+            if (trackProp) {
+                point.prop = r.properties?.[propKey];
+            }
+            return point;
+        });
 
         if (period === 'day') {
             return normalized;
@@ -128,21 +148,35 @@ export default function HistoricalDeviceChart({
                 levelSum: 0,
                 count: 0,
                 maxPower: 0,
+                propSum: 0,
+                propCount: 0,
             };
 
             bucket.levelSum += point.level;
             bucket.count += 1;
             bucket.maxPower = Math.max(bucket.maxPower, point.power);
+            if (trackProp && typeof point.prop === 'number') {
+                bucket.propSum += point.prop;
+                bucket.propCount += 1;
+            }
             buckets.set(key, bucket);
         });
 
         return Array.from(buckets.values())
             .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
-            .map((bucket) => ({
-                timestamp: bucket.timestamp,
-                level: bucket.levelSum / bucket.count,
-                power: bucket.maxPower,
-            }));
+            .map((bucket) => {
+                const out = {
+                    timestamp: bucket.timestamp,
+                    level: bucket.levelSum / bucket.count,
+                    power: bucket.maxPower,
+                };
+                if (trackProp) {
+                    out.prop = bucket.propCount
+                        ? bucket.propSum / bucket.propCount
+                        : null;
+                }
+                return out;
+            });
     };
 
     useEffect(() => {
@@ -153,18 +187,21 @@ export default function HistoricalDeviceChart({
         }
 
         setLoading(true);
+        const propParam = activeProperty
+            ? `&properties=${encodeURIComponent(activeProperty)}`
+            : '';
         api(
-            `devices/${deviceId}/states?start=${viewRange.start.getTime()}&end=${viewRange.end.getTime()}`
+            `devices/${deviceId}/states?start=${viewRange.start.getTime()}&end=${viewRange.end.getTime()}${propParam}`
         )
             .then((res) => {
                 const rows = res?.data ?? [];
-                setData(aggregateData(rows));
+                setData(aggregateData(rows, activeProperty));
             })
             .catch(() => {
                 setData([]);
             })
             .finally(() => setLoading(false));
-    }, [deviceId, viewRange]);
+    }, [deviceId, viewRange, activeProperty]);
 
     const shiftWindow = (direction) => {
         setPeriodOffset((prev) =>
@@ -190,6 +227,21 @@ export default function HistoricalDeviceChart({
             showMark: false,
             color: '#ed6c02',
             valueFormatter: (value) => ['Off', 'Pause', 'On'][value],
+        });
+    }
+
+    const numericProps = (capabilities?.state ?? []).filter(
+        (field) => field.type === 'number' || field.type === 'range'
+    );
+    if (activeProperty) {
+        const meta = numericProps.find(
+            (field) => field.key === activeProperty
+        );
+        series.push({
+            dataKey: 'prop',
+            label: meta?.label ?? activeProperty,
+            showMark: false,
+            color: '#2e7d32',
         });
     }
 
@@ -234,6 +286,34 @@ export default function HistoricalDeviceChart({
                                 ))}
                             </Select>
                         </FormControl>
+
+                        {numericProps.length > 0 && (
+                            <FormControl size="small" sx={{ minWidth: 140 }}>
+                                <InputLabel id="device-state-prop-label">
+                                    Métrique
+                                </InputLabel>
+                                <Select
+                                    labelId="device-state-prop-label"
+                                    value={activeProperty}
+                                    label="Métrique"
+                                    onChange={(event) =>
+                                        setActiveProperty(event.target.value)
+                                    }
+                                >
+                                    <MenuItem value="">
+                                        Niveau / Puissance
+                                    </MenuItem>
+                                    {numericProps.map((field) => (
+                                        <MenuItem
+                                            key={field.key}
+                                            value={field.key}
+                                        >
+                                            {field.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        )}
 
                         <IconButton
                             onClick={() => shiftWindow('left')}

@@ -52,10 +52,8 @@ export const DevicesList = ({
                             compact={isMobile}
                             favorite={favoriteDeviceIds.includes(device?._id)}
                             onToggleFavorite={onToggleFavorite}
-                            onSelect={(d) => {
-                                handleStateChange(d);
-                                setSelected(d);
-                            }}
+                            onStateChange={handleStateChange}
+                            onSelect={(d) => setSelected(d)}
                         />
                     </Grid>
                 ))}

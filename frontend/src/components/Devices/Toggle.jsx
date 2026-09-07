@@ -11,6 +11,7 @@ export const DeviceToggle = ({
     level,
     onStateChange,
     compact = false,
+    disabled = false,
 }) => {
     const [loading, setLoading] = useState(false);
 
@@ -54,7 +55,8 @@ export const DeviceToggle = ({
                     size="small"
                     variant="contained"
                     onClick={toggleState}
-                    loading={loading}
+                    loading={loading || disabled}
+                    disabled={disabled}
                     sx={{
                         px: compact ? 1.5 : 2,
                         py: compact ? 0.5 : 1,
@@ -72,7 +74,7 @@ export const DeviceToggle = ({
                     checked={power === 'on'}
                     onChange={toggleState}
                     color="primary"
-                    disabled={loading}
+                    disabled={loading || disabled}
                     size={compact ? 'small' : 'medium'}
                 />
             </>
@@ -81,6 +83,7 @@ export const DeviceToggle = ({
 
     return (
         <Box
+            onClick={(e) => e.stopPropagation()}
             sx={{
                 display: 'flex',
                 alignItems: 'center',

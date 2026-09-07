@@ -29,6 +29,7 @@ const TYPE_COLORS = {
  * @param {{
  *   device: any;
  *   onSelect?: (device: any) => void;
+ *   onStateChange?: (device: any) => void;
  *   compact?: boolean;
  *   favorite?: boolean;
  *   onToggleFavorite?: (device: any) => void;
@@ -37,6 +38,7 @@ const TYPE_COLORS = {
 export const DeviceCard = ({
     device,
     onSelect,
+    onStateChange,
     compact = false,
     favorite = false,
     onToggleFavorite,
@@ -181,14 +183,10 @@ export const DeviceCard = ({
                                 type={device?.type}
                                 level={device?.state?.level}
                                 compact={compact}
-                                onStateChange={(
-                                    /**
-                                     * @type {any}
-                                     */ newState
-                                ) => {
+                                onStateChange={(newState) => {
                                     if (newState) {
                                         device.state = newState;
-                                        onSelect?.({ ...device });
+                                        onStateChange?.({ ...device });
                                     }
                                 }}
                             />
