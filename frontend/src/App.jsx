@@ -1,5 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import {
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    useLocation,
+} from 'react-router-dom';
 import { theme } from './theme';
 import { HomePage } from './pages/Home';
 import { NotFoundPage } from './pages/NotFound';
@@ -66,6 +71,8 @@ export default function App() {
 function AppLayout({ showAiAsk }) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const location = useLocation();
+    const isAiRoute = location.pathname === '/ai';
 
     return (
         <Box
@@ -123,7 +130,7 @@ function AppLayout({ showAiAsk }) {
                     </Routes>
                 </Box>
             </Box>
-            {showAiAsk && (
+            {showAiAsk && !isAiRoute && (
                 <Box
                     sx={{
                         flexGrow: 0,

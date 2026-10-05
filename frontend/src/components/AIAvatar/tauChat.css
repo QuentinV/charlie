@@ -1,0 +1,192 @@
+/* =====================================================================
+   Charlie · Tau Chat — "Jarvis HUD" styling layer
+   ===================================================================== */
+
+/* ---- Message entrance (scan/wash + fade + lift) ---- */
+@keyframes hudIn {
+    0% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.985);
+        filter: blur(4px);
+    }
+    45% {
+        filter: blur(0px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ---- Horizontal scanline sweeping the HUD panel ---- */
+@keyframes scanMove {
+    0% {
+        transform: translateY(-100%);
+    }
+    60% {
+        transform: translateY(1200%);
+    }
+    100% {
+        transform: translateY(1200%);
+    }
+}
+
+/* ---- Status dot pulse ---- */
+@keyframes hudBlink {
+    0%,
+    100% {
+        opacity: 1;
+        box-shadow: 0 0 6px var(--hud-dot, rgba(255, 215, 0, 0.9));
+    }
+    50% {
+        opacity: 0.35;
+        box-shadow: 0 0 2px var(--hud-dot, rgba(255, 215, 0, 0.4));
+    }
+}
+
+/* ---- Equalizer "thinking" bars ---- */
+@keyframes activityBar {
+    0%,
+    100% {
+        transform: scaleY(0.35);
+    }
+    50% {
+        transform: scaleY(1);
+    }
+}
+
+/* ---- Soft glow pulse for the energy line / border ---- */
+@keyframes hudGlow {
+    0%,
+    100% {
+        opacity: 0.45;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.hud-panel {
+    position: relative;
+    background: linear-gradient(
+        160deg,
+        rgba(10, 13, 18, 0.52),
+        rgba(8, 10, 14, 0.38)
+    );
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    backdrop-filter: blur(12px) saturate(140%);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 215, 0, 0.12),
+        0 0 24px -6px rgba(0, 225, 255, 0.18),
+        0 24px 80px -16px rgba(0, 0, 0, 0.8);
+}
+
+/* Gold corner brackets */
+.hud-corners::before,
+.hud-corners::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    pointer-events: none;
+    z-index: 2;
+}
+.hud-corners::before {
+    top: 6px;
+    left: 6px;
+    border-top: 1.5px solid rgba(255, 215, 0, 0.7);
+    border-left: 1.5px solid rgba(255, 215, 0, 0.7);
+}
+.hud-corners::after {
+    bottom: 6px;
+    right: 6px;
+    border-bottom: 1.5px solid rgba(255, 215, 0, 0.7);
+    border-right: 1.5px solid rgba(255, 215, 0, 0.7);
+}
+
+/* The sweeping scanline */
+.hud-scanline {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 225, 255, 0.55),
+        rgba(255, 215, 0, 0.4),
+        transparent
+    );
+    opacity: 0.35;
+    animation: scanMove 7s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Glowing text */
+.hud-text {
+    text-shadow:
+        0 0 6px rgba(255, 215, 0, 0.25),
+        0 0 18px rgba(0, 225, 255, 0.12);
+}
+
+/* Message bubble */
+.hud-msg {
+    animation: hudIn 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.hud-status-dot {
+    animation: hudBlink 1.8s ease-in-out infinite;
+}
+
+.hud-eq {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+}
+.hud-eq span {
+    width: 2px;
+    height: 100%;
+    background: currentColor;
+    border-radius: 1px;
+    transform-origin: bottom;
+    animation: activityBar 0.9s ease-in-out infinite;
+}
+.hud-eq span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+.hud-eq span:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+/* Energy line on edge of the visualizer when active */
+.hud-energy {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 215, 0, 0.9),
+        rgba(0, 225, 255, 0.9),
+        transparent
+    );
+    animation: hudGlow 1.6s ease-in-out infinite;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+    pointer-events: none;
+    z-index: 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hud-scanline,
+    .hud-msg,
+    .hud-status-dot,
+    .hud-energy,
+    .hud-eq span {
+        animation: none !important;
+    }
+}
