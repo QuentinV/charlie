@@ -43,6 +43,8 @@ export default function TauVisualizer({
     onInputChange = () => {},
     onSend = () => {},
     onToggleMic = () => {},
+    onToggleHotword = () => {},
+    hotwordEnabled = false,
     isListening = false,
     busy = false,
     activity = 0,
@@ -276,13 +278,48 @@ export default function TauVisualizer({
                         bgcolor:
                             busy || isListening
                                 ? 'warning.main'
-                                : 'success.main',
+                                : hotwordEnabled
+                                    ? 'info.main'
+                                    : 'success.main',
                         '--hud-dot':
                             busy || isListening
                                 ? 'rgba(255,179,0,.9)'
-                                : 'rgba(76,217,100,.9)',
+                                : hotwordEnabled
+                                    ? 'rgba(78,200,245,.9)'
+                                    : 'rgba(76,217,100,.9)',
                     }}
                 />
+                <IconButton
+                    aria-label={
+                        hotwordEnabled
+                            ? 'désactiver le réveil vocal'
+                            : 'activer le réveil vocal'
+                    }
+                    size="small"
+                    onClick={onToggleHotword}
+                    title={
+                        hotwordEnabled
+                            ? 'Réveil vocal activé (charlie / hey / hi)'
+                            : 'Activer le réveil vocal (charlie / hey / hi)'
+                    }
+                    sx={{
+                        color: hotwordEnabled
+                            ? 'primary.main'
+                            : 'text.disabled',
+                        bgcolor: hotwordEnabled
+                            ? alpha('#FFD700', 0.15)
+                            : 'transparent',
+                        '&:hover': {
+                            bgcolor: alpha('#FFD700', 0.15),
+                        },
+                    }}
+                >
+                    {hotwordEnabled ? (
+                        <MicIcon fontSize="small" />
+                    ) : (
+                        <MicOffIcon fontSize="small" />
+                    )}
+                </IconButton>
             </Box>
 
             {/* Conversation floating over the τ */}
