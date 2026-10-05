@@ -2,7 +2,6 @@ import ikea from './ikea';
 import sony_bravia_tv from './sony_bravia_tv';
 import nanoleaf from './nanoleafs';
 import clim from './clim_mitshubishi';
-import customGarden from './custom_garden';
 import tuya from './tuya';
 import default_custom from './default_custom';
 import shelly from './shelly';
@@ -15,7 +14,6 @@ export default {
     sony_bravia_tv,
     nanoleaf,
     clim,
-    customGarden,
     tuya,
     default_custom,
     shelly,
