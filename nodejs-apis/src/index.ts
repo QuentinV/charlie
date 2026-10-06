@@ -6,7 +6,7 @@ import { setupRoutines } from './routines';
 import { setupRotateProvidersIp } from './devices/rotateip.job';
 import { settings } from './manager/services/settings';
 import { setupRestApi } from './restapi-setup.';
-import { setupChatServer } from './ai/chat';
+import { setupChatServer } from './ai/chat-server';
 
 (async () => {
     await initAll();
