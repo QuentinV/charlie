@@ -67,8 +67,171 @@ intents:
             - attends
             - attendre
         slots:
+            - number
             - timeUnit
-            - text
+
+    askTime:
+        starts:
+            - quelle heure
+            - il est quelle heure
+            - c est quelle heure
+            - quelle heure il est
+
+    askDate:
+        starts:
+            - quel jour
+            - quelle date
+            - on est quel jour
+            - c est quel jour
+
+    askWeather:
+        starts:
+            - quel temps
+            - quelle temperature
+            - il fait quel temps
+            - meteo
+            - il fait beau
+            - il fait mauvais
+
+    howAreYou:
+        starts:
+            - comment tu vas
+            - comment ca va
+            - tu vas bien
+            - ca va
+            - tu vas comment
+
+    whoAreYou:
+        starts:
+            - qui es tu
+            - tu es qui
+            - c est qui
+            - c est quoi charlie
+            - tu es charlie
+            - comment tu t appelles
+
+    deviceStateQuery:
+        starts:
+            - est ce que
+        slots:
+            - plurial
+            - deviceType
+            - predefinedRoom
+            - state
+            - room
+
+    setBrightness:
+        starts:
+            - mets la luminosite
+            - met la luminosite
+            - mets la lumiere a
+            - met la lumiere a
+            - passe la luminosite a
+        slots:
+            - number
+            - plurial
+            - deviceType
+            - predefinedRoom
+            - room
+
+    brightnessUp:
+        starts:
+            - augmente la luminosite
+            - augmente le luminaire
+            - monte la luminosite
+        slots:
+            - number
+            - plurial
+            - deviceType
+            - predefinedRoom
+            - room
+
+    brightnessDown:
+        starts:
+            - baisse la luminosite
+            - reduis la luminosite
+            - diminue la luminosite
+            - baisse le luminaire
+        slots:
+            - number
+            - plurial
+            - deviceType
+            - predefinedRoom
+            - room
+
+    volumeUp:
+        starts:
+            - augmente le volume
+            - augmente le son
+            - monte le volume
+            - remonte le volume
+            - volume plus haut
+        slots:
+            - number
+            - plurial
+            - deviceType
+            - predefinedRoom
+            - room
+
+    volumeDown:
+        starts:
+            - baisse le volume
+            - baisse le son
+            - reduis le volume
+            - diminue le volume
+            - volume plus bas
+        slots:
+            - number
+            - plurial
+            - deviceType
+            - predefinedRoom
+            - room
+
+    setVolume:
+        starts:
+            - mets le volume a
+            - met le volume a
+            - mets le son a
+            - met le son a
+        slots:
+            - number
+            - plurial
+            - deviceType
+            - predefinedRoom
+            - room
+
+    thanks:
+        starts:
+            - merci
+            - merci beaucoup
+            - merci bien
+            - thanks
+            - thank you
+
+    goodbye:
+        starts:
+            - au revoir
+            - bonne nuit
+            - a plus
+            - a bientot
+            - bye
+            - ciao
+
+    confirm:
+        starts:
+            - oui
+            - d accord
+            - ok
+            - vas y
+            - parfait
+            - exactement
+
+    deny:
+        starts:
+            - non
+            - non merci
+            - non pas
+            - je ne veux pas
 
 slots:
     plurial:
@@ -104,6 +267,14 @@ slots:
             - min
             - sec
 
+    number:
+        type: 'number'
+
+    state:
+        type: 'synonym'
+        keys:
+            - state
+
     text:
         type: 'string'
         filterFillingsWords: true
@@ -120,6 +291,8 @@ synonyms:
         - maison
     light:
         - lumière
+        - luminosité
+        - luminaire
         - lampe
         - ampoule
         - plafonier
@@ -180,3 +353,31 @@ synonyms:
         - seconde
         - sec
         - s
+    state:
+        - est allumée
+        - est allumé
+        - sont allumées
+        - sont allumés
+        - est ouverte
+        - est ouvert
+        - sont ouvertes
+        - sont ouverts
+        - est fermée
+        - est fermé
+        - sont fermées
+        - sont fermés
+        - est éteinte
+        - est éteint
+        - sont éteints
+        - est en marche
+        - est arrêté
+        - est arrêtée
+        - sont arrêtés
+        - allumée
+        - allumé
+        - ouverte
+        - ouvert
+        - fermée
+        - fermé
+        - éteinte
+        - éteint

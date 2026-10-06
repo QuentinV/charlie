@@ -229,6 +229,14 @@ async function haChangeDeviceState(
             return true;
 
         case 'media_player':
+            if (params?.level != null) {
+                // Volume control (0..100 level → HA 0..1 volume)
+                await haCallService('media_player', 'volume_set', {
+                    ...data,
+                    volume_level: params.level / 100,
+                });
+                return true;
+            }
             if (power === 'pause') {
                 await haCallService('media_player', 'media_pause', data);
             } else {

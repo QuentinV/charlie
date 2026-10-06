@@ -1,15 +1,33 @@
 {
     "brightness": {},
+    "confirm": {
+        "response": "Très bien."
+    },
+    "deny": {
+        "response": "D'accord, on laisse tomber."
+    },
     "devices": {},
+    "goodbye": {
+        "response": "Au revoir, à bientôt !"
+    },
     "greet": {
         "response": "Salut, comment tu vas aujourd'hui ?"
     },
     "group": {},
+    "howAreYou": {
+        "response": "Ça va bien, merci. Et toi ?"
+    },
     "music": {},
     "temperature": {},
+    "thanks": {
+        "response": "Avec plaisir."
+    },
     "timer": {},
     "volume": {},
     "weather": {
-        "answer": "A %{town} en %{country} il fait actuellement %{temp} degrée. Avec %{rain}mm de pluie et %{windspeed} km/s de vent."
+        "answer": "Il fait actuellement %{temp}°C, avec %{rain} mm de pluie et %{windspeed} km/h de vent."
+    },
+    "whoAreYou": {
+        "response": "Je suis Charlie, ton assistant de maison."
     }
 }

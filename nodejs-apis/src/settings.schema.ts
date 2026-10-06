@@ -84,6 +84,16 @@ const schema: JSONSchema7 = {
             title: 'Enable AI chat',
             tags: ['AI', 'Experimental'],
         },
+        'weather.latitude': {
+            type: 'number',
+            title: 'Home latitude used for weather questions',
+            tags: ['Weather'],
+        },
+        'weather.longitude': {
+            type: 'number',
+            title: 'Home longitude used for weather questions',
+            tags: ['Weather'],
+        },
     },
 };
 

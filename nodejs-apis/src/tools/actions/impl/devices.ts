@@ -1,13 +1,21 @@
-import { Device, DeviceTypes, PowerType, Room, Tools } from '../../../types';
+import {
+    Device,
+    DeviceState,
+    DeviceTypes,
+    PowerType,
+    Room,
+    Tools,
+} from '../../../types';
 import { cs } from '../../../core/db';
 import Fuse from 'fuse.js';
-import { changeDeviceState } from '../../../devices';
+import { changeDeviceState, getDeviceState } from '../../../devices';
 import { normalizeAndSplit } from './../../../ai/nlu/utils';
 import { log } from '../../../manager/services/activities';
 
 interface DeviceRequest {
     freeText: string;
     slots?: {
+        number?: string;
         deviceType?: string;
         room?: string;
         plurial?: 'plurial';
@@ -133,6 +141,97 @@ async function changeDevice(
     return "Je ne trouves pas l'appareil demandé.";
 }
 
+function clampLevel(value: number): number {
+    return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+/** Devices targeted by a level (brightness/volume) request. */
+async function findLevelTargets(
+    req: DeviceRequest,
+    defaultType: string
+): Promise<Device[] | string> {
+    const effective: DeviceRequest = {
+        ...req,
+        slots: {
+            ...req.slots,
+            deviceType: req.slots?.deviceType ?? defaultType,
+        },
+    };
+
+    const found = await findDevices(effective);
+    const devices = found?.length ? found : await findByType(effective);
+    if (!devices?.length) {
+        return "Je ne trouves pas l'appareil demandé.";
+    }
+
+    if (req.slots?.plurial) {
+        return devices;
+    }
+    if (
+        devices.length > 1 &&
+        !req.slots?.room &&
+        !req.slots?.predefinedRoom
+    ) {
+        return `Plusieurs appareils correspondent. Précise la pièce, par exemple: ${devices
+            .slice(0, 3)
+            .map((d) => d.name)
+            .join(', ')}.`;
+    }
+    return [devices[0]];
+}
+
+/** Fallback when free text does not name a device: whole type (scoped to room). */
+async function findByType(req: DeviceRequest): Promise<Device[]> {
+    const filter: any = { type: req.slots?.deviceType };
+    if (req.slots?.room) {
+        const room = await getRoom(req.slots.room);
+        if (room?.devices?.length) {
+            filter['_id'] = { $in: room.devices };
+        }
+    }
+    return cs.devices.find(filter).toArray();
+}
+
+async function applyLevel(
+    req: DeviceRequest,
+    defaultType: string,
+    resolveLevel: (current: number | undefined) => number | undefined
+): Promise<boolean | string> {
+    const targets = await findLevelTargets(req, defaultType);
+    if (typeof targets === 'string') {
+        return targets;
+    }
+
+    for (const device of targets) {
+        if (!device._id) continue;
+        const state = await getDeviceState(device._id);
+        const level = resolveLevel(state?.level);
+        if (level === undefined) return false;
+        const changed = await changeDeviceState(device._id, { level });
+        if (!changed) {
+            return `Impossible de modifier le niveau de ${device.name}.`;
+        }
+    }
+    return true;
+}
+
+function describeDeviceState(device: Device, state?: DeviceState): string {
+    if (!state?.power) {
+        return `${device.name}: je ne connais pas son état.`;
+    }
+    const power =
+        state.power === 'on'
+            ? 'allumé'
+            : state.power === 'pause'
+              ? 'en pause'
+              : 'éteint';
+    let description = `${device.name} est ${power}`;
+    if (state.level != null) {
+        description += ` à ${state.level}%`;
+    }
+    return `${description}.`;
+}
+
 export const tools: Tools = {
     turnOnDevice: {
         exec: async (req: DeviceRequest) => changeDevice(req, 'on'),
@@ -142,6 +241,65 @@ export const tools: Tools = {
     },
     pauseDevice: {
         exec: async (req: DeviceRequest) => changeDevice(req, 'pause'),
+    },
+    deviceStateQuery: {
+        exec: async (req: DeviceRequest) => {
+            if (!req.slots || !Object.keys(req.slots).length) {
+                // Nothing device related was recognized
+                // (e.g. "est ce que tu peux ...").
+                return false;
+            }
+            const devices = await findDevices(req);
+            if (!devices?.length) {
+                return "Je ne trouves pas l'appareil demandé.";
+            }
+            const descriptions: string[] = [];
+            for (const device of devices) {
+                const state = device._id
+                    ? await getDeviceState(device._id)
+                    : undefined;
+                descriptions.push(describeDeviceState(device, state));
+            }
+            return descriptions.join(' ');
+        },
+    },
+    setBrightness: {
+        exec: async (req: DeviceRequest) => {
+            const value = Number(req.slots?.number);
+            if (!req.slots?.number || Number.isNaN(value)) return false;
+            return applyLevel(req, 'light', () => clampLevel(value));
+        },
+    },
+    brightnessUp: {
+        exec: async (req: DeviceRequest) =>
+            applyLevel(req, 'light', (current) =>
+                clampLevel((current ?? 50) + 10)
+            ),
+    },
+    brightnessDown: {
+        exec: async (req: DeviceRequest) =>
+            applyLevel(req, 'light', (current) =>
+                clampLevel((current ?? 50) - 10)
+            ),
+    },
+    setVolume: {
+        exec: async (req: DeviceRequest) => {
+            const value = Number(req.slots?.number);
+            if (!req.slots?.number || Number.isNaN(value)) return false;
+            return applyLevel(req, 'tv', () => clampLevel(value));
+        },
+    },
+    volumeUp: {
+        exec: async (req: DeviceRequest) =>
+            applyLevel(req, 'tv', (current) =>
+                clampLevel((current ?? 50) + 10)
+            ),
+    },
+    volumeDown: {
+        exec: async (req: DeviceRequest) =>
+            applyLevel(req, 'tv', (current) =>
+                clampLevel((current ?? 50) - 10)
+            ),
     },
 };
 

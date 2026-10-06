@@ -24,7 +24,6 @@ describe('findIntent', () => {
 
         expect(await findIntent('Bonjour !')).toStrictEqual({
             name: 'greet',
-            freeText: '!',
         });
 
         expect(await findIntent('coucou')).toStrictEqual({
@@ -133,7 +132,7 @@ describe('findIntent', () => {
 
         expect(await findIntent('stop la mus')).toStrictEqual({
             name: 'pauseDevice',
-            freeText: 'la mu\s',
+            freeText: 'la mus',
             slots: { text: 'mus' },
         });
     });
@@ -284,9 +283,124 @@ describe('findIntent', () => {
             name: 'wait',
             freeText: '1 minute',
             slots: {
+                number: '1',
                 timeUnit: 'min',
-                text: '1',
             },
+        });
+
+        expect(await findIntent('attend une heure')).toStrictEqual({
+            name: 'wait',
+            freeText: 'une heure',
+            slots: {
+                number: '1',
+                timeUnit: 'hour',
+            },
+        });
+    });
+
+    test('lead-ins, politeness and separators', async () => {
+        expect(await findIntent('Charlie, allume la lumière')).toStrictEqual({
+            name: 'turnOnDevice',
+            freeText: 'la lumière',
+            slots: { deviceType: 'light' },
+        });
+        expect(
+            await findIntent('peux-tu allumer la lumière du salon')
+        ).toStrictEqual({
+            name: 'turnOnDevice',
+            freeText: 'la lumière du salon',
+            slots: { deviceType: 'light', room: 'salon' },
+        });
+        expect(
+            await findIntent("arrête la musique s'il te plaît")
+        ).toStrictEqual({
+            name: 'pauseDevice',
+            freeText: 'la musique',
+            slots: { text: 'musique' },
+        });
+    });
+
+    test('questions', async () => {
+        expect(await findIntent('quelle heure est-il ?')).toStrictEqual({
+            name: 'askTime',
+            freeText: 'est il',
+        });
+        expect(await findIntent('quel jour on est ?')).toStrictEqual({
+            name: 'askDate',
+            freeText: 'on est',
+        });
+        expect(await findIntent('quel temps fait-il ?')).toStrictEqual({
+            name: 'askWeather',
+            freeText: 'fait il',
+        });
+        expect(await findIntent('comment ça va ?')).toStrictEqual({
+            name: 'howAreYou',
+        });
+        expect(await findIntent('qui es-tu ?')).toStrictEqual({
+            name: 'whoAreYou',
+        });
+    });
+
+    test('device state query', async () => {
+        expect(
+            await findIntent('est-ce que la lumière du salon est allumée ?')
+        ).toStrictEqual({
+            name: 'deviceStateQuery',
+            freeText: 'la lumière du salon est allumée',
+            slots: { deviceType: 'light', state: 'state', room: 'salon' },
+        });
+        expect(
+            await findIntent('est ce que les volets du salon sont fermés')
+        ).toStrictEqual({
+            name: 'deviceStateQuery',
+            freeText: 'les volets du salon sont fermés',
+            slots: {
+                plurial: 'plurial',
+                deviceType: 'shutter',
+                state: 'state',
+                room: 'salon',
+            },
+        });
+    });
+
+    test('brightness and volume', async () => {
+        expect(await findIntent('mets la lumière à 50')).toStrictEqual({
+            name: 'setBrightness',
+            freeText: '50',
+            slots: { number: '50' },
+        });
+        expect(
+            await findIntent('augmente la luminosité du salon')
+        ).toStrictEqual({
+            name: 'brightnessUp',
+            freeText: 'du salon',
+            slots: { room: 'salon' },
+        });
+        expect(await findIntent('baisse le volume du salon')).toStrictEqual({
+            name: 'volumeDown',
+            freeText: 'du salon',
+            slots: { room: 'salon' },
+        });
+        expect(await findIntent('mets le volume à 20')).toStrictEqual({
+            name: 'setVolume',
+            freeText: '20',
+            slots: { number: '20' },
+        });
+    });
+
+    test('small talk', async () => {
+        expect(await findIntent('merci')).toStrictEqual({ name: 'thanks' });
+        expect(await findIntent('merci beaucoup')).toStrictEqual({
+            name: 'thanks',
+        });
+        expect(await findIntent('au revoir')).toStrictEqual({
+            name: 'goodbye',
+        });
+        expect(await findIntent('oui')).toStrictEqual({ name: 'confirm' });
+        expect(await findIntent(`d'accord`)).toStrictEqual({ name: 'confirm' });
+        expect(await findIntent('non')).toStrictEqual({ name: 'deny' });
+        expect(await findIntent(`non c'est bon`)).toStrictEqual({
+            name: 'pauseDevice',
         });
     });
 });

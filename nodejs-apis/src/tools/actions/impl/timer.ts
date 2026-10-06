@@ -4,18 +4,21 @@ interface WaitRequest {
     freeText: string;
     slots?: {
         timeUnit: 'hour' | 'min' | 'sec';
-        text: string;
+        text?: string;
+        number?: string;
     };
 }
 
 export const tools: Tools = {
     wait: {
         exec: async (req: WaitRequest) => {
-            if (!req.slots?.timeUnit || !req.slots?.text) return false;
+            const amount = req.slots?.number ?? req.slots?.text;
+            if (!req.slots?.timeUnit || !amount) return false;
             const unit = req.slots.timeUnit;
             const time =
-                Number(req.slots.text) *
+                Number(amount) *
                 (unit === 'hour' ? 3600 : unit === 'min' ? 60 : 1);
+            if (Number.isNaN(time)) return false;
 
             return new Promise((res, rej) => {
                 setTimeout(() => {
