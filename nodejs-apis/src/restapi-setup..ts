@@ -96,4 +96,6 @@ export async function setupRestApi() {
             );
         });
     }
+
+    return hserver;
 }

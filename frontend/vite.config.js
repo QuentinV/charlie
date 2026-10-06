@@ -42,6 +42,11 @@ export default defineConfig({
                 target: apihost,
                 changeOrigin: true,
             },
+            '/ws': {
+                target: apihost,
+                changeOrigin: true,
+                ws: true,
+            },
         },
     },
 });

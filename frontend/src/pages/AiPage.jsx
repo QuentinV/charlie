@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Box } from '@mui/material';
 import TauVisualizer from '../components/AIAvatar/TauVisualizer';
 import { api } from '../api/charlie';
@@ -54,6 +54,11 @@ export const AiPage = () => {
     const pendingRef = useRef('');
     const silenceTimerRef = useRef(null);
 
+    // Chat WebSocket + audio playback.
+    const chatWsRef = useRef(null);
+    const wavChunksRef = useRef([]);
+    const audioCtxRef = useRef(null);
+
     useEffect(() => {
         hotwordRef.current = hotwordEnabled;
     }, [hotwordEnabled]);
@@ -63,12 +68,94 @@ export const AiPage = () => {
     const pushReply = (text) =>
         setMessages((prev) => [...prev, { sender: 'Charlie', text }]);
 
+    // Play back a WAV (array of ArrayBuffer chunks) via Web Audio.
+    const playWavBuffer = useCallback((chunks) => {
+        if (!chunks || chunks.length === 0) return;
+        const blob = new Blob(chunks, { type: 'audio/wav' });
+        blob
+            .arrayBuffer()
+            .then((audioData) => {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx || !Ctx) return;
+                if (!audioCtxRef.current) {
+                    audioCtxRef.current = new Ctx();
+                }
+                const ctx = audioCtxRef.current;
+                if (!ctx.decodeAudioData || !ctx.destination) return;
+                ctx.decodeAudioData(audioData).then((buffer) => {
+                    const source = new AudioBufferSourceNode(ctx, { buffer });
+                    source.connect(ctx.destination);
+                    source.start();
+                    if (ctx.state === 'suspended') ctx.resume();
+                });
+            })
+            .catch(() => {
+                // audio not playable — ignore
+            });
+    }, []);
+
+    // Open a persistent socket to the chat WS endpoint.
+    const openChatWs = useCallback(() => {
+        if (chatWsRef.current) return;
+        try {
+            const ws = new WebSocket('/ws/chat');
+            chatWsRef.current = ws;
+
+            ws.onmessage = (event) => {
+                if (typeof event.data === 'string') {
+                    let payload = null;
+                    try {
+                        payload = JSON.parse(event.data);
+                    } catch {
+                        return;
+                    }
+                    if (!payload) return;
+                    if (payload.c === 'text') {
+                        setInput('');
+                        pushReply(
+                            typeof payload.v === 'string'
+                                ? payload.v
+                                : FALLBACK_REPLY
+                        );
+                        setBusy(false);
+                    } else if (payload.c === 'playAudio') {
+                        playWavBuffer(wavChunksRef.current);
+                        wavChunksRef.current = [];
+                        setBusy(false);
+                    }
+                    return;
+                }
+                // Binary frame — WAV audio part.
+                wavChunksRef.current.push(event.data);
+            };
+
+            ws.onclose = () => {
+                chatWsRef.current = null;
+                setBusy(false);
+            };
+            ws.onerror = () => {
+                chatWsRef.current = null;
+                setBusy(false);
+            };
+        } catch {
+            chatWsRef.current = null;
+        }
+    }, [playWavBuffer]);
+
     const send = async (text) => {
         const trimmed = (text ?? '').trim();
         if (!trimmed) return;
         pushUser(trimmed);
         setInput('');
         setBusy(true);
+
+        const ws = chatWsRef.current;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(trimmed);
+            return; // the reply (text + audio) comes back over the socket
+        }
+
+        // Fallback: REST endpoint if the socket isn't available.
         try {
             const res = await api('assistant/chat', {
                 method: 'POST',
@@ -83,6 +170,22 @@ export const AiPage = () => {
             setBusy(false);
         }
     };
+
+    // Open the chat socket on mount; close it when leaving the page.
+    useEffect(() => {
+        openChatWs();
+        return () => {
+            const ws = chatWsRef.current;
+            if (ws) {
+                try {
+                    ws.close();
+                } catch {
+                    // best effort
+                }
+                chatWsRef.current = null;
+            }
+        };
+    }, [openChatWs]);
 
     // Finalize the current utterance: it's sent once the user stops talking.
     const finalizeCurrent = () => {
