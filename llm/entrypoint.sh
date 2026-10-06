@@ -25,6 +25,17 @@ else
 fi
 
 echo "[entrypoint] Starting llama-server..."
+
+# Optional GPU offload: set LLAMA_ARG_N_GPU_LAYERS (or LLAMA_N_GPU_LAYERS) to
+# offload layers to the GPU. Left unset on CPU-only builds so behavior is
+# unchanged.
+GPU_ARGS=""
+N_GPU_LAYERS="${LLAMA_ARG_N_GPU_LAYERS:-${LLAMA_N_GPU_LAYERS:-}}"
+if [ -n "${N_GPU_LAYERS}" ]; then
+    echo "[entrypoint] GPU offload requested: --n-gpu-layers ${N_GPU_LAYERS}"
+    GPU_ARGS="--n-gpu-layers ${N_GPU_LAYERS}"
+fi
+
 exec /app/llama-server \
     -m "${MODEL_PATH}" \
     --host 0.0.0.0 \
@@ -33,4 +44,5 @@ exec /app/llama-server \
     --cache-type-k q8_0 \
     --cache-type-v q8_0 \
     --prio 1 \
-    --reasoning off
+    --reasoning off \
+    ${GPU_ARGS}

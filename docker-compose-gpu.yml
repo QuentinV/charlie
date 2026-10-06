@@ -1,0 +1,157 @@
+services:
+    api:
+        build: ./nodejs-apis
+        container_name: charlie-api
+        environment:
+            - NODE_ENV=production
+            - PULSE_SERVER=unix:/tmp/pulse/native
+        volumes:
+            - ./nodejs-apis/src:/app/src
+            - ./nodejs-apis/.env:/app/.env
+            - ./nodejs-apis/tsconfig.json:/app/tsconfig.json
+            - ~/media/musics:/musics
+            - ${XDG_RUNTIME_DIR}/pulse/native:/tmp/pulse/native
+            - ./nodejs-apis/recordings:/app/recordings
+            - ./echo-devices:/echo-devices
+        ports:
+            - '9300:9300' # http server
+            - '9303:9303' # audio udp
+            - '9304:9304' # mqtt server
+        command: 'yarn start'
+        depends_on:
+            - db
+        restart: unless-stopped
+        networks:
+            - internal
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+    network-scanner:
+        build: ./network-scanner
+        container_name: charlie-network-scanner
+        environment:
+            - NODE_ENV=production
+        volumes:
+            - ./network-scanner/src:/app/src
+        ports:
+            - '9306:9306'
+        command: 'yarn start'
+        restart: unless-stopped
+        network_mode: host
+        cap_add:
+            - NET_ADMIN
+            - NET_RAW
+    tts:
+        build: ./tts
+        container_name: charlie-tts
+        ports:
+            - '9301:8000'
+        volumes:
+            - ./tts/app:/app
+        restart: unless-stopped
+        networks:
+            - internal
+    asr:
+        build:
+            context: https://github.com/QuentinV/qwen-asr.git
+            dockerfile: Dockerfile
+        container_name: charlie-asr
+        ports:
+            - '9307:5000'
+        environment:
+            - MODEL_SIZE=${ASR_MODEL_SIZE:-large}
+            - MODEL_DIR=/model
+        volumes:
+            - ${ASR_MODEL_PATH:-./asr/models}/${ASR_MODEL_SIZE:-large}:/model
+            - ./nodejs-apis/src/echo/__tests__/rec-2026-03-09T20-38-20-462Z.wav:/warmup.wav
+        command:
+            [
+                '--ws',
+                '--skip-silence',
+                '--language',
+                'French',
+                '--prompt',
+                'This is a conversation with an assistant named Charlie.',
+                '--warmup',
+                '/warmup.wav',
+            ]
+        networks:
+            - internal
+    # GPU build: uses the CUDA llama.cpp server image and offloads all layers.
+    # Requires an NVIDIA driver + nvidia-container-toolkit on the host.
+    llm:
+        build:
+            context: ./llm
+            args:
+                LLAMA_BASE: ghcr.io/ggml-org/llama.cpp:server-cuda
+        container_name: charlie-llm
+        networks:
+            - internal
+        ports:
+            - '9308:9308'
+        volumes:
+            - ./llm/models:/app/models
+        environment:
+            - LLAMA_ARG_THREADS=${LLAMA_ARG_THREADS:-6}
+            - LLAMA_ARG_N_GPU_LAYERS=${LLAMA_ARG_N_GPU_LAYERS:-99}
+            - LLAMA_ARG_FLASH_ATTN=on
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: all
+                          capabilities: [gpu]
+        restart: unless-stopped
+    db:
+        container_name: charlie-db
+        image: mongo
+        ports:
+            - '9302:27017'
+        restart: unless-stopped
+        volumes:
+            - ./db:/data/db
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=
+            - MONGO_INITDB_ROOT_PASSWORD=
+        networks:
+            - internal
+    homeassistant:
+        build: ./homeassistant
+        container_name: charlie-homeassistant
+        environment:
+            - TZ=Europe/Paris
+            # - HA_TRUSTED_NETWORKS=172.16.0.0/12,127.0.0.1  # optional override
+        volumes:
+            - ./homeassistant/config:/config
+        ports:
+            #    - '127.0.0.1:8123:8123' # loopback only (device-provider layer)
+            - '8123:8123'
+        restart: unless-stopped
+        networks:
+            - internal
+    frontend:
+        build: ./frontend
+        container_name: charlie-frontend
+        environment:
+            - NODE_ENV=production
+            - API_HOST=http://api:9300
+        volumes:
+            - ./frontend/src:/app/src
+            - ./frontend/.env:/app/.env
+            - ./frontend/vite.config.js:/app/vite.config.js
+            - ./frontend/public:/app/public
+            - ./certs:/certs
+        ports:
+            - '9305:3000'
+        command: 'yarn start --host'
+        depends_on:
+            - api
+        restart: unless-stopped
+        networks:
+            - internal
+
+networks:
+    internal:
+        driver: bridge
+    charlieExternal:
+        external: true

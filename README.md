@@ -50,6 +50,29 @@ Use `docker-compose.windows.yml` to run the full stack locally. ASR requires clo
 
 Use `docker-compose.yml` — it will automatically fetch and build `qwen-asr` from GitHub.
 
+### 🎮 GPU (NVIDIA)
+
+Use `docker-compose-gpu.yml` to run the `llm` service on GPU. It builds `llm/Dockerfile` with `LLAMA_BASE=ghcr.io/ggml-org/llama.cpp:server-cuda` and reserves the NVIDIA device, offloading all layers (`LLAMA_ARG_N_GPU_LAYERS`, default `99`).
+
+Prerequisites on the host:
+
+- an NVIDIA GPU with a recent driver installed
+- [`nvidia-container-toolkit`](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) configured for Docker
+
+▶️ Running
+
+```bash
+docker compose -f docker-compose-gpu.yml up llm --build
+```
+
+Or the full stack:
+
+```bash
+docker compose -f docker-compose-gpu.yml up --build
+```
+
+Tune the offload with `LLAMA_ARG_N_GPU_LAYERS` (e.g. `LLAMA_ARG_N_GPU_LAYERS=0` falls back to CPU while keeping the CUDA image).
+
 ## 🐍 Backend
 
 A Python/FastAPI service responsible for running AI models and acting as an MCP client proxy. It exposes REST endpoints consumed by the Node.js backend.
