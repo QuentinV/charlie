@@ -151,6 +151,6 @@ demo
 nodejs-apis/recordings
 python-apis/qwen_models
 llm/models
-asr
+asr/models
 .clinerules
 IDEA_NLU.md
