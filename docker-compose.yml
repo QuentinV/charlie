@@ -51,29 +51,15 @@ services:
         networks:
             - internal
     asr:
-        build:
-            context: https://github.com/QuentinV/qwen-asr.git
-            dockerfile: Dockerfile
         container_name: charlie-asr
         ports:
-            - '9307:5000'
+            - '9307:10300'
+        build: ./asr
         environment:
-            - MODEL_SIZE=${ASR_MODEL_SIZE:-large}
-            - MODEL_DIR=/model
+            - NUM_THREADS=4
+        restart: unless-stopped
         volumes:
-            - ${ASR_MODEL_PATH:-./asr/models}/${ASR_MODEL_SIZE:-large}:/model
-            - ./nodejs-apis/src/echo/__tests__/rec-2026-03-09T20-38-20-462Z.wav:/warmup.wav
-        command:
-            [
-                '--ws',
-                '--skip-silence',
-                '--language',
-                'French',
-                '--prompt',
-                'This is a conversation with an assistant named Charlie.',
-                '--warmup',
-                '/warmup.wav',
-            ]
+            - ./asr/models:/app/models
         networks:
             - internal
     llm:
@@ -135,7 +121,6 @@ services:
         restart: unless-stopped
         networks:
             - internal
-
 networks:
     internal:
         driver: bridge
