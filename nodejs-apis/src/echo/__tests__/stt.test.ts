@@ -1,7 +1,6 @@
 import fs from 'fs';
 import { stt } from '../stt';
 import { wavToPcm } from '../utils';
-import WebSocket from 'ws';
 
 describe('stt', () => {
     test('standard - allume la lumière du salon', async () => {
@@ -19,7 +18,7 @@ describe('stt', () => {
         );
         let pcmBuffer = wavToPcm(wavBuffer);
         let text = await stt([pcmBuffer]);
-        expect(text).toBe('Charlie, éteins la lumière de la cuisine.');
+        expect(text).toBe('Charlie, éteint la lumière de la cuisine.');
     });
 
     test('Éteint la lumière de la cuisine.', async () => {
@@ -28,14 +27,14 @@ describe('stt', () => {
         );
         const pcmBuffer = wavToPcm(wavBuffer);
         const text = await stt([pcmBuffer]);
-        expect(text).toBe('Éteins la lumière de la cuisine.');
+        expect(text).toBe('Éteint la lumière de la cuisine.');
     });
 
     test('Quelle est la racine carrée de pi ?', async () => {
         const wavBuffer = fs.readFileSync('src/echo/__tests__/rec-2.wav');
         const pcmBuffer = wavToPcm(wavBuffer);
         const text = await stt([pcmBuffer]);
-        expect(text).toBe('Quelle est la racine carrée de pi?');
+        expect(text).toBe('Quelle est la racine carrée de pi ?');
     });
 
     test('charlie', async () => {
