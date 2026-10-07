@@ -21,6 +21,8 @@ const positiveAnswers = [
 
 export interface AskOptions {
     log?: boolean;
+    /** Stable id used to keep the LLM conversation memory across turns. */
+    sessionId?: string;
 }
 
 export async function ask(
@@ -56,7 +58,7 @@ export async function ask(
     if (settings.flow?.agentic?.enabled) {
         try {
             isLog && log('nlu', `Fallback to LLM`);
-            return await chat(uuid(), text);
+            return await chat(options?.sessionId ?? uuid(), text);
         } catch (e) {
             throw e;
         }

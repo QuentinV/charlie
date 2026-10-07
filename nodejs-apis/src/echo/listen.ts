@@ -3,12 +3,16 @@ import { stt } from './stt';
 import { tts } from '../ai/tts';
 import { ask } from '../ai/flow';
 import { logEcho } from './logs';
+import { v4 as uuid } from 'uuid';
 import {
     clearScreenUpdatesForIp,
     startScreenUpdatesForIp,
 } from './screensUpdates';
 
 const VERIFY_TEXT = ['charlie, ', 'charlie ', 'charlie. '];
+
+// How long a wake-word utterance keeps the conversation open for follow-ups.
+const CONVERSATION_TIMEOUT_MS = 10000;
 
 function random(arr: string[]) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -77,6 +81,8 @@ export function setupEchoListen() {
         //});;
 
         let audioBuffer = [];
+        let conversationUntil = 0;
+        const sessionId = uuid();
         ws.on('error', (err) => {
             log('WebSocket error:' + err.message);
             delete connectedEchos[ip];
@@ -115,8 +121,25 @@ export function setupEchoListen() {
                         const valid = verify(text);
                         log(`text verified = ${valid}`);
 
-                        if (valid) {
-                            const result = await ask(valid);
+                        // A "charlie …" utterance starts (or restarts) the
+                        // conversation window; any other utterance is accepted
+                        // as a follow-up while that window is still open.
+                        const inConversation = Date.now() < conversationUntil;
+                        const command =
+                            typeof valid === 'string' && valid.trim()
+                                ? valid.trim()
+                                : inConversation && text.trim()
+                                  ? text.trim()
+                                  : undefined;
+                        log(
+                            `command = ${command} (in conversation = ${inConversation})`
+                        );
+
+                        if (command) {
+                            conversationUntil =
+                                Date.now() + CONVERSATION_TIMEOUT_MS;
+
+                            const result = await ask(command, { sessionId });
                             log(`result = ${result}`);
 
                             const shortText =

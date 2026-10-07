@@ -1,5 +1,14 @@
 [
     {
+        "version": "1.5",
+        "description": "Conversational mode: after Charlie replies, the device re-opens the microphone for follow-up turns without the wake word until N ms of silence (config: conversationalMode, conversationTimeoutMs).",
+        "devices": [
+            "echo-zero",
+            "echo-zero-screen",
+            "echo-dashbord"
+        ]
+    },
+    {
         "version": "1.4",
         "description": "Add support for multiple screens & temperature sensor with 'Echo dasboard' + JSON text commands",
         "devices": [
