@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------------
+# Charlie wake-word pipeline — Python dependencies (ml-trainer container)
+#
+# NOTE: microWakeWord (OHF-Voice/micro-wake-word) is NOT published on PyPI as a
+# `micro_wake_word` package, and it has no `micro_wake_word.train` CLI module.
+# It is a source checkout that ships a `microwakeword` package plus Jupyter
+# notebooks. The pipeline clones it at build/run time (see Dockerfile.ml and
+# training/train.py) and imports `microwakeword` from that checkout.
+# ---------------------------------------------------------------------------
+
+# --- Training framework (pinned to match microWakeWord's expectations) ------
+tensorflow~=2.15.0
+tflite~=2.15.0
+
+# --- Feature / data pipeline ------------------------------------------------
+numpy>=1.24,<2.0
+scipy>=1.10
+librosa>=0.10.1
+soundfile>=0.12.1
+pydub>=0.25.1
+mmap_ninja>=0.6
+pymicro-features>=1.0
+
+# --- Audio augmentation -----------------------------------------------------
+audiomentations>=0.33.0
+
+# --- Synthetic speech (French positives) ------------------------------------
+piper-tts>=1.2.0
+piper-phonemize-cross>=1.1.0
+
+# --- Datasets / utilities ---------------------------------------------------
+datasets>=2.18.0          # Hugging Face negative dataset download
+huggingface-hub>=0.20
+pyyaml>=6.0
+tqdm>=4.66.0
+pandas>=2.0
+matplotlib>=3.7
+seaborn>=0.13
+jupyterlab>=4.0          # for the optional training notebook
+ipykernel>=6.29
+papermill>=2.5           # headless execution of the microWakeWord notebook

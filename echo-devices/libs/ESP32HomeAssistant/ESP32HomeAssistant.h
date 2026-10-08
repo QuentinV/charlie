@@ -18,12 +18,13 @@
 #include <vector>
 #include <Adafruit_AHTX0.h>
 
+#include "WakeWordEngine.h"
+
 #define WS_PORT 9303
 
 #define DRD_TIMEOUT 3
 #define MIC_THRESHOLD_SOUND 500
 #define MIC_DURATION_SILENCE 1
-#define EIDSP_QUANTIZE_FILTERBANK   0
 
  // Fixed‑point HPF coefficients (scaled by 256)
 #define HP_A0  256
@@ -111,7 +112,6 @@ public:
 
     void printMemoryUsage();
 
-    int _ei_get_sliding_window_data(size_t offset, size_t length, float *out_ptr);
     void _listenAndSendTask(void *arg);
     void _onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length);
     void _wsTask(void *arg);
@@ -126,6 +126,7 @@ private:
     void _tcaSelect(uint8_t channel); // multiplexer i2s
     void _setupDisplays();
     void _setupTempSensor();
+    bool _setupWakeWord();
 
     void _handleIncomingAudio(uint8_t *payload, size_t length);
     void _playBufferedAudio();
@@ -161,6 +162,9 @@ private:
 
     int16_t* inference_window = NULL;
     inference_t inference;
+
+    // Offline microWakeWord inference (replaces the Edge Impulse classifier).
+    WakeWordEngine wakeWord;
 
     int16_t* bufferCaptureAudio = NULL;
     size_t totalRecordedSamples;

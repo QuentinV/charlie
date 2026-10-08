@@ -1,0 +1,15 @@
+# Wake-word pipeline build/runtime artifacts
+data/positives/
+data/traps/
+data/negatives/
+data/augmented/
+features/
+output/*.tflite
+output/*.tflite.json
+output/*.tflite.state
+output/*.h5
+output/*.keras
+output/training_logs/
+*.pyc
+__pycache__/
+.ipynb_checkpoints/

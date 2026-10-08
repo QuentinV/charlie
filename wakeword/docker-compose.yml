@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------------------
+# Charlie wake-word pipeline orchestration
+#
+# Run from the wakeword/ directory:   docker compose run --rm ml-trainer ...
+#
+# The `version:` key is intentionally omitted — it is obsolete in Compose v2.
+# GPU access uses the modern `gpus: all` form (Compose v2.30+, requires the
+# NVIDIA Container Toolkit on the host). On non-NVIDIA hosts omit/ignore it.
+# ---------------------------------------------------------------------------
+
+services:
+    ml-trainer:
+        build:
+            context: .
+            dockerfile: Dockerfile.ml
+            args:
+                # Override with ML_BASE=cpu on non-NVIDIA hosts (macOS / plain Windows)
+                ML_BASE: ${ML_BASE:-cuda}
+        image: charlie-wakeword-ml:latest
+        volumes:
+            - .:/workspace
+            - ../echo-devices:/echo-devices
+        working_dir: /workspace
+        environment:
+            - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+            - MICROWAKEWORD_HOME=/opt/micro-wake-word
+        # NVIDIA GPU reservation (Compose v2). Remove for CPU-only hosts.
+        gpus: all
+        shm_size: '8gb'
+        stdin_open: true
+        tty: true

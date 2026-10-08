@@ -13,7 +13,9 @@ This library depends on the following Arduino libraries (installable via Platfor
 - `Adafruit_GFX` – Graphics primitives
 - `Adafruit_SSD1306` – OLED display driver
 - `Adafruit_AHTX0` – Temperature/humidity sensor
-- Edge Impulse inferencing library (`charlie-2_inferencing`) – wake word detection
+- `TensorFlowLite_ESP32` – TFLite Micro runtime for the offline wake-word engine
+  (`tanakamasayuki/TensorFlowLite_ESP32`, with `-DTFLITE_WITH_ESP_NN` for the
+  Xtensa LX7 SIMD kernels)
 
 ## Configuration
 
@@ -198,6 +200,29 @@ When `HAConfig.conversationalMode` is `true`, the device keeps the conversation 
 5. If no speech is detected within `conversationTimeoutMs`, the conversation window closes (LED off) and the device returns to wake‑word detection.
 
 The reply‑wait is also bounded by `conversationTimeoutMs`, so a missing or slow server reply never leaves the device stuck.
+
+## Wake word engine
+
+Wake-word detection is fully offline and runs on-device through
+`WakeWordEngine` (TFLite Micro), replacing the previous Edge Impulse classifier.
+
+- **Model**: a custom microWakeWord *streaming* model trained by the
+  `wakeword/` pipeline (see `wakeword/README.md`), shipped as C headers in
+  `model/`. Optional **preprocessor** model converts raw 16 kHz PCM into
+  40-channel log-mel features.
+- **Frontend**: 16 kHz, 30 ms window, 10 ms hop — `WakeWordEngine` maintains the
+  ring buffer and runs the preprocessor every `WW_FEATURE_STEP_SIZE` ms.
+- **Detection**: the per-frame probability is smoothed over
+  `WW_SLIDING_WINDOW_SIZE` frames and compared against `wwcfg.probabilityCutoff`
+  (initialised from `HAConfig.WAKE_UP_WORD_ACCURACY` / the persisted
+  `wordAccuracy`). `setWakeUpWordAccuracy` updates it live.
+- **Pre-roll**: on detection, the 1 s of audio preceding the trigger is prepended
+  to the recorded utterance so the command is not truncated.
+- **Tensor arenas**: allocated in PSRAM (`WW_TENSOR_ARENA_SIZE`,
+  `WW_PREPROCESSOR_ARENA_SIZE`).
+
+If no trained model is embedded, the device still boots and streams audio over
+the WebSocket, but wake-word detection is disabled (a hint is logged on boot).
 
 ## Persisted settings (Preferences)
 

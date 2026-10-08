@@ -1,0 +1,55 @@
+# ---------------------------------------------------------------------------
+# Charlie wake-word training parameters
+#
+# This is the *pipeline's* config. training/train.py translates it into the
+# microWakeWord `training_parameters.yaml` schema and drives the official
+# microWakeWord training notebook headlessly (papermill).
+#
+# IMPORTANT: the artifact microWakeWord produces is a *streaming*, already
+# INT8-quantized .tflite — there is no separate quantization step (the draft
+# PLAN.md's quantize.py is unnecessary and would break the streaming state).
+# ---------------------------------------------------------------------------
+
+model_name: charlie
+wake_word: Charlie
+author: Charlie
+website: https://github.com/charlie
+trained_languages:
+  - fr
+
+# --- Frontend (must stay in sync with the device runtime constants) --------
+sample_rate: 16000
+window_step_ms: 10            # hop between feature frames (device: 10 ms)
+window_size_ms: 30            # analysis window
+num_mel_bins: 40              # 40-channel log-mel
+
+# --- Positive / hard-negative sources --------------------------------------
+positives:
+  - data/positives            # Piper synthetic + real user wake words
+  - data/augmented            # RIR / noise / gain augmented positives
+traps:
+  - data/traps                # phonetic near-misses (Chérie, Chalet, …)
+
+# --- Negative / ambient sources --------------------------------------------
+ambient:
+  - data/negatives            # ESC-50 / command speech / downloaded negatives
+negative_datasets:            # Hugging Face datasets for download_negative_datasets.py
+  - kahrendt/microwakeword_negative_datasets
+
+# --- Training hyper-parameters (microWakeWord knobs) -----------------------
+training:
+  batch_size: 128
+  training_steps: 20000
+  learning_rate: 0.001
+  # Penalising false accepts aggressively (PLAN.md §3 Phase 3: multiplier >= 5.0)
+  positive_class_weight: 1.0
+  negative_class_weight: 5.0
+  penalty_weight_positive_mistakes: 5.0
+
+# --- Multi-stage training thresholds (false accepts per hour targets) ------
+false_positive_targets: [1.0, 0.5, 0.2]
+sliding_window_size: 5
+probability_cutoff: 0.97
+
+# --- Output -----------------------------------------------------------------
+output_dir: output
