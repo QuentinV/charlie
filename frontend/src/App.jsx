@@ -10,9 +10,11 @@ import { HomePage } from './pages/Home';
 import { NotFoundPage } from './pages/NotFound';
 import {
     Box,
+    Button,
     CircularProgress,
     ThemeProvider,
     CssBaseline,
+    Typography,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
@@ -36,6 +38,63 @@ import SettingsPage from './pages/Settings';
 import { MusicsPage } from './pages/Musics';
 
 settings.loadFx();
+
+// Without a boundary, any uncaught error in a route (render or effect) makes
+// React unmount the whole tree — i.e. a blank page. This keeps the shell and
+// shows the actual error instead.
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { error: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { error };
+    }
+
+    componentDidCatch(error, info) {
+        console.error('Page error:', error, info);
+    }
+
+    render() {
+        if (this.state.error) {
+            return (
+                <Box
+                    sx={{
+                        p: 3,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        alignItems: 'flex-start',
+                    }}
+                >
+                    <Typography variant="h6" color="error">
+                        Une erreur est survenue sur cette page.
+                    </Typography>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            fontFamily: 'monospace',
+                            whiteSpace: 'pre-wrap',
+                            opacity: 0.8,
+                        }}
+                    >
+                        {String(
+                            this.state.error?.message ?? this.state.error
+                        )}
+                    </Typography>
+                    <Button
+                        variant="outlined"
+                        onClick={() => this.setState({ error: null })}
+                    >
+                        Réessayer
+                    </Button>
+                </Box>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 export default function App() {
     const loadingSettings = useUnit(settings.loadFx.pending);
@@ -106,6 +165,7 @@ function AppLayout({ showAiAsk }) {
                 className="overlay smooth-scroll"
             >
                 <Box sx={{ flexGrow: 1, minHeight: 0 }} className="page-enter">
+                    <ErrorBoundary key={location.pathname}>
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/discovery" element={<DiscoveryPage />} />
@@ -128,6 +188,7 @@ function AppLayout({ showAiAsk }) {
                         <Route path="/providers" element={<ProvidersPage />} />
                         <Route path="*" element={<NotFoundPage />} />
                     </Routes>
+                    </ErrorBoundary>
                 </Box>
             </Box>
             {showAiAsk && !isAiRoute && (

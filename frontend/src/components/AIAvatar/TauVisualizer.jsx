@@ -75,137 +75,216 @@ export default function TauVisualizer({
         const mount = mountRef.current;
         if (!mount) return;
 
-        // scene setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
-        camera.position.z = 1;
+        // Declared out here so the cleanup can always release whatever the
+        // setup managed to create before failing.
+        let renderer = null;
+        let geometry = null;
+        let material = null;
+        let audioContext = null;
+        let analyser = null;
+        let freqData = null;
+        let micStream = null;
+        let uniforms = null;
+        let frameId = null;
+        let resizeObserver = null;
 
-        const renderer = new THREE.WebGLRenderer({
-            antialias: true,
-            alpha: true,
-        });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(mount.clientWidth, mount.clientHeight);
-
-        renderer.render(scene, camera);
-
-        mount.appendChild(renderer.domElement);
-
-        const geometry = new THREE.PlaneGeometry(2, 2);
-
-        const uniforms = {
-            uTime: { value: 0 },
-            uLow: { value: 0 },
-            uMid: { value: 0 },
-            uHigh: { value: 0 },
-            uCoreColor: { value: new THREE.Color(colors.core) },
-            uRingColor: { value: new THREE.Color(colors.ring) },
-            uBeamColor: { value: new THREE.Color(colors.beam) },
-            uStripeColor: { value: new THREE.Color(colors.stripe) },
-            uSensLow: { value: sensitivity.low },
-            uSensMid: { value: sensitivity.mid },
-            uSensHigh: { value: sensitivity.high },
-            uUseVignette: { value: useVignette ? 1.0 : 0.0 },
-        };
-
-        const material = new THREE.ShaderMaterial({
-            vertexShader,
-            fragmentShader,
-            uniforms,
-        });
-
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
-
-        // Resize
+        // Resize — refresh the canvas AND the aspect uniform so the pattern
+        // keeps its proportions on any screen / orientation.
         const handleResize = () => {
-            renderer.setSize(mount.clientWidth, mount.clientHeight);
+            if (!renderer) return;
+            const w = mount.clientWidth || 1;
+            const h = mount.clientHeight || 1;
+            renderer.setSize(w, h);
+            uniforms?.uResolution.value.set(w, h);
         };
-        window.addEventListener('resize', handleResize);
 
-        // audio setup
-        const audioContext = new (window.AudioContext ||
-            window.webkitAudioContext)();
-        const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 512;
-        const freqData = new Uint8Array(analyser.frequencyBinCount);
+        try {
+            // scene setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+            camera.position.z = 1;
 
-        if (sourceType === 'mic') {
-            navigator.mediaDevices
-                .getUserMedia({ audio: true })
-                .then((stream) => {
-                    const src = audioContext.createMediaStreamSource(stream);
-                    src.connect(analyser);
-                });
-        } else if (sourceType === 'element' && audioElementId) {
-            const el = document.getElementById(audioElementId);
-            if (el) {
-                const src = audioContext.createMediaElementSource(el);
-                src.connect(analyser);
-                analyser.connect(audioContext.destination);
-            }
-        }
-
-        // animation loop
-        let start = performance.now();
-        let frameId;
-
-        const animate = () => {
-            frameId = requestAnimationFrame(animate);
-
-            const now = performance.now();
-            uniforms.uTime.value = (now - start) / 1000;
-
-            analyser.getByteFrequencyData(freqData);
-            const n = freqData.length || 1;
-
-            const getAvg = (start, end) => {
-                let sum = 0;
-                let count = 0;
-                for (let i = start; i < end; i++) {
-                    sum += freqData[i];
-                    count++;
-                }
-                return count ? sum / count : 0;
-            };
-
-            const low = getAvg(0, n * 0.15);
-            const mid = getAvg(n * 0.15, n * 0.5);
-            const high = getAvg(n * 0.5, n);
-
-            const norm = (v) => (v / 255) * 1.5;
-
-            // The δ reacts to audio ONLY while Charlie is listening. When not
-            // listening the τ stays calm (no audio breathing / no energy).
-            const listening = listeningRef.current;
-            const act = listening ? activityRef.current : 0;
-            const energy =
-                act > 0
-                    ? 0.35 + 0.65 * Math.abs(Math.sin((now - start) / 240)) * act
-                    : 0;
-
-            uniforms.uLow.value = listening
-                ? Math.max(norm(low), energy * 0.5)
-                : 0;
-            uniforms.uMid.value = listening
-                ? Math.max(norm(mid), energy * 0.85)
-                : 0;
-            uniforms.uHigh.value = listening
-                ? Math.max(norm(high), energy * 0.4)
-                : 0;
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true,
+            });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(mount.clientWidth, mount.clientHeight);
 
             renderer.render(scene, camera);
-        };
 
-        animate();
+            mount.appendChild(renderer.domElement);
+
+            geometry = new THREE.PlaneGeometry(2, 2);
+
+            uniforms = {
+                uTime: { value: 0 },
+                uResolution: {
+                    value: new THREE.Vector2(
+                        mount.clientWidth || 1,
+                        mount.clientHeight || 1
+                    ),
+                },
+                uLow: { value: 0 },
+                uMid: { value: 0 },
+                uHigh: { value: 0 },
+                uCoreColor: { value: new THREE.Color(colors.core) },
+                uRingColor: { value: new THREE.Color(colors.ring) },
+                uBeamColor: { value: new THREE.Color(colors.beam) },
+                uStripeColor: { value: new THREE.Color(colors.stripe) },
+                uSensLow: { value: sensitivity.low },
+                uSensMid: { value: sensitivity.mid },
+                uSensHigh: { value: sensitivity.high },
+                uUseVignette: { value: useVignette ? 1.0 : 0.0 },
+            };
+
+            material = new THREE.ShaderMaterial({
+                vertexShader,
+                fragmentShader,
+                uniforms,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            window.addEventListener('resize', handleResize);
+            if (typeof ResizeObserver !== 'undefined') {
+                // Covers container resizes (mobile URL bar, rotation, layout).
+                resizeObserver = new ResizeObserver(handleResize);
+                resizeObserver.observe(mount);
+            }
+
+            // audio setup — best effort; the visualizer still runs without it.
+            // `sourceType === 'none'` skips capture entirely so the mic stays
+            // free for SpeechRecognition (which needs it exclusively on mobile).
+            try {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (Ctx && sourceType !== 'none') {
+                    audioContext = new Ctx();
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 512;
+                    freqData = new Uint8Array(analyser.frequencyBinCount);
+
+                    if (sourceType === 'mic') {
+                        // navigator.mediaDevices is undefined on non-secure
+                        // origins (plain HTTP on a LAN IP) — never let it throw.
+                        navigator.mediaDevices
+                            ?.getUserMedia({ audio: true })
+                            .then((stream) => {
+                                micStream = stream;
+                                const src =
+                                    audioContext.createMediaStreamSource(
+                                        stream
+                                    );
+                                src.connect(analyser);
+                            })
+                            .catch(() => {
+                                // no mic (insecure context / denied) — ignore
+                            });
+                    } else if (
+                        sourceType === 'element' &&
+                        audioElementId
+                    ) {
+                        const el = document.getElementById(audioElementId);
+                        if (el) {
+                            const src =
+                                audioContext.createMediaElementSource(el);
+                            src.connect(analyser);
+                            analyser.connect(audioContext.destination);
+                        }
+                    }
+                }
+            } catch {
+                // audio analysis unavailable — the τ simply stays calm
+                analyser = null;
+                freqData = null;
+            }
+
+            // animation loop
+            const start = performance.now();
+
+            const animate = () => {
+                frameId = requestAnimationFrame(animate);
+
+                const now = performance.now();
+                uniforms.uTime.value = (now - start) / 1000;
+
+                let low = 0;
+                let mid = 0;
+                let high = 0;
+                if (analyser && freqData) {
+                    analyser.getByteFrequencyData(freqData);
+                    const n = freqData.length || 1;
+
+                    const getAvg = (from, to) => {
+                        let sum = 0;
+                        let count = 0;
+                        for (let i = from; i < to; i++) {
+                            sum += freqData[i];
+                            count++;
+                        }
+                        return count ? sum / count : 0;
+                    };
+
+                    low = getAvg(0, n * 0.15);
+                    mid = getAvg(n * 0.15, n * 0.5);
+                    high = getAvg(n * 0.5, n);
+                }
+
+                const norm = (v) => (v / 255) * 1.5;
+
+                // The δ reacts to audio ONLY while Charlie is listening. When
+                // not listening the τ stays calm (no breathing / no energy).
+                const listening = listeningRef.current;
+                const act = listening ? activityRef.current : 0;
+                const energy =
+                    act > 0
+                        ? 0.35 +
+                          0.65 * Math.abs(Math.sin((now - start) / 240)) * act
+                        : 0;
+
+                uniforms.uLow.value = listening
+                    ? Math.max(norm(low), energy * 0.5)
+                    : 0;
+                uniforms.uMid.value = listening
+                    ? Math.max(norm(mid), energy * 0.85)
+                    : 0;
+                uniforms.uHigh.value = listening
+                    ? Math.max(norm(high), energy * 0.4)
+                    : 0;
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+        } catch (err) {
+            // A missing WebGL context (or any other init failure) must never
+            // blank the whole app — log it and leave the mount empty.
+            console.error('TauVisualizer: failed to initialise', err);
+        }
 
         return () => {
-            cancelAnimationFrame(frameId);
+            if (frameId) cancelAnimationFrame(frameId);
             window.removeEventListener('resize', handleResize);
-            mount.removeChild(renderer.domElement);
-            renderer.dispose();
-            geometry.dispose();
-            material.dispose();
+            resizeObserver?.disconnect();
+            try {
+                if (renderer) {
+                    if (renderer.domElement?.parentNode === mount) {
+                        mount.removeChild(renderer.domElement);
+                    }
+                    renderer.dispose();
+                }
+                geometry?.dispose();
+                material?.dispose();
+                if (micStream) {
+                    micStream.getTracks().forEach((track) => track.stop());
+                }
+                if (audioContext && audioContext.state !== 'closed') {
+                    audioContext.close();
+                }
+            } catch {
+                // best effort
+            }
         };
     }, [sourceType, audioElementId, colors, sensitivity, useVignette]);
 

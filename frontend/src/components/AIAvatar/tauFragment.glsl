@@ -16,6 +16,7 @@ uniform float uSensLow;
 uniform float uSensMid;
 uniform float uSensHigh;
 uniform float uUseVignette; // 0.0 or 1.0
+uniform vec2 uResolution; // canvas size in CSS pixels (width, height)
 
 mat2 rot(float a) {
     float c = cos(a), s = sin(a);
@@ -91,7 +92,10 @@ float triFractal(vec2 p, float r, int iterations) {
 
 void main() {
     vec2 uv = vUv * 2.0 - 1.0;
-    uv.x *= 1.78;
+    // Aspect-correct AND fit to the smaller dimension so the pattern stays
+    // circular and fully visible on any orientation (phone portrait, desktop).
+    // On a 16:9 canvas this is identical to the previous `uv.x *= 1.78`.
+    uv *= uResolution / min(uResolution.x, uResolution.y);
     float t = uTime * 0.35;
     float r = length(uv);
 

@@ -316,12 +316,43 @@ export const AiPage = () => {
             }
         };
 
-        rec.onerror = () => {
+        rec.onerror = (event) => {
+            const code = event?.error ?? 'unknown';
+            console.error(
+                '[AiPage] speech recognition error:',
+                code,
+                event?.message ?? ''
+            );
+            const wasActive = activeRef.current;
+            const wasManual = manualRef.current;
             recRef.current = null;
             activeRef.current = false;
             manualRef.current = false;
             pendingRef.current = '';
             setIsListening(false);
+
+            if (wasActive && wasManual) {
+                const messages = {
+                    'not-allowed':
+                        "Accès au micro refusé. Autorise le microphone pour ce site puis réessaie.",
+                    'service-not-allowed':
+                        "La reconnaissance vocale est bloquée. Autorise le micro pour ce site puis réessaie.",
+                    'audio-capture':
+                        "Micro indisponible (déjà utilisé par une autre application ?).",
+                    network:
+                        'Reconnaissance vocale indisponible (problème réseau).',
+                    service: 'Service de reconnaissance vocale indisponible.',
+                    'language-not-supported':
+                        'Langue non supportée par la reconnaissance vocale.',
+                    'no-speech': "Je n'ai rien entendu, réessaie.",
+                    aborted: null,
+                };
+                const msg =
+                    code in messages
+                        ? messages[code]
+                        : `Reconnaissance vocale indisponible (${code}).`;
+                if (msg) pushReply(msg);
+            }
         };
 
         rec.onend = () => {
@@ -334,7 +365,21 @@ export const AiPage = () => {
             }
         };
 
-        rec.start();
+        try {
+            rec.start();
+        } catch (e) {
+            console.error('[AiPage] speech recognition start failed:', e);
+            recRef.current = null;
+            activeRef.current = false;
+            manualRef.current = false;
+            setIsListening(false);
+            if (forceActive) {
+                pushReply(
+                    'Impossible de démarrer la reconnaissance vocale.'
+                );
+            }
+            return false;
+        }
         return true;
     };
 
@@ -401,6 +446,7 @@ export const AiPage = () => {
             }}
         >
             <TauVisualizer
+                sourceType="none"
                 messages={messages}
                 input={input}
                 onInputChange={setInput}
