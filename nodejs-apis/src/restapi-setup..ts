@@ -72,30 +72,10 @@ export async function setupRestApi() {
 
     // Start the Express server
     const port = 9300;
-    let hserver = null;
-    try {
-        const privateKey = fs.readFileSync(
-            '../invData/invDataService/certs/live/mymovies.freeboxos.fr/privkey.pem'
+    return app.listen(port, '0.0.0.0', () => {
+        console.log(`Http server listening on port ${port}`);
+        console.log(
+            `Swagger available here: http://localhost:${port}/api-docs`
         );
-        const certificate = fs.readFileSync(
-            '../invData/invDataService/certs/live/mymovies.freeboxos.fr/fullchain.pem'
-        );
-
-        hserver = https.createServer(
-            { key: privateKey, cert: certificate },
-            app
-        );
-        hserver.listen(port, () => {
-            console.log(`Https server listening on port ${port}`);
-        });
-    } catch (e) {
-        hserver = app.listen(port, () => {
-            console.log(`Http server listening on port ${port}`);
-            console.log(
-                `Swagger available here: http://localhost:${port}/api-docs`
-            );
-        });
-    }
-
-    return hserver;
+    });
 }
