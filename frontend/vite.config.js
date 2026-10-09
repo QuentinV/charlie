@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const apihost = process?.env?.API_HOST ?? 'http://localhost:9300';
+const wsHost = apihost.replace(/^http/, 'ws');
 console.log(apihost);
 
 // https://vite.dev/config/
@@ -43,7 +44,7 @@ export default defineConfig({
                 changeOrigin: true,
             },
             '/ws': {
-                target: apihost,
+                target: wsHost,
                 changeOrigin: true,
                 ws: true,
             },
