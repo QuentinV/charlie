@@ -58,6 +58,9 @@ export const AiPage = () => {
     const chatWsRef = useRef(null);
     const wavChunksRef = useRef([]);
     const audioCtxRef = useRef(null);
+    const reconnectTimerRef = useRef(null);
+    const reconnectAttemptRef = useRef(0);
+    const closedByUsRef = useRef(false);
 
     useEffect(() => {
         hotwordRef.current = hotwordEnabled;
@@ -97,9 +100,18 @@ export const AiPage = () => {
     // Open a persistent socket to the chat WS endpoint.
     const openChatWs = useCallback(() => {
         if (chatWsRef.current) return;
+        if (reconnectTimerRef.current) {
+            clearTimeout(reconnectTimerRef.current);
+            reconnectTimerRef.current = null;
+        }
+        closedByUsRef.current = false;
         try {
             const ws = new WebSocket('/ws/chat');
             chatWsRef.current = ws;
+
+            ws.onopen = () => {
+                reconnectAttemptRef.current = 0;
+            };
 
             ws.onmessage = (event) => {
                 if (typeof event.data === 'string') {
@@ -132,9 +144,18 @@ export const AiPage = () => {
             ws.onclose = () => {
                 chatWsRef.current = null;
                 setBusy(false);
+                // Reconnect with backoff unless we closed it on purpose.
+                if (!closedByUsRef.current) {
+                    const attempt = (reconnectAttemptRef.current += 1);
+                    const delay = Math.min(1000 * 2 ** (attempt - 1), 15000);
+                    reconnectTimerRef.current = setTimeout(() => {
+                        reconnectTimerRef.current = null;
+                        openChatWs();
+                    }, delay);
+                }
             };
+            // onclose always follows onerror, so reconnect is handled there.
             ws.onerror = () => {
-                chatWsRef.current = null;
                 setBusy(false);
             };
         } catch {
@@ -175,14 +196,30 @@ export const AiPage = () => {
     useEffect(() => {
         openChatWs();
         return () => {
+            closedByUsRef.current = true;
+            if (reconnectTimerRef.current) {
+                clearTimeout(reconnectTimerRef.current);
+                reconnectTimerRef.current = null;
+            }
             const ws = chatWsRef.current;
-            if (ws) {
+            chatWsRef.current = null;
+            if (!ws) return;
+            if (ws.readyState === WebSocket.CONNECTING) {
+                // Closing a CONNECTING socket logs a console error, so wait
+                // for the handshake to finish and close right after.
+                ws.onopen = () => {
+                    try {
+                        ws.close();
+                    } catch {
+                        // best effort
+                    }
+                };
+            } else if (ws.readyState === WebSocket.OPEN) {
                 try {
                     ws.close();
                 } catch {
                     // best effort
                 }
-                chatWsRef.current = null;
             }
         };
     }, [openChatWs]);
