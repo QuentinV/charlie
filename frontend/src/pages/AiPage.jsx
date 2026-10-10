@@ -52,6 +52,7 @@ export const AiPage = () => {
     const manualRef = useRef(false); // push-to-talk: whole phrase is the command
     const hotwordRef = useRef(false);
     const pendingRef = useRef('');
+    const finalRef = useRef(''); // finalized segments of the current session
     const silenceTimerRef = useRef(null);
 
     // Chat WebSocket + audio playback.
@@ -233,6 +234,7 @@ export const AiPage = () => {
         const wasActive = activeRef.current;
         const command = pendingRef.current;
         pendingRef.current = '';
+        finalRef.current = '';
         activeRef.current = false;
         manualRef.current = false;
         setIsListening(false);
@@ -273,6 +275,8 @@ export const AiPage = () => {
             if (forceActive && !activeRef.current) {
                 activeRef.current = true;
                 manualRef.current = true;
+                pendingRef.current = '';
+                finalRef.current = '';
                 setIsListening(true);
                 resetSilenceTimer();
             }
@@ -288,14 +292,26 @@ export const AiPage = () => {
         activeRef.current = forceActive;
         manualRef.current = forceActive;
         pendingRef.current = '';
+        finalRef.current = '';
         if (forceActive) setIsListening(true);
 
         rec.onresult = (event) => {
-            let text = '';
-            for (let i = 0; i < event.results.length; i++) {
-                text += ' ' + (event.results[i]?.[0]?.transcript ?? '');
+            // Only process what changed (event.resultIndex) and keep committed
+            // (final) segments separate from the in-flight interim text.
+            // Concatenating the whole event.results list re-adds the same
+            // history on every event, producing the duplicated "… … …"
+            // transcript seen on Chrome mobile.
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const result = event.results[i];
+                const transcript = result?.[0]?.transcript ?? '';
+                if (result.isFinal) {
+                    finalRef.current = `${finalRef.current} ${transcript}`;
+                } else {
+                    interim += ` ${transcript}`;
+                }
             }
-            text = normalize(text);
+            const text = normalize(`${finalRef.current} ${interim}`);
 
             if (manualRef.current) {
                 pendingRef.current = text;
