@@ -292,25 +292,21 @@ export const AiPage = () => {
         if (forceActive) setIsListening(true);
 
         rec.onresult = (event) => {
-            // The full (growing) result list is re-sent on every event, and
-            // Chrome - notably on Android, where `continuous` isn't honoured -
-            // can append a fresh hypothesis for EVERY interim update of the SAME
-            // utterance ("eteins", "etins la", "eteins la lumiere"...). Joining
-            // them duplicates the sentence, so keep every finalised segment but
-            // only the LAST interim (the current hypothesis).
-            let finalText = '';
-            let interim = '';
-            for (let i = 0; i < event.results.length; i++) {
-                const result = event.results[i];
-                const transcript = result?.[0]?.transcript ?? '';
-                if (!transcript) continue;
-                if (result.isFinal) {
-                    finalText += ` ${transcript}`;
-                } else {
-                    interim = transcript;
+            // Chrome (esp. Android, where `continuous` isn't honoured) appends
+            // a new hypothesis for every update of the SAME utterance
+            // ("eteins", "etins la", "eteins la lumiere"...), re-sending the
+            // whole list each event. The LAST entry is the most complete, so
+            // never join results - joining duplicates the sentence.
+            const results = event.results;
+            let transcript = '';
+            for (let i = results.length - 1; i >= 0; i--) {
+                const t = results[i]?.[0]?.transcript ?? '';
+                if (t) {
+                    transcript = t;
+                    break;
                 }
             }
-            const text = normalize(`${finalText} ${interim}`);
+            const text = normalize(transcript);
 
             if (manualRef.current) {
                 pendingRef.current = text;
