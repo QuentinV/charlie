@@ -52,7 +52,6 @@ export const AiPage = () => {
     const manualRef = useRef(false); // push-to-talk: whole phrase is the command
     const hotwordRef = useRef(false);
     const pendingRef = useRef('');
-    const finalRef = useRef(''); // finalized segments of the current session
     const silenceTimerRef = useRef(null);
 
     // Chat WebSocket + audio playback.
@@ -234,7 +233,6 @@ export const AiPage = () => {
         const wasActive = activeRef.current;
         const command = pendingRef.current;
         pendingRef.current = '';
-        finalRef.current = '';
         activeRef.current = false;
         manualRef.current = false;
         setIsListening(false);
@@ -276,7 +274,6 @@ export const AiPage = () => {
                 activeRef.current = true;
                 manualRef.current = true;
                 pendingRef.current = '';
-                finalRef.current = '';
                 setIsListening(true);
                 resetSilenceTimer();
             }
@@ -292,26 +289,28 @@ export const AiPage = () => {
         activeRef.current = forceActive;
         manualRef.current = forceActive;
         pendingRef.current = '';
-        finalRef.current = '';
         if (forceActive) setIsListening(true);
 
         rec.onresult = (event) => {
-            // Only process what changed (event.resultIndex) and keep committed
-            // (final) segments separate from the in-flight interim text.
-            // Concatenating the whole event.results list re-adds the same
-            // history on every event, producing the duplicated "… … …"
-            // transcript seen on Chrome mobile.
+            // The full (growing) result list is re-sent on every event, and
+            // Chrome - notably on Android, where `continuous` isn't honoured -
+            // can append a fresh hypothesis for EVERY interim update of the SAME
+            // utterance ("eteins", "etins la", "eteins la lumiere"...). Joining
+            // them duplicates the sentence, so keep every finalised segment but
+            // only the LAST interim (the current hypothesis).
+            let finalText = '';
             let interim = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
+            for (let i = 0; i < event.results.length; i++) {
                 const result = event.results[i];
                 const transcript = result?.[0]?.transcript ?? '';
+                if (!transcript) continue;
                 if (result.isFinal) {
-                    finalRef.current = `${finalRef.current} ${transcript}`;
+                    finalText += ` ${transcript}`;
                 } else {
-                    interim += ` ${transcript}`;
+                    interim = transcript;
                 }
             }
-            const text = normalize(`${finalRef.current} ${interim}`);
+            const text = normalize(`${finalText} ${interim}`);
 
             if (manualRef.current) {
                 pendingRef.current = text;
