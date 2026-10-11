@@ -78,6 +78,16 @@ services:
         environment:
             - LLAMA_ARG_THREADS=${LLAMA_ARG_THREADS:-6}
         restart: unless-stopped
+    voiceprofiler:
+        build: ./voiceprofiler
+        container_name: charlie-voice-profiler
+        restart: unless-stopped
+        ports:
+        - "9309:10400"
+        - "9310:8000"
+        volumes:
+        - ./voiceprofiler/data:/app/data
+        - ./voiceprofiler/models:/app/models
     db:
         container_name: charlie-db
         image: mongo
