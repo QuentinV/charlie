@@ -390,3 +390,30 @@ export const haDeleteEntry = (entryId: string) =>
     haRequest(`/api/config/config_entries/entry/${entryId}`, {
         method: 'DELETE',
     });
+
+// ===== Core lifecycle (community integration support) =====
+
+/**
+ * Restart the Home Assistant process. Adding a brand-new custom integration
+ * (`custom_components/<domain>/`) is only picked up on startup — HA exposes no
+ * `reload_custom_integrations` service — so a process restart is required to
+ * register its config-flow handler. The container `restart: unless-stopped`
+ * policy keeps the container itself alive.
+ */
+export const haRestart = () =>
+    haRequest('/api/services/homeassistant/restart', {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
+
+/**
+ * Unauthenticated readiness probe used while HA restarts.
+ *
+ * We deliberately do NOT use `GET /api/`: that view requires auth, so an
+ * unauthenticated poll makes HA log an "invalid authentication" ban warning
+ * (`components.http.ban`) on every attempt — and repeated attempts can get the
+ * brain's IP banned. `/api/onboarding` is served by a no-auth view (the same
+ * one the bootstrap uses), so it is safe: it returns 200 while onboarding is
+ * active and 404 afterwards — either means HA is up and answering.
+ */
+export const haPing = () => haNoAuthRequest('/api/onboarding');

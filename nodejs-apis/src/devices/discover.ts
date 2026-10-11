@@ -81,9 +81,8 @@ export async function discoverDevices() {
                 const entry = apis[i];
                 return {
                     provider: entry?.provider,
-                    publicDiscovery: entry?.provider?._id?.startsWith(
-                        'virtual-'
-                    ),
+                    publicDiscovery:
+                        entry?.provider?._id?.startsWith('virtual-'),
                     devices: [],
                     error: s.reason?.message ?? 'Discovery failed',
                 };
@@ -96,5 +95,11 @@ export async function discoverDevices() {
                 error: undefined,
             };
         })
-        .filter((r: any) => r && (r.devices?.length > 0 || r.error));
+        .filter(
+            (r: any) =>
+                r &&
+                (r.devices?.length > 0 ||
+                    r.error ||
+                    r.provider?.codesource === 'homeassistant')
+        );
 }

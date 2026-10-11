@@ -10,6 +10,7 @@ import providerApis from './provider';
 //   provider.ts  – ProviderApi bridge (discover / state / services / caps)
 //   sync.ts      – onBoot(): seed provider row + state_changed listener
 //   manager.ts   – integration wizard REST routes (mounted under /api/ha)
+//   community.ts – HACS-compatible community installer (custom_components)
 //
 // The folder is the provider: startup hook + REST routes + MQTT-free
 // listener all defined here (init.ts / manager/index.ts know nothing about
@@ -30,3 +31,4 @@ export * from './client';
 export * from './bootstrap';
 export * from './provider';
 export * from './sync';
+export * from './community';

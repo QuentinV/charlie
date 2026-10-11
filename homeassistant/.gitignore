@@ -30,3 +30,4 @@ custom_components/*/__pycache__/
 
 
 .ha_run.lock
+custom_components

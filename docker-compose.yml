@@ -5,6 +5,9 @@ services:
         environment:
             - NODE_ENV=production
             - PULSE_SERVER=unix:/tmp/pulse/native
+            # HA config dir: lets the brain install community integrations
+            # (custom_components/) directly. See homeassistant/README.md.
+            - HA_CONFIG_DIR=/ha-config
         volumes:
             - ./nodejs-apis/src:/app/src
             - ./nodejs-apis/.env:/app/.env
@@ -13,6 +16,7 @@ services:
             - ${XDG_RUNTIME_DIR}/pulse/native:/tmp/pulse/native
             - ./nodejs-apis/recordings:/app/recordings
             - ./echo-devices:/echo-devices
+            - ./homeassistant/config:/ha-config
         ports:
             - '9300:9300' # http server
             - '9303:9303' # audio udp

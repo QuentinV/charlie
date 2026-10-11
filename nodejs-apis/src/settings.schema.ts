@@ -54,6 +54,16 @@ const schema: JSONSchema7 = {
             title: 'Log Home Assistant device state history',
             tags: ['Devices'],
         },
+        'devices.providers.homeassistant.community.enabled': {
+            type: 'boolean',
+            title: 'Enable Home Assistant community integrations (HACS-compatible)',
+            tags: ['Devices', 'Experimental'],
+        },
+        'devices.providers.homeassistant.community.githubToken': {
+            type: 'string',
+            title: 'GitHub token used to browse community integrations (optional)',
+            tags: ['Devices', 'Experimental'],
+        },
         'musics.show': {
             type: 'boolean',
             title: 'Enable music assistant iframe',

@@ -9,5 +9,6 @@
     "musics_playlists": "musics_playlists",
     "activities": "activities",
     "echoSettings": "echo_settings",
-    "settings": "settings"
+    "settings": "settings",
+    "haCustomIntegrations": "ha_custom_integrations"
 }
