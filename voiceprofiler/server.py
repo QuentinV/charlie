@@ -94,7 +94,7 @@ class MinimalVoiceProfileHandler(AsyncEventHandler):
 
     if AudioStop.is_type(event.type):
       await self._identify_speaker()
-      return True
+      return False
 
     return True
 

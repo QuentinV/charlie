@@ -1,52 +1,12 @@
 import { WebSocketServer } from 'ws';
-import { ask } from './flow';
-import { tts } from './tts';
-
-function random(arr: string[]) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-
-const positiveAnswers = [
-    "C'est fait.",
-    'Mission accomplie.',
-    "Pas de problème, je m'en occupe.",
-    "C'est réglé.",
-    'Affirmatif.',
-    'Pas de souci.',
-];
-
-const notPossibleAnswers = [
-    "Cette action n'est pas disponible.",
-    'Je ne peux pas faire ça, malheureusement.',
-    'Action impossible.',
-];
-
-const doesNotUnderstandAnswers = [
-    'Je ne comprends pas.',
-    'Hein ? Peux-tu répéter ?',
-    "Je n'ai pas capté un seul mot.",
-];
-
-function longTextFor(result: unknown): string {
-    if (typeof result === 'string') return result;
-    if (result === null) return random(doesNotUnderstandAnswers);
-    if (result === false) return random(notPossibleAnswers);
-    return random(positiveAnswers);
-}
-
-function shortTextFor(result: unknown): string {
-    if (typeof result === 'string') return 'Ok';
-    if (result === null) return 'Je ne comprends pas.';
-    if (result === false) return 'Pas possible.';
-    return 'Ok';
-}
+import { answer } from './flow';
 
 /**
  * Chat WebSocket endpoint.
  *
  * The client does STT in the browser and sends the recognized TEXT here.
- * This server calls `ask` (NLU → LLM fallback) and replies with the answer as
- * text plus spoken audio (WAV) synthesised via the TTS container.
+ * This server calls `answer` (NLU → LLM fallback → TTS) and replies with the
+ * answer as text plus spoken audio (WAV) synthesised via the TTS container.
  *
  * Frames (c / v protocol):
  *   client → text (or JSON { text })
@@ -85,16 +45,11 @@ export function setupChatServer(server: any) {
             if (!text) return;
 
             try {
-                const result = await ask(text);
-                const longText = longTextFor(result);
+                const a = await answer(text, { audioType: 'audio/wav' });
 
-                ws.send(JSON.stringify({ c: 'text', v: longText }));
-                ws.send(
-                    JSON.stringify({ c: 'feedback', v: shortTextFor(result) })
-                );
-
-                const audio = await tts({ text: longText, type: 'audio/wav' });
-                ws.send(Buffer.from(audio), { binary: true });
+                ws.send(JSON.stringify({ c: 'text', v: a.text }));
+                ws.send(JSON.stringify({ c: 'feedback', v: a.short }));
+                ws.send(a.audio, { binary: true });
                 ws.send(JSON.stringify({ c: 'playAudio' }));
             } catch (e) {
                 console.log('chat ws error', e);

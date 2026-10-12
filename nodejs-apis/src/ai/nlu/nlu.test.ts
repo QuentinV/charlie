@@ -403,4 +403,30 @@ describe('findIntent', () => {
             name: 'pauseDevice',
         });
     });
+
+    test('voice profile', async () => {
+        expect(await findIntent('configure mon profil')).toStrictEqual({
+            name: 'configureProfile',
+        });
+        expect(await findIntent('configurer mon profil')).toStrictEqual({
+            name: 'configureProfile',
+        });
+        expect(await findIntent('enregistre ma voix')).toStrictEqual({
+            name: 'configureProfile',
+        });
+        expect(await findIntent('je veux configurer mon profil')).toStrictEqual(
+            {
+                name: 'configureProfile',
+            }
+        );
+        expect(await findIntent('qui suis-je ?')).toStrictEqual({
+            name: 'whoAmI',
+        });
+        expect(await findIntent('qui suis je')).toStrictEqual({
+            name: 'whoAmI',
+        });
+        expect(await findIntent('tu me reconnais')).toStrictEqual({
+            name: 'whoAmI',
+        });
+    });
 });

@@ -102,6 +102,8 @@ services:
         volumes:
         - ./voiceprofiler/data:/app/data
         - ./voiceprofiler/models:/app/models
+        networks:
+            - internal
     db:
         container_name: charlie-db
         image: mongo

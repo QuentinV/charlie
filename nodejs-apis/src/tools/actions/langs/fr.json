@@ -18,6 +18,9 @@
         "response": "Ça va bien, merci. Et toi ?"
     },
     "music": {},
+    "profile": {
+        "askName": "Très bien. Quel est ton nom ?"
+    },
     "temperature": {},
     "thanks": {
         "response": "Avec plaisir."
@@ -26,6 +29,10 @@
     "volume": {},
     "weather": {
         "answer": "Il fait actuellement %{temp}°C, avec %{rain} mm de pluie et %{windspeed} km/h de vent."
+    },
+    "whoAmI": {
+        "response": "Tu es %{name}.",
+        "unknown": "Je ne te reconnais pas encore. Dis « configure mon profil » pour enregistrer ta voix."
     },
     "whoAreYou": {
         "response": "Je suis Charlie, ton assistant de maison."

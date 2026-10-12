@@ -83,6 +83,11 @@ export async function req(
 }
 
 // ===== Orchestration =====
+export interface ChatOptions {
+    /** Name of the speaker recognized through the voice profile, if any. */
+    user?: string;
+}
+
 export async function chat(
     sessionId: string,
     mesage: string,
@@ -92,9 +97,18 @@ export async function chat(
     }: {
         tools: LlmChatCompletionsChoicesTool[];
         mess: string;
-    }) => void
+    }) => void,
+    options?: ChatOptions
 ): Promise<string> {
     const session = await getSession(sessionId);
+
+    // Refresh the system prompt with the recognized speaker (the session is
+    // cached, so the identity may change between turns).
+    const user =
+        options?.user && options.user !== 'unknown' ? options.user : undefined;
+    session.messages[0].content =
+        'You are an helpful home assistant named Charlie.' +
+        (user ? ` The person speaking is ${user}.` : '');
 
     session.messages.push({
         role: 'user',

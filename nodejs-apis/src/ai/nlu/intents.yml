@@ -110,6 +110,25 @@ intents:
             - tu es charlie
             - comment tu t appelles
 
+    whoAmI:
+        starts:
+            - qui suis je
+            - qui suis-je
+            - tu sais qui je suis
+            - tu me reconnais
+
+    configureProfile:
+        starts:
+            - configure mon profil
+            - configurer mon profil
+            - enregistre ma voix
+            - enregistrer ma voix
+            - enregistre mon profil
+            - enregistrer mon profil
+            - cree mon profil
+            - creer mon profil
+            - ajoute mon profil
+
     deviceStateQuery:
         starts:
             - est ce que
