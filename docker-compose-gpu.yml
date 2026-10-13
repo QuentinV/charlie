@@ -97,13 +97,28 @@ services:
         container_name: charlie-voice-profiler
         restart: unless-stopped
         ports:
-        - "9309:10400"
-        - "9310:8000"
+            - "9309:10400"
+            - "9310:8000"
         volumes:
-        - ./voiceprofiler/data:/app/data
-        - ./voiceprofiler/models:/app/models
+            - ./voiceprofiler/data:/app/data
+            - ./voiceprofiler/models:/app/models
         networks:
             - internal
+    vision:
+        image: ghcr.io/ggml-org/llama.cpp:server
+        container_name: charlie-vision
+        ports:
+            - "9311:8080"
+        volumes:
+            - ./vision/models:/models
+        command: >
+            -m /models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+            --mmproj /models/mmproj-Qwen3VL-4B-Instruct-F16.gguf
+            --host 0.0.0.0
+            --port 8080
+            --threads 4
+            -c 2048
+        restart: unless-stopped
     db:
         container_name: charlie-db
         image: mongo
