@@ -88,8 +88,6 @@ struct HAConfig {
     bool displayScreenTime = false;
     bool tempSensorEnabled = false;
 
-    // Conversation
-    bool conversationalMode = false;
     uint32_t conversationTimeoutMs = 10000;
 };
 
@@ -152,8 +150,7 @@ private:
     bool mute = false;
     bool isWsConnected = false;
 
-    // Conversation runtime state (signalled from the WebSocket task)
-    volatile bool replyPlayed = false;
+    volatile bool expectFollowUp = false;
 
     String serverip;
     float wakeUpWordAccuracy;

@@ -56,6 +56,16 @@ export function longTextFor(result: unknown): string {
     return random(positiveAnswers);
 }
 
+/**
+ * Whether the assistant is expecting the user to answer back. The server
+ * decides this per turn: the echo device keeps its microphone open for a
+ * follow-up (no wake word) only when this is true. We consider the reply a
+ * question when it ends with a `?`.
+ */
+export function expectsFollowUp(text: string): boolean {
+    return /\?\s*$/.test(text.trim());
+}
+
 // Sentence the user is asked to repeat so we capture a clean, long enough
 // voice sample for the profile registration.
 const REPEAT_SENTENCE = 'Bonjour Charlie, je suis prêt.';
@@ -185,6 +195,11 @@ export interface AnswerResult {
     text: string;
     /** Synthesised audio, format given by `AnswerOptions.audioType`. */
     audio: Buffer;
+    /**
+     * Whether the echo device should keep the microphone open for a follow-up
+     * turn (no wake word needed). Decided by the server.
+     */
+    conversation: boolean;
 }
 
 /**
@@ -202,5 +217,11 @@ export async function answer(
         text: long,
         type: options?.audioType ?? 'audio/L16',
     });
-    return { result, short, text: long, audio: Buffer.from(audio) };
+    return {
+        result,
+        short,
+        text: long,
+        audio: Buffer.from(audio),
+        conversation: expectsFollowUp(long),
+    };
 }

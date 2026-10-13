@@ -17,11 +17,14 @@ function log(message: string, activity?: Activity) {
 }
 
 // ===== Sessions =====
+const SESSION_TTL_MS = 10 * 60 * 1000;
 const sessions: { [id: string]: LlmChatCompletionsRequest } = {};
+const sessionsLastUsed: { [id: string]: number } = {};
 
 async function getSession(
     sessionId: string
 ): Promise<LlmChatCompletionsRequest> {
+    sessionsLastUsed[sessionId] = Date.now();
     if (!sessions[sessionId])
         sessions[sessionId] = {
             messages: [
@@ -34,6 +37,24 @@ async function getSession(
         };
     return sessions[sessionId];
 }
+
+/** Release a conversation session and its LLM memory. */
+export function endSession(sessionId?: string): void {
+    if (!sessionId) return;
+    delete sessions[sessionId];
+    delete sessionsLastUsed[sessionId];
+}
+
+// Evict sessions that have been idle for too long (orphans, one-shot API
+// calls, crashed turns...).
+setInterval(() => {
+    const now = Date.now();
+    for (const id of Object.keys(sessions)) {
+        if (now - (sessionsLastUsed[id] ?? 0) > SESSION_TTL_MS) {
+            endSession(id);
+        }
+    }
+}, 60_000).unref?.();
 
 // ===== Tool execution =====
 async function execTool({

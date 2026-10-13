@@ -46,8 +46,7 @@ All settings are defined through the `HAConfig` struct. Create an instance, set 
 | `TEMP_SCL`              | `gpio_num_t`             | `GPIO_NUM_42`            | I2C SCL pin for the temperature sensor                                                                                               |
 | `feedbackScreenEnabled` | `bool`                   | `false`                  | Show server text feedback and listening animation on the first display                                                               |
 | `tempSensorEnabled`     | `bool`                   | `false`                  | Enable the AHT10/AHT20 temperature/humidity sensor                                                                                   |
-| `conversationalMode`    | `bool`                   | `false`                  | Enable multi‑turn conversation: after the assistant replies, the device re‑opens the microphone for follow‑ups without the wake word |
-| `conversationTimeoutMs` | `uint32_t`               | `10000`                  | Close the conversation window after this many ms of silence (also used as the reply‑wait timeout)                                    |
+| `conversationTimeoutMs` | `uint32_t`               | `10000`                  | How long the device waits for the user to start a follow-up before returning to wake-word detection. Follow-ups are enabled by the server per turn. |
 
 ### `I2CScreen` struct
 
@@ -174,7 +173,7 @@ The device connects to `ws://{serverIp}:9303/ws/echo` and communicates using JSO
 
 | Command                 | Payload                                       | Description                                          |
 | ----------------------- | --------------------------------------------- | ---------------------------------------------------- |
-| `playAudio`             | —                                             | Play the previously received audio buffer            |
+| `playAudio`             | `{ "conversation": <bool> }`                  | Play the buffered audio; `conversation` asks the device to keep listening for a follow-up |
 | `setWakeUpWordAccuracy` | `{ "v": <float> }`                            | Adjust wake word sensitivity                         |
 | `setServerIp`           | `{ "v": "<ip>" }`                             | Change the Charlie server IP and reboot              |
 | `OTA`                   | —                                             | Trigger over‑the‑air firmware update from the server |
@@ -189,15 +188,20 @@ The device sends:
 
 ## Conversation mode
 
-When `HAConfig.conversationalMode` is `true`, the device keeps the conversation going after the first wake‑word turn:
+Conversation mode is **driven by the server** – there is no device flag. Each turn, the server appends a `conversation` boolean to the `playAudio` command:
 
-1. The wake word ("charlie") is detected locally and the utterance is recorded and sent.
-2. The assistant's reply is received and played back.
-3. As soon as playback finishes, the device **re‑opens the microphone automatically** (LED white) without requiring the wake word again.
-4. If the user starts speaking, the follow‑up utterance is recorded and sent, and the cycle repeats.
-5. If no speech is detected within `conversationTimeoutMs`, the conversation window closes (LED off) and the device returns to wake‑word detection.
+```json
+{ "c": "playAudio", "conversation": true }   // keep the microphone open
+{ "c": "playAudio", "conversation": false }  // return to wake‑word mode
+```
 
-The reply‑wait is also bounded by `conversationTimeoutMs`, so a missing or slow server reply never leaves the device stuck.
+1. The wake word ("charlie") is detected locally and the utterance is recorded and sent; the device then goes back to wake‑word detection.
+2. The assistant's reply is received and played back. When playback finishes, the device checks the `conversation` flag.
+3. If the server asked for a follow‑up, the device re‑opens the microphone (LED white) **without requiring the wake word again**.
+4. If the user starts speaking, the follow‑up utterance is recorded and sent, and the cycle repeats with the server deciding again whether to continue.
+5. If no speech is detected within `conversationTimeoutMs`, the window closes (LED off) and the device returns to wake‑word detection.
+
+The Charlie server sets the flag from the assistant's answer: when the reply is a question (ends with `?`), it keeps the conversation open – this also covers the voice‑profile registration prompts. It also keeps one LLM session per connection, so follow‑ups have memory across turns.
 
 ## Persisted settings (Preferences)
 

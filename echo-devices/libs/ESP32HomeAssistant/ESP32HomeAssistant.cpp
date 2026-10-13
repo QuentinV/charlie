@@ -177,10 +177,6 @@ void ESP32HomeAssistant::_playBufferedAudio() {
     i2s_write(this->_cfg.I2S_SPK_PORT, (const char*)this->playbackBuffer, bytes_to_write, &bytes_written, portMAX_DELAY);
 
     this->totalPlaybackSamples = 0;
-
-    if (this->_cfg.conversationalMode) {
-        this->replyPlayed = true;
-    }
 }
 
 void ESP32HomeAssistant::_handleIncomingAudio(uint8_t *payload, size_t length) {
@@ -223,6 +219,7 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
 
                 String command = doc["c"];
                 if (command == "playAudio") {
+                    this->expectFollowUp = doc["conversation"] | false;
                     this->_playBufferedAudio();
                     this->setLed(0, 0, 0);
                 } else if (command == "setWakeUpWordAccuracy") {
@@ -363,6 +360,7 @@ void ESP32HomeAssistant::_sendAudioWS() {
     }
 
     this->setLed(128, 0, 128);
+    this->expectFollowUp = false;
     this->webSocket.sendTXT("start");
     
     size_t samples_sent = 0;
@@ -407,12 +405,7 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
     silenceStart = 0;
     time_t startTime = 0;
     bool recordMode = false;
-
-    // Conversation state (multi-turn follow-ups without wake word)
-    bool conversationWindow = false;       // inside an ongoing conversation
-    bool followUpWaitingSpeech = false;    // reply played, waiting for the user to start
-    unsigned long followUpWaitStart = 0;   // ms timestamp when the follow-up wait began
-    unsigned long replyWaitStart = 0;      // ms timestamp when waiting for the reply
+    unsigned long followUpWaitStart = 0;
 
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(2));
@@ -440,7 +433,7 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                 if (this->totalRecordedSamples < MAX_SAMPLES) {
                     this->bufferCaptureAudio[this->totalRecordedSamples++] = capture_pcm16[i];
                 }
-            } else if (!conversationWindow) {
+            } else if (!this->expectFollowUp) {
                 this->inference.buffer[this->inference.buf_count] = capture_pcm16[i];
                 this->inference.buf_count = (this->inference.buf_count + 1) % window;
             }
@@ -457,13 +450,6 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                 memset(this->inference.buffer, 0, window * sizeof(int16_t));
                 this->inference.buf_count = 0;
                 samples_since_last_inference = 0;
-
-                if (this->_cfg.conversationalMode) {
-                    conversationWindow = true;
-                    followUpWaitingSpeech = false;
-                    this->replyPlayed = false;
-                    replyWaitStart = millis();
-                }
 
                 continue;
             }
@@ -490,69 +476,42 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                     this->inference.buf_count = 0;
                     samples_since_last_inference = 0;
 
-                    if (this->_cfg.conversationalMode) {
-                        conversationWindow = true;
-                        followUpWaitingSpeech = false;
-                        this->replyPlayed = false;
-                        replyWaitStart = millis();
-                    }
-
                     continue;
                 }
             } else {
                 silenceStart = 0;
             }
-        } else if (conversationWindow) {
-            // ===== Conversational follow-up (no wake word) =====
-            if (!followUpWaitingSpeech) {
-                // Waiting for the assistant's reply to finish playing.
-                if (this->replyPlayed) {
-                    this->replyPlayed = false;
+        } else if (this->expectFollowUp) {
+            // ===== Follow-up (no wake word): wait for the user to speak =====
+            if (followUpWaitStart == 0) {
+                followUpWaitStart = millis();
+                this->setLed(255, 255, 255);
+                this->_drawListeningScreen();
+            }
 
-                    // Reset the capture buffers and get ready for the next utterance.
-                    memset(this->inference.buffer, 0, window * sizeof(int16_t));
-                    this->inference.buf_count = 0;
-                    samples_since_last_inference = 0;
-                    this->totalRecordedSamples = 0;
+            int64_t sumsq = 0;
+            for (size_t i = 0; i < frames_read; i++) {
+                int32_t s = capture_pcm16[i];
+                sumsq += (int64_t)s * s;
+            }
+            int rms = sqrt((double)sumsq / frames_read);
 
-                    followUpWaitingSpeech = true;
-                    followUpWaitStart = millis();
-                    this->setLed(255, 255, 255);
-                    this->_drawListeningScreen();
-                } else if (millis() - replyWaitStart > this->_cfg.conversationTimeoutMs) {
-                    // The assistant never replied: give up on the conversation.
-                    Serial.println("No reply, back to wake word.");
-                    conversationWindow = false;
-                    this->setLed(0, 0, 0);
-                }
-            } else {
-                // Listening for the user to start speaking (with a timeout).
-                int64_t sumsq = 0;
-                for (size_t i = 0; i < frames_read; i++) {
-                    int32_t s = capture_pcm16[i];
-                    sumsq += (int64_t)s * s;
-                }
-                int rms = sqrt((double)sumsq / frames_read);
-
-                if (rms >= MIC_THRESHOLD_SOUND) {
-                    // Speech detected: record the follow-up utterance.
-                    followUpWaitingSpeech = false;
-                    recordMode = true;
-                    silenceStart = 0;
-                    startTime = time(NULL);
-                } else if (millis() - followUpWaitStart > this->_cfg.conversationTimeoutMs) {
-                    // No follow-up: close the conversation and resume wake word.
-                    Serial.println("Conversation timeout, back to wake word.");
-                    conversationWindow = false;
-                    followUpWaitingSpeech = false;
-                    this->setLed(0, 0, 0);
-
-                    memset(this->inference.buffer, 0, window * sizeof(int16_t));
-                    this->inference.buf_count = 0;
-                    samples_since_last_inference = 0;
-                }
+            if (rms >= MIC_THRESHOLD_SOUND) {
+                // Speech detected: record the follow-up utterance.
+                this->expectFollowUp = false;
+                followUpWaitStart = 0;
+                recordMode = true;
+                silenceStart = 0;
+                startTime = time(NULL);
+            } else if (millis() - followUpWaitStart > this->_cfg.conversationTimeoutMs) {
+                // No follow-up: close the window and resume wake word.
+                Serial.println("Conversation timeout, back to wake word.");
+                this->expectFollowUp = false;
+                followUpWaitStart = 0;
+                this->setLed(0, 0, 0);
             }
         } else {
+            followUpWaitStart = 0;
             samples_since_last_inference += frames_read;
 
             // Only run AI every 'hop' (200ms), but use the full 1s 'window'
@@ -586,7 +545,6 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                     recordMode = true;
                     silenceStart = 0;
                     startTime = time(NULL);
-                    this->replyPlayed = false;
 
                     this->_drawListeningScreen();
 

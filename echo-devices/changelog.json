@@ -1,7 +1,7 @@
 [
     {
         "version": "1.5",
-        "description": "Conversational mode: after Charlie replies, the device re-opens the microphone for follow-up turns without the wake word until N ms of silence (config: conversationalMode, conversationTimeoutMs).",
+        "description": "Server-driven conversation mode: the server adds a 'conversation' flag to the playAudio command to tell the device whether to keep the microphone open for a follow-up turn (no wake word) until N ms of silence (config: conversationTimeoutMs). No device flag required; the server keeps one LLM session per echo connection for multi-turn memory.",
         "devices": [
             "echo-zero",
             "echo-zero-screen",

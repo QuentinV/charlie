@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { stt } from './stt';
 import { answer } from '../ai/flow';
+import { endSession } from '../ai/llm';
 import { identify } from '../ai/voiceProfile';
 import { logEcho } from './logs';
 import { v4 as uuid } from 'uuid';
@@ -10,18 +11,16 @@ import {
 } from './screensUpdates';
 
 const VERIFY_TEXT = ['charlie, ', 'charlie ', 'charlie. '];
-
-// How long a wake-word utterance keeps the conversation open for follow-ups.
 const CONVERSATION_TIMEOUT_MS = 10000;
 
 export const connectedEchos: { [key: string]: any } = {};
 
-function sendPCMInChunks(ws, buffer, chunkSize = 8192) {
+function sendPCMInChunks(ws, buffer, conversation = false, chunkSize = 8192) {
     for (let i = 0; i < buffer.length; i += chunkSize) {
         const chunk = buffer.slice(i, i + chunkSize);
         ws.send(chunk, { binary: true });
     }
-    ws.send(JSON.stringify({ c: 'playAudio' }));
+    ws.send(JSON.stringify({ c: 'playAudio', conversation }));
 }
 
 function verify(text: string) {
@@ -50,15 +49,17 @@ export function setupEchoListen() {
 
         let audioBuffer = [];
         let conversationUntil = 0;
-        const sessionId = uuid();
+        let sessionId: string | undefined;
         ws.on('error', (err) => {
             log('WebSocket error:' + err.message);
+            if (sessionId) endSession(sessionId);
             delete connectedEchos[ip];
             clearScreenUpdatesForIp(ip);
         });
 
         ws.on('close', () => {
             log('connection closed');
+            if (sessionId) endSession(sessionId);
             delete connectedEchos[ip];
             clearScreenUpdatesForIp(ip);
         });
@@ -107,6 +108,12 @@ export function setupEchoListen() {
                         // conversation window; any other utterance is accepted
                         // as a follow-up while that window is still open.
                         const inConversation = Date.now() < conversationUntil;
+
+                        if (!inConversation && sessionId) {
+                            endSession(sessionId);
+                            sessionId = undefined;
+                        }
+
                         const command =
                             typeof valid === 'string' && valid.trim()
                                 ? valid.trim()
@@ -118,20 +125,32 @@ export function setupEchoListen() {
                         );
 
                         if (command) {
-                            conversationUntil =
-                                Date.now() + CONVERSATION_TIMEOUT_MS;
-
+                            // Lazily create the conversation session, then
+                            // keep it only while the conversation continues.
+                            const turnSessionId = sessionId ?? uuid();
                             const a = await answer(command, {
-                                sessionId,
+                                sessionId: turnSessionId,
                                 user,
                                 audio: pcm,
                             });
-                            log(`result = ${a.result}`);
+                            log(
+                                `result = ${a.result} (conversation = ${a.conversation})`
+                            );
+
+                            if (a.conversation) {
+                                sessionId = turnSessionId;
+                                conversationUntil =
+                                    Date.now() + CONVERSATION_TIMEOUT_MS;
+                            } else {
+                                sessionId = undefined;
+                                conversationUntil = 0;
+                                endSession(turnSessionId);
+                            }
 
                             ws.send(
                                 JSON.stringify({ c: 'feedback', v: a.short })
                             );
-                            sendPCMInChunks(ws, a.audio);
+                            sendPCMInChunks(ws, a.audio, a.conversation);
                         }
                     }
                 } catch (e) {
