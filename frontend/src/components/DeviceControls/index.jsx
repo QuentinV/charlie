@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Box, CircularProgress, Stack, Typography } from '@mui/material';
-import { api } from '../../api/charlie';
+import { useDeviceCapabilities } from '../../hooks/useDeviceCapabilities';
 import GenericControls from './GenericControls';
 import { ACControls } from './providers/clim';
 import { TVControls } from './providers/sony_bravia_tv';
@@ -76,9 +76,9 @@ export const DeviceControls = ({
 };
 
 /**
- * Detail-view wrapper: fetches the device capabilities once, then renders the
- * resolved control panel (provider-specific custom → per-type default →
- * generic capability renderer).
+ * Detail-view wrapper: resolves the device capabilities through the shared
+ * cache (or accepts them as a prop), then renders the resolved control panel
+ * (provider-specific custom → per-type default → generic capability renderer).
  */
 export const DeviceDetailControls = ({
     device,
@@ -88,15 +88,12 @@ export const DeviceDetailControls = ({
     state,
     loading = false,
 }) => {
-    const [fetchedCapabilities, setFetchedCapabilities] = useState(null);
-    const capabilities = capabilitiesProp ?? fetchedCapabilities;
-
-    useEffect(() => {
-        if (capabilitiesProp || !device?._id) return;
-        api(`devices/${device._id}/capabilities`)
-            .then(setFetchedCapabilities)
-            .catch(() => setFetchedCapabilities(null));
-    }, [device?._id, capabilitiesProp]);
+    // Capabilities either come from the parent (already loaded) or from the
+    // shared, de-duplicated capabilities cache — so however many consumers
+    // mount at once, the device is fetched a single time.
+    const deviceId = capabilitiesProp ? null : device?._id;
+    const { capabilities: fetched } = useDeviceCapabilities(deviceId);
+    const capabilities = capabilitiesProp ?? fetched;
 
     return (
         <Stack spacing={2} sx={{ p: 1 }}>

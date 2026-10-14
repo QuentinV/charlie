@@ -29,7 +29,6 @@ export const ViewDevice = ({ device }) => {
     const [roomId, setRoomId] = useState(null);
     const [rooms, setRooms] = useState([]);
     const [providers, setProviders] = useState([]);
-    const [capabilities, setCapabilities] = useState(null);
 
     const deviceId = device?._id;
 
@@ -40,11 +39,6 @@ export const ViewDevice = ({ device }) => {
     useEffect(() => {
         if (!deviceId) return;
         (async () => {
-            const caps = await api(`devices/${deviceId}/capabilities`).catch(
-                () => null
-            );
-            setCapabilities(caps ?? null);
-
             const stateRes = await api(`devices/${deviceId}/state`).catch(
                 () => null
             );
@@ -89,7 +83,6 @@ export const ViewDevice = ({ device }) => {
                     <DeviceDetailControls
                         device={data}
                         codesource={codesource}
-                        capabilities={capabilities}
                         state={state}
                         loading={stateLoading}
                         onStateChange={(newState) =>

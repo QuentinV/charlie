@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { ArrowBackIosNew, ArrowForwardIos } from '@mui/icons-material';
 import { api } from '../../api/charlie';
+import { useDeviceCapabilities } from '../../hooks/useDeviceCapabilities';
 
 const startOfDay = (date = new Date()) => {
     const d = new Date(date);
@@ -97,22 +98,15 @@ export default function HistoricalDeviceChart({
     const [viewRange, setViewRange] = useState(() =>
         getViewRange(period, periodOffset)
     );
-    const [capabilities, setCapabilities] = useState(null);
     const [activeProperty, setActiveProperty] = useState('');
+    const { capabilities } = useDeviceCapabilities(deviceId);
 
     useEffect(() => {
         setPeriodOffset(rangeDays);
     }, [rangeDays]);
 
     useEffect(() => {
-        if (!deviceId) {
-            setCapabilities(null);
-            setActiveProperty('');
-            return;
-        }
-        api(`devices/${deviceId}/capabilities`)
-            .then((res) => setCapabilities(res ?? null))
-            .catch(() => setCapabilities(null));
+        setActiveProperty('');
     }, [deviceId]);
 
     useEffect(() => {
