@@ -2,16 +2,18 @@ import { WebSocketServer } from 'ws';
 import { stt } from './stt';
 import { answer } from '../ai/flow';
 import { endSession } from '../ai/llm';
-import { identify } from '../ai/voiceProfile';
+import { getPending, identify } from '../ai/voiceProfile';
+import {
+    Conversation,
+    ECHO_WAKE_WORDS,
+    REGISTRATION_TIMEOUT_MS,
+    prefixWakeWords,
+} from '../ai/conversation';
 import { logEcho } from './logs';
-import { v4 as uuid } from 'uuid';
 import {
     clearScreenUpdatesForIp,
     startScreenUpdatesForIp,
 } from './screensUpdates';
-
-const VERIFY_TEXT = ['charlie, ', 'charlie ', 'charlie. '];
-const CONVERSATION_TIMEOUT_MS = 10000;
 
 export const connectedEchos: { [key: string]: any } = {};
 
@@ -21,16 +23,6 @@ function sendPCMInChunks(ws, buffer, conversation = false, chunkSize = 8192) {
         ws.send(chunk, { binary: true });
     }
     ws.send(JSON.stringify({ c: 'playAudio', conversation }));
-}
-
-function verify(text: string) {
-    const t = text.toLowerCase();
-    for (let i = 0; i < VERIFY_TEXT.length; ++i) {
-        if (t.startsWith(VERIFY_TEXT[i])) {
-            return text.substring(VERIFY_TEXT[i].length);
-        }
-    }
-    return false;
 }
 
 export function setupEchoListen() {
@@ -47,19 +39,21 @@ export function setupEchoListen() {
         //    log('ping');
         //});;
 
+        const conversation = new Conversation({
+            strip: prefixWakeWords(ECHO_WAKE_WORDS),
+            endSession,
+        });
         let audioBuffer = [];
-        let conversationUntil = 0;
-        let sessionId: string | undefined;
         ws.on('error', (err) => {
             log('WebSocket error:' + err.message);
-            if (sessionId) endSession(sessionId);
+            conversation.close();
             delete connectedEchos[ip];
             clearScreenUpdatesForIp(ip);
         });
 
         ws.on('close', () => {
             log('connection closed');
-            if (sessionId) endSession(sessionId);
+            conversation.close();
             delete connectedEchos[ip];
             clearScreenUpdatesForIp(ip);
         });
@@ -101,35 +95,18 @@ export function setupEchoListen() {
                     console.log('received text', text);
                     if (text && typeof text === 'string') {
                         log(`text = ${text}`);
-                        const valid = verify(text);
-                        log(`text verified = ${valid}`);
 
                         // A "charlie …" utterance starts (or restarts) the
                         // conversation window; any other utterance is accepted
                         // as a follow-up while that window is still open.
-                        const inConversation = Date.now() < conversationUntil;
-
-                        if (!inConversation && sessionId) {
-                            endSession(sessionId);
-                            sessionId = undefined;
-                        }
-
-                        const command =
-                            typeof valid === 'string' && valid.trim()
-                                ? valid.trim()
-                                : inConversation && text.trim()
-                                  ? text.trim()
-                                  : undefined;
+                        const decision = conversation.resolve(text);
                         log(
-                            `command = ${command} (in conversation = ${inConversation})`
+                            `command = ${decision.command} (in conversation = ${decision.inConversation})`
                         );
 
-                        if (command) {
-                            // Lazily create the conversation session, then
-                            // keep it only while the conversation continues.
-                            const turnSessionId = sessionId ?? uuid();
-                            const a = await answer(command, {
-                                sessionId: turnSessionId,
+                        if (decision.command && decision.sessionId) {
+                            const a = await answer(decision.command, {
+                                sessionId: decision.sessionId,
                                 user,
                                 audio: pcm,
                             });
@@ -138,13 +115,17 @@ export function setupEchoListen() {
                             );
 
                             if (a.conversation) {
-                                sessionId = turnSessionId;
-                                conversationUntil =
-                                    Date.now() + CONVERSATION_TIMEOUT_MS;
+                                // A voice-profile registration needs a longer
+                                // window: the sentence to repeat is long to
+                                // speak back.
+                                conversation.keep(
+                                    decision.sessionId,
+                                    getPending(decision.sessionId)
+                                        ? REGISTRATION_TIMEOUT_MS
+                                        : undefined
+                                );
                             } else {
-                                sessionId = undefined;
-                                conversationUntil = 0;
-                                endSession(turnSessionId);
+                                conversation.release(decision.sessionId);
                             }
 
                             ws.send(

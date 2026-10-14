@@ -18,6 +18,10 @@
         "response": "Ça va bien, merci. Et toi ?"
     },
     "music": {},
+    "memory": {
+        "remembered": "D'accord, je m'en souviendrai.",
+        "forgotten": "C'est oublié."
+    },
     "profile": {
         "askName": "Très bien. Quel est ton nom ?"
     },

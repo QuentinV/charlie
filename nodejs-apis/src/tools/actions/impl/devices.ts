@@ -11,6 +11,7 @@ import Fuse from 'fuse.js';
 import { changeDeviceState, getDeviceState } from '../../../devices';
 import { normalizeAndSplit } from './../../../ai/nlu/utils';
 import { log } from '../../../manager/services/activities';
+import * as memory from '../../../ai/memory';
 
 interface DeviceRequest {
     freeText: string;
@@ -20,7 +21,15 @@ interface DeviceRequest {
         room?: string;
         plurial?: 'plurial';
         predefinedRoom?: string;
+        deviceId?: string;
     };
+    user?: string;
+    sessionId?: string;
+}
+
+/** Memory scope derived from the NLU request. */
+function scopeOf(req: DeviceRequest): { user?: string; sessionId?: string } {
+    return { user: req?.user, sessionId: req?.sessionId };
 }
 
 async function getRoom(q: string): Promise<Room | undefined> {
@@ -44,6 +53,14 @@ async function getRoom(q: string): Promise<Room | undefined> {
 
 async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
     DeviceTypes;
+    // Explicit target coming from memory (implicit reference like "éteins-la").
+    if (req.slots?.deviceId) {
+        const d = await cs.devices.findOne({ _id: req.slots.deviceId });
+        if (d) {
+            return [d];
+        }
+    }
+
     if (req.slots?.predefinedRoom === 'house') {
         log('devices-actions', 'house requested, use all shutters devices');
         return cs.devices
@@ -127,14 +144,25 @@ async function changeDevice(
     power: PowerType
 ): Promise<boolean | string> {
     const devices = await findDevices(req);
-    if (devices) {
+    if (devices?.length) {
+        // Turning a device on may carry a remembered level (preference).
+        const state: DeviceState = { power };
+        if (power === 'on' && req.slots?.number != null) {
+            const level = Number(req.slots.number);
+            if (!Number.isNaN(level)) state.level = clampLevel(level);
+        }
+
         let ok = true;
-        for (let i = 0; i < devices.length; ++i) {
-            ok =
-                ok &&
-                !!(await changeDeviceState(devices[i]._id!, {
-                    power,
-                }));
+        for (const device of devices) {
+            if (!device._id) continue;
+            ok = ok && !!(await changeDeviceState(device._id, state));
+        }
+        if (ok) {
+            memory.setActiveDevice(
+                scopeOf(req),
+                devices[0]._id,
+                devices[0].name
+            );
         }
         return ok;
     }
@@ -212,6 +240,7 @@ async function applyLevel(
             return `Impossible de modifier le niveau de ${device.name}.`;
         }
     }
+    memory.setActiveDevice(scopeOf(req), targets[0]._id, targets[0].name);
     return true;
 }
 
@@ -253,6 +282,11 @@ export const tools: Tools = {
             if (!devices?.length) {
                 return "Je ne trouves pas l'appareil demandé.";
             }
+            memory.setActiveDevice(
+                scopeOf(req),
+                devices[0]._id,
+                devices[0].name
+            );
             const descriptions: string[] = [];
             for (const device of devices) {
                 const state = device._id

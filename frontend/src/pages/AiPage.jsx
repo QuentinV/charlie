@@ -2,41 +2,24 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Box } from '@mui/material';
 import TauVisualizer from '../components/AIAvatar/TauVisualizer';
 import { api } from '../api/charlie';
+import { MicCapture } from '../audio/micCapture';
 
 const FALLBACK_REPLY = "Je n'ai pas trouvé de réponse à ça.";
 const ERROR_REPLY = "Une erreur est survenue, réessaie s'il te plaît.";
-const WAKE_UP_REPLY = "Oui ? Dis-moi ce que je peux faire pour toi.";
-const SILENCE_MS = 1200;
+const MIC_ERROR_REPLY =
+    "Je n'ai pas pu accéder au micro. Autorise le microphone pour ce site puis réessaie.";
+const INSECURE_REPLY =
+    'Le micro nécessite une connexion sécurisée (HTTPS) ou localhost.';
 
-// Longest first so "hey charlie" is matched before "hey"/"charlie".
-const WAKE_KEYWORDS = ['hey charlie', 'hi charlie', 'charlie', 'hey', 'hi'];
-
-const escapeRE = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const normalize = (s) =>
-    (s || '')
-        .toLowerCase()
-        .replace(/[\u2018\u2019\u201c\u201d\u2013\u2014]/g, ' ')
-        .replace(/[.,!?;:]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-// Return the recognized text minus the first wake keyword, or null if none.
-function stripWake(text) {
-    const t = normalize(text);
-    if (!t) return null;
-    for (const kw of WAKE_KEYWORDS) {
-        const re = new RegExp(`(?:^|\\s)${escapeRE(kw)}(?=$|\\s|[.,!?;])`, 'i');
-        const m = t.match(re);
-        if (m) {
-            const before = t.slice(0, m.index);
-            const after = t.slice(m.index + m[0].length);
-            return `${before} ${after}`.replace(/\s+/g, ' ').trim();
-        }
-    }
-    return null;
-}
-
+/**
+ * AI chat page.
+ *
+ * Speech recognition runs **server-side**: the browser captures the mic,
+ * frames each utterance (VAD / push-to-talk) and streams PCM16 to `/ws/chat`,
+ * where the Charlie brain runs the local ASR + voice profiler (see
+ * `nodejs-apis/src/ai/chat-server.ts`). Wake words and the follow-up window
+ * are handled by the server, exactly like the echo devices.
+ */
 export const AiPage = () => {
     const [messages, setMessages] = useState(
         /** @type {Array<{sender: string; text: string}>} */ ([])
@@ -45,14 +28,8 @@ export const AiPage = () => {
     const [busy, setBusy] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [hotwordEnabled, setHotwordEnabled] = useState(false);
-
-    // Values needed inside recognition callbacks, held in refs (never stale).
-    const recRef = useRef(null);
-    const activeRef = useRef(false); // capturing a command right now
-    const manualRef = useRef(false); // push-to-talk: whole phrase is the command
-    const hotwordRef = useRef(false);
-    const pendingRef = useRef('');
-    const silenceTimerRef = useRef(null);
+    const [awaitingReply, setAwaitingReply] = useState(false);
+    const [level, setLevel] = useState(0);
 
     // Chat WebSocket + audio playback.
     const chatWsRef = useRef(null);
@@ -62,40 +39,207 @@ export const AiPage = () => {
     const reconnectAttemptRef = useRef(0);
     const closedByUsRef = useRef(false);
 
+    // Microphone capture → server-side ASR (see src/audio/micCapture.js).
+    const captureRef = useRef(null);
+    const hotwordRef = useRef(false);
+    // Server-driven "the assistant expects an answer" flag (the echo devices
+    // call it `expectFollowUp`): it comes from `playAudio.conversation`.
+    const followUpRef = useRef(false);
+    const playingRef = useRef(false);
+    const lastLevelAtRef = useRef(0);
+
     useEffect(() => {
         hotwordRef.current = hotwordEnabled;
     }, [hotwordEnabled]);
 
-    const pushUser = (text) =>
-        setMessages((prev) => [...prev, { sender: 'me', text }]);
-    const pushReply = (text) =>
-        setMessages((prev) => [...prev, { sender: 'Charlie', text }]);
+    const pushUser = useCallback(
+        (text) => setMessages((prev) => [...prev, { sender: 'me', text }]),
+        []
+    );
+    const pushReply = useCallback(
+        (text) => setMessages((prev) => [...prev, { sender: 'Charlie', text }]),
+        []
+    );
+
+    // ---- microphone ------------------------------------------------------
+
+    // Restore the capture mode after playback / at the end of an utterance.
+    // A pending follow-up (`conversation: true`) keeps the mic open exactly
+    // like the hotword mode, so the user can answer without pressing anything.
+    const syncCaptureMode = useCallback(() => {
+        const capture = captureRef.current;
+        if (!capture) return;
+        if (!playingRef.current && (hotwordRef.current || followUpRef.current))
+            capture.setMode('auto');
+        else capture.setMode('idle');
+    }, []);
+
+    // Release the mic when nothing needs it (no hotword, no pending
+    // follow-up, no live utterance).
+    const releaseIfIdle = useCallback(() => {
+        const capture = captureRef.current;
+        if (!capture) return;
+        if (
+            hotwordRef.current ||
+            followUpRef.current ||
+            capture.speaking ||
+            playingRef.current
+        )
+            return;
+        captureRef.current = null;
+        void capture.stop();
+    }, []);
+
+    const ensureCapture = useCallback(async () => {
+        if (captureRef.current) return true;
+
+        const capture = new MicCapture({
+            onStart: ({ manual }) => {
+                const ws = chatWsRef.current;
+                if (ws?.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ c: 'start', manual }));
+                }
+                // The user is answering: the "waiting for a reply" hint ends
+                // here, and the next server turn re-arms it if needed.
+                setAwaitingReply(false);
+                setIsListening(true);
+            },
+            onChunk: (buffer) => {
+                const ws = chatWsRef.current;
+                if (ws?.readyState === WebSocket.OPEN) ws.send(buffer);
+            },
+            onEnd: () => {
+                const ws = chatWsRef.current;
+                if (ws?.readyState === WebSocket.OPEN) {
+                    ws.send('end');
+                    // Waiting for the transcription + the answer.
+                    setBusy(true);
+                }
+                setIsListening(false);
+                setLevel(0);
+                syncCaptureMode();
+                releaseIfIdle();
+            },
+            onLevel: (rms) => {
+                // Throttle the visualiser updates (~10/s).
+                const now = performance.now();
+                if (now - lastLevelAtRef.current < 100) return;
+                lastLevelAtRef.current = now;
+                setLevel(Math.min(1, rms * 10));
+            },
+            onError: (error) => {
+                console.error('[AiPage] microphone error:', error);
+                pushReply(
+                    error?.message === 'insecure-context'
+                        ? INSECURE_REPLY
+                        : MIC_ERROR_REPLY
+                );
+                setIsListening(false);
+                hotwordRef.current = false;
+                setHotwordEnabled(false);
+            },
+        });
+
+        const ok = await capture.start();
+        if (!ok) return false;
+        captureRef.current = capture;
+        syncCaptureMode();
+        return true;
+    }, [pushReply, releaseIfIdle, syncCaptureMode]);
+
+    const toggleHotword = useCallback(async () => {
+        const next = !hotwordRef.current;
+        hotwordRef.current = next;
+        setHotwordEnabled(next);
+        if (next) {
+            const ok = await ensureCapture();
+            if (!ok) {
+                hotwordRef.current = false;
+                setHotwordEnabled(false);
+                return;
+            }
+            captureRef.current?.setMode('auto');
+        } else {
+            // Keep listening if the assistant still expects an answer.
+            syncCaptureMode();
+            releaseIfIdle();
+        }
+    }, [ensureCapture, releaseIfIdle, syncCaptureMode]);
+
+    const onToggleMic = useCallback(async () => {
+        const capture = captureRef.current;
+        if (capture?.speaking && capture.manual) {
+            capture.end(); // push-to-talk release → send what we have
+            return;
+        }
+        const ok = await ensureCapture();
+        if (!ok) return;
+        captureRef.current?.begin();
+    }, [ensureCapture]);
+
+    // ---- audio playback --------------------------------------------------
+
+    const resumeCapture = useCallback(() => {
+        playingRef.current = false;
+        // Tell the server the reply finished playing so it (re)opens the
+        // follow-up window from *now*: otherwise the window runs from the
+        // moment the reply was sent and the playback eats most of it.
+        if (followUpRef.current) {
+            const ws = chatWsRef.current;
+            if (ws?.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ c: 'played' }));
+            }
+        }
+        syncCaptureMode();
+        releaseIfIdle();
+    }, [releaseIfIdle, syncCaptureMode]);
 
     // Play back a WAV (array of ArrayBuffer chunks) via Web Audio.
-    const playWavBuffer = useCallback((chunks) => {
-        if (!chunks || chunks.length === 0) return;
-        const blob = new Blob(chunks, { type: 'audio/wav' });
-        blob
-            .arrayBuffer()
-            .then((audioData) => {
-                const Ctx = window.AudioContext || window.webkitAudioContext;
-                if (!Ctx || !Ctx) return;
-                if (!audioCtxRef.current) {
-                    audioCtxRef.current = new Ctx();
-                }
-                const ctx = audioCtxRef.current;
-                if (!ctx.decodeAudioData || !ctx.destination) return;
-                ctx.decodeAudioData(audioData).then((buffer) => {
-                    const source = new AudioBufferSourceNode(ctx, { buffer });
-                    source.connect(ctx.destination);
-                    source.start();
-                    if (ctx.state === 'suspended') ctx.resume();
-                });
-            })
-            .catch(() => {
-                // audio not playable — ignore
-            });
-    }, []);
+    const playWavBuffer = useCallback(
+        (chunks) => {
+            if (!chunks || chunks.length === 0) {
+                resumeCapture();
+                return;
+            }
+
+            // Charlie is talking: stop feeding the mic to the server so the
+            // synthesised voice isn't transcribed back into the conversation.
+            playingRef.current = true;
+            captureRef.current?.setMode('idle');
+
+            const blob = new Blob(chunks, { type: 'audio/wav' });
+            blob.arrayBuffer()
+                .then((audioData) => {
+                    const Ctx =
+                        window.AudioContext || window.webkitAudioContext;
+                    if (!Ctx) {
+                        resumeCapture();
+                        return;
+                    }
+                    if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
+                    const ctx = audioCtxRef.current;
+                    if (!ctx.decodeAudioData || !ctx.destination) {
+                        resumeCapture();
+                        return;
+                    }
+                    ctx.decodeAudioData(audioData)
+                        .then((buffer) => {
+                            const source = new AudioBufferSourceNode(ctx, {
+                                buffer,
+                            });
+                            source.connect(ctx.destination);
+                            source.onended = () => resumeCapture();
+                            source.start();
+                            if (ctx.state === 'suspended') ctx.resume();
+                        })
+                        .catch(() => resumeCapture());
+                })
+                .catch(() => resumeCapture());
+        },
+        [resumeCapture]
+    );
+
+    // ---- chat WebSocket --------------------------------------------------
 
     // Open a persistent socket to the chat WS endpoint.
     const openChatWs = useCallback(() => {
@@ -122,7 +266,12 @@ export const AiPage = () => {
                         return;
                     }
                     if (!payload) return;
-                    if (payload.c === 'text') {
+                    if (payload.c === 'transcript') {
+                        // What the server-side ASR heard.
+                        if (typeof payload.v === 'string' && payload.v.trim()) {
+                            pushUser(payload.v.trim());
+                        }
+                    } else if (payload.c === 'text') {
                         setInput('');
                         pushReply(
                             typeof payload.v === 'string'
@@ -131,6 +280,17 @@ export const AiPage = () => {
                         );
                         setBusy(false);
                     } else if (payload.c === 'playAudio') {
+                        // Server-driven conversation mode (the echo devices
+                        // call it `expectFollowUp`): keep the microphone open
+                        // when the assistant expects an answer.
+                        const wantsReply = !!payload.conversation;
+                        followUpRef.current = wantsReply;
+                        setAwaitingReply(wantsReply);
+                        // Warm the mic up while it is still muted by the
+                        // playback, so it is ready the instant Charlie stops
+                        // talking (getUserMedia + worklet load would otherwise
+                        // eat the first words of the answer).
+                        if (wantsReply) void ensureCapture();
                         playWavBuffer(wavChunksRef.current);
                         wavChunksRef.current = [];
                         setBusy(false);
@@ -144,6 +304,9 @@ export const AiPage = () => {
             ws.onclose = () => {
                 chatWsRef.current = null;
                 setBusy(false);
+                // No server → nothing to wait for.
+                followUpRef.current = false;
+                setAwaitingReply(false);
                 // Reconnect with backoff unless we closed it on purpose.
                 if (!closedByUsRef.current) {
                     const attempt = (reconnectAttemptRef.current += 1);
@@ -157,11 +320,13 @@ export const AiPage = () => {
             // onclose always follows onerror, so reconnect is handled there.
             ws.onerror = () => {
                 setBusy(false);
+                followUpRef.current = false;
+                setAwaitingReply(false);
             };
         } catch {
             chatWsRef.current = null;
         }
-    }, [playWavBuffer]);
+    }, [ensureCapture, playWavBuffer, pushReply, pushUser]);
 
     const send = async (text) => {
         const trimmed = (text ?? '').trim();
@@ -192,7 +357,7 @@ export const AiPage = () => {
         }
     };
 
-    // Open the chat socket on mount; close it when leaving the page.
+    // Open the chat socket on mount; close it (and the mic) when leaving.
     useEffect(() => {
         openChatWs();
         return () => {
@@ -201,6 +366,11 @@ export const AiPage = () => {
                 clearTimeout(reconnectTimerRef.current);
                 reconnectTimerRef.current = null;
             }
+
+            const capture = captureRef.current;
+            captureRef.current = null;
+            void capture?.stop();
+
             const ws = chatWsRef.current;
             chatWsRef.current = null;
             if (!ws) return;
@@ -224,229 +394,6 @@ export const AiPage = () => {
         };
     }, [openChatWs]);
 
-    // Finalize the current utterance: it's sent once the user stops talking.
-    const finalizeCurrent = () => {
-        if (silenceTimerRef.current) {
-            clearTimeout(silenceTimerRef.current);
-            silenceTimerRef.current = null;
-        }
-        const wasActive = activeRef.current;
-        const command = pendingRef.current;
-        pendingRef.current = '';
-        activeRef.current = false;
-        manualRef.current = false;
-        setIsListening(false);
-        if (wasActive) setInput('');
-
-        if (recRef.current) {
-            try {
-                recRef.current.stop();
-            } catch {
-                // best effort
-            }
-            recRef.current = null;
-        }
-
-        const trimmed = command.trim();
-        if (wasActive) {
-            if (trimmed) send(trimmed);
-            else pushReply(WAKE_UP_REPLY);
-        }
-
-        if (hotwordRef.current) {
-            setTimeout(() => startRecognition(), 200);
-        }
-    };
-
-    const resetSilenceTimer = () => {
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = setTimeout(finalizeCurrent, SILENCE_MS);
-    };
-
-    // Single continuous recognition that powers both the wake word and
-    // push-to-talk. `forceActive` pre-arms "manual" mode (whole phrase = command).
-    const startRecognition = ({ forceActive = false } = {}) => {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) return false;
-
-        if (recRef.current) {
-            if (forceActive && !activeRef.current) {
-                activeRef.current = true;
-                manualRef.current = true;
-                pendingRef.current = '';
-                setIsListening(true);
-                resetSilenceTimer();
-            }
-            return true;
-        }
-
-        const rec = new SR();
-        rec.continuous = true;
-        rec.interimResults = true;
-        rec.lang = 'fr-FR';
-        recRef.current = rec;
-
-        activeRef.current = forceActive;
-        manualRef.current = forceActive;
-        pendingRef.current = '';
-        if (forceActive) setIsListening(true);
-
-        rec.onresult = (event) => {
-            // Chrome (esp. Android, where `continuous` isn't honoured) appends
-            // a new hypothesis for every update of the SAME utterance
-            // ("eteins", "etins la", "eteins la lumiere"...), re-sending the
-            // whole list each event. The LAST entry is the most complete, so
-            // never join results - joining duplicates the sentence.
-            const results = event.results;
-            let transcript = '';
-            for (let i = results.length - 1; i >= 0; i--) {
-                const t = results[i]?.[0]?.transcript ?? '';
-                if (t) {
-                    transcript = t;
-                    break;
-                }
-            }
-            const text = normalize(transcript);
-
-            if (manualRef.current) {
-                pendingRef.current = text;
-            } else {
-                const rest = stripWake(text);
-                if (rest !== null) {
-                    if (!activeRef.current) {
-                        activeRef.current = true;
-                        setIsListening(true);
-                    }
-                    pendingRef.current = rest;
-                }
-            }
-
-            if (activeRef.current) {
-                setInput(pendingRef.current);
-                resetSilenceTimer();
-            }
-        };
-
-        rec.onerror = (event) => {
-            const code = event?.error ?? 'unknown';
-            console.error(
-                '[AiPage] speech recognition error:',
-                code,
-                event?.message ?? ''
-            );
-            const wasActive = activeRef.current;
-            const wasManual = manualRef.current;
-            recRef.current = null;
-            activeRef.current = false;
-            manualRef.current = false;
-            pendingRef.current = '';
-            setIsListening(false);
-
-            if (wasActive && wasManual) {
-                const messages = {
-                    'not-allowed':
-                        "Accès au micro refusé. Autorise le microphone pour ce site puis réessaie.",
-                    'service-not-allowed':
-                        "La reconnaissance vocale est bloquée. Autorise le micro pour ce site puis réessaie.",
-                    'audio-capture':
-                        "Micro indisponible (déjà utilisé par une autre application ?).",
-                    network:
-                        'Reconnaissance vocale indisponible (problème réseau).',
-                    service: 'Service de reconnaissance vocale indisponible.',
-                    'language-not-supported':
-                        'Langue non supportée par la reconnaissance vocale.',
-                    'no-speech': "Je n'ai rien entendu, réessaie.",
-                    aborted: null,
-                };
-                const msg =
-                    code in messages
-                        ? messages[code]
-                        : `Reconnaissance vocale indisponible (${code}).`;
-                if (msg) pushReply(msg);
-            }
-        };
-
-        rec.onend = () => {
-            const wasActive = activeRef.current;
-            recRef.current = null;
-            if (wasActive) {
-                finalizeCurrent();
-            } else if (hotwordRef.current) {
-                setTimeout(() => startRecognition(), 200);
-            }
-        };
-
-        try {
-            rec.start();
-        } catch (e) {
-            console.error('[AiPage] speech recognition start failed:', e);
-            recRef.current = null;
-            activeRef.current = false;
-            manualRef.current = false;
-            setIsListening(false);
-            if (forceActive) {
-                pushReply(
-                    'Impossible de démarrer la reconnaissance vocale.'
-                );
-            }
-            return false;
-        }
-        return true;
-    };
-
-    const toggleHotword = () => {
-        const next = !hotwordRef.current;
-        hotwordRef.current = next;
-        setHotwordEnabled(next);
-        if (next) {
-            startRecognition();
-        } else if (activeRef.current) {
-            finalizeCurrent();
-        } else {
-            if (recRef.current) {
-                try {
-                    recRef.current.stop();
-                } catch {
-                    // best effort
-                }
-                recRef.current = null;
-            }
-            if (silenceTimerRef.current) {
-                clearTimeout(silenceTimerRef.current);
-                silenceTimerRef.current = null;
-            }
-            setIsListening(false);
-        }
-    };
-
-    const onToggleMic = () => {
-        if (activeRef.current) {
-            finalizeCurrent(); // already capturing — send now
-            return;
-        }
-        const started = startRecognition({ forceActive: true });
-        if (!started) {
-            pushReply(
-                'Reconnaissance vocale non supportée sur ce navigateur.'
-            );
-        }
-    };
-
-    // Stop recognition + timers when leaving the page.
-    useEffect(() => {
-        return () => {
-            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-            if (recRef.current) {
-                try {
-                    recRef.current.stop();
-                } catch {
-                    // best effort
-                }
-                recRef.current = null;
-            }
-        };
-    }, []);
-
     return (
         <Box
             sx={{
@@ -463,9 +410,9 @@ export const AiPage = () => {
                 onInputChange={setInput}
                 onSend={() => send(input)}
                 onToggleMic={onToggleMic}
-                isListening={isListening}
+                isListening={isListening || awaitingReply}
                 busy={busy}
-                activity={isListening ? 1 : 0}
+                activity={isListening ? level : 0}
                 hotwordEnabled={hotwordEnabled}
                 onToggleHotword={toggleHotword}
             />

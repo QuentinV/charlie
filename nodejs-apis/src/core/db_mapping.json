@@ -10,5 +10,6 @@
     "activities": "activities",
     "echoSettings": "echo_settings",
     "settings": "settings",
+    "memories": "memories",
     "haCustomIntegrations": "ha_custom_integrations"
 }

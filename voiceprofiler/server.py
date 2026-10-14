@@ -7,7 +7,7 @@ import urllib.request
 import numpy as np
 import sherpa_onnx
 import soundfile as sf
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile
 import uvicorn
 from wyoming.audio import AudioChunk, AudioStart, AudioStop
 from wyoming.event import Event
@@ -65,11 +65,22 @@ def load_user_database() -> dict:
 USER_DATABASE = load_user_database()
 
 
-def extract_embedding(audio_np: np.ndarray, sample_rate: int) -> np.ndarray:
+def extract_embedding(audio_np: np.ndarray, sample_rate: int):
+  """Compute a speaker embedding, or None when there is not enough audio.
+
+  sherpa-onnx returns the embedding from `SpeakerEmbeddingExtractor.compute()`
+  — there is no `stream.embedding` and no `get_embedding()`.
+  """
   stream = extractor.create_stream()
-  stream.accept_waveform(sample_rate, audio_np)
-  extractor.compute(stream)
-  return np.array(stream.embedding)
+  stream.accept_waveform(
+      sample_rate, np.ascontiguousarray(audio_np, dtype=np.float32)
+  )
+  stream.input_finished()
+
+  if not extractor.is_ready(stream):
+    return None
+
+  return np.asarray(extractor.compute(stream), dtype=np.float32)
 
 
 # --- WYOMING TCP EVENT HANDLER ---
@@ -108,15 +119,23 @@ class MinimalVoiceProfileHandler(AsyncEventHandler):
         / 32768.0
     )
     query_embedding = extract_embedding(audio_np, self.sample_rate)
+    if query_embedding is None:
+      _LOGGER.info("Not enough audio to compute a speaker embedding.")
+      await self._send_result("unknown", 0.0)
+      self.audio_buffer.clear()
+      return
 
     best_match = "unknown"
     max_similarity = 0.0
 
-    if USER_DATABASE:
+    query_norm = float(np.linalg.norm(query_embedding))
+    if query_norm > 0.0 and USER_DATABASE:
       for username, ref_embedding in USER_DATABASE.items():
+        ref_norm = float(np.linalg.norm(ref_embedding))
+        if ref_norm == 0.0:
+          continue
         similarity = float(
-            np.dot(query_embedding, ref_embedding)
-            / (np.linalg.norm(query_embedding) * np.linalg.norm(ref_embedding))
+            np.dot(query_embedding, ref_embedding) / (query_norm * ref_norm)
         )
         if similarity > max_similarity:
           max_similarity = similarity
@@ -151,6 +170,11 @@ async def register_speaker(username: str, file: UploadFile = File(...)):
     audio_data = audio_data.mean(axis=1)
 
   embedding = extract_embedding(audio_data.astype(np.float32), sample_rate)
+  if embedding is None:
+    raise HTTPException(
+        status_code=400,
+        detail="Audio sample is too short for a speaker embedding",
+    )
 
   conn = sqlite3.connect(DB_PATH)
   cursor = conn.cursor()
@@ -176,7 +200,11 @@ async def main():
   wyoming_server = AsyncServer.from_uri("tcp://0.0.0.0:10400")
   _LOGGER.info("Wyoming TCP Server listening on port 10400...")
   wyoming_task = asyncio.create_task(
-      wyoming_server.run(lambda: MinimalVoiceProfileHandler())
+      # Wyoming calls the factory with (reader, writer): forward them to the
+      # handler, exactly like asr/server.py does.
+      wyoming_server.run(
+          lambda *handler_args: MinimalVoiceProfileHandler(*handler_args)
+      )
   )
 
   config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")

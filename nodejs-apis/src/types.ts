@@ -32,8 +32,17 @@ export type RestApiFullHandler = (
 export type RestApis = { [route: string]: RestApi };
 
 // --- Tools
+/** Runtime context passed to a tool executor (recognized user / session). */
+export interface ToolExecutionContext {
+    user?: string;
+    sessionId?: string;
+}
+
 export interface ToolExecutor<P> {
-    exec: (params?: P) => Promise<string | void | boolean>;
+    exec: (
+        params?: P,
+        ctx?: ToolExecutionContext
+    ) => Promise<string | void | boolean>;
 }
 
 export interface Tool<P> extends ToolExecutor<P> {

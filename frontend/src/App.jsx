@@ -31,6 +31,7 @@ import { DashboardPage } from './pages/Dashboard';
 import { useUnit } from 'effector-react';
 import { ActivitiesPage } from './pages/Activities';
 import { EchoPage } from './pages/Echo';
+import { MemoryPage } from './pages/Memory';
 import { RoutineEditPage } from './pages/RoutineEdit';
 import { settings } from './state/settings';
 import { useSetting } from './state/settingsHooks';
@@ -181,6 +182,7 @@ function AppLayout({ showAiAsk }) {
                             path="/activities"
                             element={<ActivitiesPage />}
                         />
+                        <Route path="/memory" element={<MemoryPage />} />
                         <Route path="/echos" element={<EchoPage />} />
                         <Route path="/dashboard" element={<DashboardPage />} />
                         <Route path="/musics" element={<MusicsPage />} />

@@ -104,6 +104,26 @@ const schema: JSONSchema7 = {
             title: 'Home longitude used for weather questions',
             tags: ['Weather'],
         },
+        'memory.maxFacts': {
+            type: 'number',
+            title: 'Maximum number of facts kept per user',
+            tags: ['AI', 'Memory'],
+        },
+        'memory.maxTopics': {
+            type: 'number',
+            title: 'Maximum number of topics kept per user',
+            tags: ['AI', 'Memory'],
+        },
+        'memory.promptMaxChars': {
+            type: 'number',
+            title: 'Maximum characters of memory injected in the LLM prompt',
+            tags: ['AI', 'Memory'],
+        },
+        'memory.contextTtlMs': {
+            type: 'number',
+            title: 'Conversation context time-to-live (ms)',
+            tags: ['AI', 'Memory'],
+        },
     },
 };
 

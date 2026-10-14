@@ -6,7 +6,11 @@ import { settings } from '../manager/services/settings';
 import { chat } from './llm';
 import { tts } from './tts';
 import * as voiceProfile from './voiceProfile';
+import * as memory from './memory';
+import { expectsFollowUp } from './conversation';
 import { v4 as uuid } from 'uuid';
+
+export { expectsFollowUp };
 
 const positiveAnswers = [
     "C'est fait.",
@@ -54,16 +58,6 @@ export function longTextFor(result: unknown): string {
     if (result === null) return random(doesNotUnderstandAnswers);
     if (result === false) return random(notPossibleAnswers);
     return random(positiveAnswers);
-}
-
-/**
- * Whether the assistant is expecting the user to answer back. The server
- * decides this per turn: the echo device keeps its microphone open for a
- * follow-up (no wake word) only when this is true. We consider the reply a
- * question when it ends with a `?`.
- */
-export function expectsFollowUp(text: string): boolean {
-    return /\?\s*$/.test(text.trim());
 }
 
 // Sentence the user is asked to repeat so we capture a clean, long enough
@@ -149,11 +143,28 @@ export async function ask(
 
         isLog && log('nlu', 'Find intent', { context: { text }, data: res });
         if (res?.name && actions[res.name]) {
-            const response = await actions[res.name].exec({
-                ...res,
+            // Enrich the intent with memory (implicit device references,
+            // learned preferences) before executing it.
+            const view = await memory.getMemory({
                 user: options?.user,
                 sessionId,
             });
+            const resolved = memory.resolveIntentWithMemory(res, view);
+            const response = await actions[resolved.name].exec({
+                ...resolved,
+                user: options?.user,
+                sessionId,
+            });
+
+            // Implicit preference learning: only from explicitly provided
+            // values (computed on the original, unresolved intent).
+            if (options?.user && response !== false && response !== null) {
+                const learned = memory.learnedPreferences(res);
+                if (Object.keys(learned).length) {
+                    await memory.learnPreferences(options.user, learned);
+                }
+            }
+
             if (response === true) {
                 return random(positiveAnswers);
             } else if (response === false) {
@@ -171,8 +182,13 @@ export async function ask(
     if (settings.flow?.agentic?.enabled) {
         try {
             isLog && log('nlu', `Fallback to LLM`);
+            const view = await memory.getMemory({
+                user: options?.user,
+                sessionId,
+            });
             return await chat(sessionId ?? uuid(), text, undefined, {
                 user: options?.user,
+                memory: memory.renderMemory(view),
             });
         } catch (e) {
             throw e;
@@ -210,6 +226,13 @@ export async function answer(
     text: string,
     options?: AnswerOptions
 ): Promise<AnswerResult> {
+    if (options?.sessionId) {
+        memory.logTurn(options.sessionId, options.user, {
+            role: 'user',
+            text,
+            at: Date.now(),
+        });
+    }
     const result = await ask(text, options);
     const short = shortTextFor(result);
     const long = longTextFor(result);
@@ -217,11 +240,24 @@ export async function answer(
         text: long,
         type: options?.audioType ?? 'audio/L16',
     });
+    if (options?.sessionId) {
+        memory.logTurn(options.sessionId, options.user, {
+            role: 'assistant',
+            text: long,
+            at: Date.now(),
+        });
+    }
     return {
         result,
         short,
         text: long,
         audio: Buffer.from(audio),
-        conversation: expectsFollowUp(long),
+        // Keep the microphone open for a follow-up when the reply is a
+        // question, or while a voice-profile registration is pending: its
+        // prompts are not questions but still need the next utterance.
+        conversation: expectsFollowUp(
+            long,
+            !!voiceProfile.getPending(options?.sessionId)
+        ),
     };
 }

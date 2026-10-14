@@ -20,6 +20,7 @@ import RouterIcon from '@mui/icons-material/Router';
 import ChatIcon from '@mui/icons-material/Chat';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import HistoryIcon from '@mui/icons-material/History';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import SpeakerIcon from '@mui/icons-material/Speaker';
 import SettingsIcon from '@mui/icons-material/Settings';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
@@ -90,6 +91,12 @@ export const Menu = () => {
         label: 'Activities',
         route: '/activities',
         icon: <HistoryIcon fontSize="small" />,
+    });
+
+    navItems.push({
+        label: 'Memory',
+        route: '/memory',
+        icon: <AccountTreeIcon fontSize="small" />,
     });
 
     echosMenu &&

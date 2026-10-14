@@ -252,6 +252,20 @@ intents:
             - non pas
             - je ne veux pas
 
+    remember:
+        starts:
+            - retiens que
+            - souviens toi que
+            - rappelle toi que
+            - note que
+
+    forgetMemory:
+        starts:
+            - efface ma memoire
+            - vide ma memoire
+            - oublie tout ce que tu sais
+            - oublie tout ce que je t ai dit
+
 slots:
     plurial:
         type: 'synonym'
