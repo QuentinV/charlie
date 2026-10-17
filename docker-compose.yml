@@ -60,7 +60,8 @@ services:
             - '9307:10300'
         build: ./asr
         environment:
-            - NUM_THREADS=4
+            - MODEL_SIZE=${ASR_MODEL_SIZE:-0.6B}
+            - NUM_THREADS=${NUM_THREADS:-4}
         restart: unless-stopped
         volumes:
             - ./asr/models:/app/models
