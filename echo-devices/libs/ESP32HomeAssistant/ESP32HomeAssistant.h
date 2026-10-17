@@ -89,6 +89,9 @@ struct HAConfig {
     bool tempSensorEnabled = false;
 
     uint32_t conversationTimeoutMs = 10000;
+
+    // TTS / microphone ducking
+    uint32_t ttsMuteTailMs = 300; // keep the mic cut after playback ends (DMA + room tail)
 };
 
 typedef struct {
@@ -125,6 +128,9 @@ private:
     void _setupDisplays();
     void _setupTempSensor();
 
+    bool _isMicMuted();
+    void _resetInferenceBuffer();
+
     void _handleIncomingAudio(uint8_t *payload, size_t length);
     void _playBufferedAudio();
     void _setupSpeakerI2S();
@@ -147,7 +153,8 @@ private:
     Adafruit_AHTX0 _tempSensor;
 
     unsigned long silenceStart = 0;
-    bool mute = false;
+    volatile bool mute = false;         // speaker is playing     -> mic samples discarded
+    volatile bool ttsStreaming = false; // TTS chunks are arriving -> mic samples discarded
     bool isWsConnected = false;
 
     volatile bool expectFollowUp = false;

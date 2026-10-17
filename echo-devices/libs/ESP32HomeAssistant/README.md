@@ -47,6 +47,7 @@ All settings are defined through the `HAConfig` struct. Create an instance, set 
 | `feedbackScreenEnabled` | `bool`                   | `false`                  | Show server text feedback and listening animation on the first display                                                               |
 | `tempSensorEnabled`     | `bool`                   | `false`                  | Enable the AHT10/AHT20 temperature/humidity sensor                                                                                   |
 | `conversationTimeoutMs` | `uint32_t`               | `10000`                  | How long the device waits for the user to start a follow-up before returning to wake-word detection. Follow-ups are enabled by the server per turn. |
+| `ttsMuteTailMs`         | `uint32_t`               | `300`                    | How long the microphone stays cut after a TTS reply finished playing (covers the I2S/DAC and room tail). |
 
 ### `I2CScreen` struct
 
@@ -203,6 +204,17 @@ Conversation mode is **driven by the server** – there is no device flag. Each 
 
 The Charlie server sets the flag from the assistant's answer: when the reply is a question (ends with `?`), it keeps the conversation open – this also covers the voice‑profile registration prompts. It also keeps one LLM session per connection, so follow‑ups have memory across turns.
 
+## Microphone muting during playback
+
+The microphone would otherwise pick up the speaker and feed the assistant's own voice back into the wake‑word detector (and into the follow‑up detection), which makes the device talk to itself in an endless loop. To prevent this the microphone is **cut for the whole TTS turn**:
+
+1. On the first audio chunk of a reply (`WStype_BIN`) the microphone is muted – samples are still read from I2S so the DMA never overflows, but they are discarded.
+2. Playback keeps the mute engaged until `i2s_write()` returned **and** `ttsMuteTailMs` has elapsed, so the DAC and the acoustic tail are covered too.
+3. When the mute is released the inference buffers are zeroed and a full clean 1 s window is captured before wake‑word detection runs again; the conversation timeout restarts at that point as well.
+4. A dropped WebSocket resets the mute, so the microphone can never stay cut after a failed stream.
+
+Muting is entirely software based – the I2S RX driver keeps running, which keeps the DMA drained and avoids stopping a driver that another task is blocking on. The LED stays purple while a reply is received / played.
+
 ## Persisted settings (Preferences)
 
 The library stores the following values in NVS namespace `config`:
@@ -232,7 +244,7 @@ The library stores the following values in NVS namespace `config`:
 | Green          | Booting                                 |
 | Blue           | Ready, waiting for WebSocket connection |
 | Red            | Not connected to WebSocket              |
-| Purple (flash) | Sending audio / playing audio           |
+| Purple (flash) | Sending audio / receiving or playing a TTS reply (microphone muted) |
 | White          | Wake word detected, recording audio     |
 | Cyan           | OTA update in progress                  |
 | Off            | Idle (no activity)                      |

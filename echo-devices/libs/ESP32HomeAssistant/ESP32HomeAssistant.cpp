@@ -168,18 +168,39 @@ void ESP32HomeAssistant::_setupTempSensor() {
     Serial.println("AHT10 initialized successfully.");
 }
 
+bool ESP32HomeAssistant::_isMicMuted() {
+    return this->mute || this->ttsStreaming;
+}
+
+void ESP32HomeAssistant::_resetInferenceBuffer() {
+    size_t bytes = this->inference.n_samples * sizeof(int16_t);
+    if (this->inference.buffer != NULL) memset(this->inference.buffer, 0, bytes);
+    if (this->inference_window != NULL) memset(this->inference_window, 0, bytes);
+    this->inference.buf_count = 0;
+}
+
 void ESP32HomeAssistant::_playBufferedAudio() {
+    this->ttsStreaming = false;
+
     if (this->totalPlaybackSamples == 0 || this->playbackBuffer == NULL) return;
 
     size_t bytes_to_write = this->totalPlaybackSamples * sizeof(int16_t);
     size_t bytes_written = 0;
 
+    this->mute = true;
     i2s_write(this->_cfg.I2S_SPK_PORT, (const char*)this->playbackBuffer, bytes_to_write, &bytes_written, portMAX_DELAY);
 
+    // i2s_write returns once the bytes are queued, the DAC / room tail is still audible.
+    vTaskDelay(pdMS_TO_TICKS(this->_cfg.ttsMuteTailMs));
+
     this->totalPlaybackSamples = 0;
+    this->mute = false;
 }
 
 void ESP32HomeAssistant::_handleIncomingAudio(uint8_t *payload, size_t length) {
+    // TTS audio is on its way: never feed the speaker output back into the mic.
+    this->ttsStreaming = true;
+
     size_t samplesInPayload = length / 2;
     if (this->totalPlaybackSamples + samplesInPayload > MAX_SAMPLES_PLAYBACK) {
         Serial.println("Buffer full!");
@@ -203,6 +224,7 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
     switch(type) {
         case WStype_DISCONNECTED:
             this->isWsConnected = false;
+            this->ttsStreaming = false;
             break;
         case WStype_CONNECTED:
             this->isWsConnected = true;
@@ -407,6 +429,11 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
     bool recordMode = false;
     unsigned long followUpWaitStart = 0;
 
+    // Microphone ducking while the assistant is speaking
+    bool micMuted = false;
+    bool micWarmupDone = true;
+    size_t micWarmupSamples = 0;
+
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(2));
 
@@ -420,6 +447,31 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
 
         if (capture_err != ESP_OK || capture_bytes_read == 0) {
             continue;
+        }
+
+        if (this->_isMicMuted()) {
+            if (!micMuted) {
+                micMuted = true;
+                recordMode = false;
+                silenceStart = 0;
+                followUpWaitStart = 0;
+                startTime = 0;
+                samples_since_last_inference = 0;
+                this->totalRecordedSamples = 0;
+                this->_resetInferenceBuffer();
+            }
+            continue;
+        }
+
+        if (micMuted) {
+            // Speaker is quiet again: resume from a clean slate.
+            micMuted = false;
+            micWarmupDone = false;
+            micWarmupSamples = 0;
+            silenceStart = 0;
+            followUpWaitStart = 0;
+            samples_since_last_inference = 0;
+            this->_resetInferenceBuffer();
         }
 
         size_t frames_read = capture_bytes_read / sizeof(int32_t);
@@ -512,6 +564,14 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
             }
         } else {
             followUpWaitStart = 0;
+
+            // Require a full, clean window before classifying again after TTS.
+            if (!micWarmupDone) {
+                micWarmupSamples += frames_read;
+                if (micWarmupSamples < window) continue;
+                micWarmupDone = true;
+            }
+
             samples_since_last_inference += frames_read;
 
             // Only run AI every 'hop' (200ms), but use the full 1s 'window'
