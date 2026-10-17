@@ -243,6 +243,11 @@ export const DiscoveryPage = () => {
                     externalId: device.externalId,
                     provider: providerId,
                     type: device.type || 'unknown',
+                    // HA platform (melcloud, tradfri…) — lets the UI pick a
+                    // `<type>/<integration>` renderer and group devices.
+                    ...(device.category
+                        ? { integration: device.category }
+                        : {}),
                 }),
             });
 

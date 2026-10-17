@@ -1,0 +1,181 @@
+{
+    "description": "MelCloud ATA AC — payload captured LIVE from HA (`climate.salon`, platform melcloud, supported_features 937). Pins two real-world facts: (1) the mode lives in the entity STATE ('fan_only') and HA never exposes hvac_mode in state_attributes, so it must be DERIVED, never read from an attribute; (2) this integration reports no hvac_action, so no such readout may be advertised. Vocabulary, option lists and ranges are the live ones (min_temp 10, max_temp 31, step 0.5, fan_modes 1..4); drifting readings and the device identifiers are representative. Drives the premium 'clim' panel.",
+    "provider": "homeassistant",
+    "entity": {
+        "entity_id": "climate.salon",
+        "state": "fan_only",
+        "attributes": {
+            "friendly_name": "Salon",
+            "current_temperature": 20.9,
+            "temperature": 21.5,
+            "hvac_modes": ["off", "heat", "dry", "cool", "fan_only", "heat_cool"],
+            "fan_mode": "auto",
+            "fan_modes": ["auto", "1", "2", "3", "4"],
+            "swing_mode": "swing",
+            "swing_modes": ["auto", "1_up", "2", "3", "4", "5_down", "swing"],
+            "swing_horizontal_mode": "auto",
+            "swing_horizontal_modes": [
+                "auto",
+                "1_left",
+                "2",
+                "3",
+                "4",
+                "5_right",
+                "split",
+                "swing"
+            ],
+            "vane_horizontal": "auto",
+            "vane_vertical": "swing",
+            "min_temp": 10,
+            "max_temp": 31,
+            "target_temp_step": 0.5,
+            "device_id": 1234567,
+            "serial": "MEL0000000000",
+            "mac": "aa:bb:cc:dd:ee:ff",
+            "supported_features": 937
+        },
+        "last_changed": "2026-01-01T00:00:00Z"
+    },
+    "registry": {
+        "entity_id": "climate.salon",
+        "platform": "melcloud",
+        "supported_features": 937,
+        "device_class": null,
+        "unit_of_measurement": null,
+        "capabilities": {
+            "hvac_modes": ["off", "heat", "dry", "cool", "fan_only", "heat_cool"],
+            "min_temp": 10,
+            "max_temp": 31,
+            "target_temp_step": 0.5,
+            "fan_modes": ["auto", "1", "2", "3", "4"],
+            "swing_modes": ["auto", "1_up", "2", "3", "4", "5_down", "swing"],
+            "swing_horizontal_modes": [
+                "auto",
+                "1_left",
+                "2",
+                "3",
+                "4",
+                "5_right",
+                "split",
+                "swing"
+            ]
+        }
+    },
+    "services": {
+        "climate": {
+            "turn_on": {
+                "target": { "entity": { "supported_features": ["climate.ClimateEntityFeature.TURN_ON"] } }
+            },
+            "turn_off": {
+                "target": { "entity": { "supported_features": ["climate.ClimateEntityFeature.TURN_OFF"] } }
+            },
+            "set_hvac_mode": {
+                "fields": {
+                    "hvac_mode": { "selector": { "state": { "hide_states": ["unavailable", "unknown"] } } }
+                }
+            },
+            "set_temperature": {
+                "fields": {
+                    "temperature": {
+                        "filter": { "supported_features": ["climate.ClimateEntityFeature.TARGET_TEMPERATURE"] },
+                        "selector": { "number": { "min": 0, "max": 250, "step": 0.1, "mode": "box" } }
+                    },
+                    "target_temp_high": {
+                        "filter": { "supported_features": ["climate.ClimateEntityFeature.TARGET_TEMPERATURE_RANGE"] },
+                        "selector": { "number": { "min": 0, "max": 250, "step": 0.1 } }
+                    },
+                    "target_temp_low": {
+                        "filter": { "supported_features": ["climate.ClimateEntityFeature.TARGET_TEMPERATURE_RANGE"] },
+                        "selector": { "number": { "min": 0, "max": 250, "step": 0.1 } }
+                    }
+                }
+            },
+            "set_fan_mode": {
+                "fields": {
+                    "fan_mode": { "required": true, "selector": { "state": { "attribute": "fan_mode" } } }
+                },
+                "target": { "entity": { "supported_features": ["climate.ClimateEntityFeature.FAN_MODE"] } }
+            },
+            "set_swing_mode": {
+                "fields": {
+                    "swing_mode": { "required": true, "selector": { "state": { "attribute": "swing_mode" } } }
+                },
+                "target": { "entity": { "supported_features": ["climate.ClimateEntityFeature.SWING_MODE"] } }
+            },
+            "set_swing_horizontal_mode": {
+                "fields": {
+                    "swing_horizontal_mode": {
+                        "required": true,
+                        "selector": { "state": { "attribute": "swing_horizontal_mode" } }
+                    }
+                },
+                "target": {
+                    "entity": {
+                        "supported_features": ["climate.ClimateEntityFeature.SWING_HORIZONTAL_MODE"]
+                    }
+                }
+            },
+            "toggle": {}
+        }
+    },
+    "expect": {
+        "type": "thermostat",
+        "control": "clim",
+        "power": "on",
+        "level": 20.9,
+        "stateKeys": [
+            "temperature",
+            "hvac_mode",
+            "fan_mode",
+            "swing_mode",
+            "swing_horizontal_mode",
+            "current_temperature"
+        ],
+        "state": {
+            "temperature": { "type": "range", "unit": "°C", "min": 10, "max": 31, "step": 0.5 },
+            "hvac_mode": { "type": "enum" },
+            "fan_mode": { "type": "enum" },
+            "swing_mode": { "type": "enum" },
+            "swing_horizontal_mode": { "type": "enum" },
+            "current_temperature": { "type": "number", "readonly": true }
+        },
+        "options": {
+            "hvac_mode": ["heat", "dry", "cool", "fan_only", "heat_cool"],
+            "fan_mode": ["auto", "1", "2", "3", "4"],
+            "swing_mode": ["auto", "1_up", "2", "3", "4", "5_down", "swing"],
+            "swing_horizontal_mode": ["auto", "1_left", "2", "3", "4", "5_right", "split", "swing"]
+        },
+        "readonly": ["current_temperature"],
+        "stateValues": {
+            "temperature": 21.5,
+            "hvac_mode": "fan_only",
+            "fan_mode": "auto",
+            "swing_mode": "swing",
+            "swing_horizontal_mode": "auto",
+            "current_temperature": 20.9
+        },
+        "writes": {
+            "temperature": { "value": 22, "domain": "climate", "service": "set_temperature", "data": { "temperature": 22 } },
+            "hvac_mode": { "value": "heat", "domain": "climate", "service": "set_hvac_mode", "data": { "hvac_mode": "heat" } },
+            "fan_mode": { "value": "2", "domain": "climate", "service": "set_fan_mode", "data": { "fan_mode": "2" } },
+            "swing_mode": { "value": "swing", "domain": "climate", "service": "set_swing_mode", "data": { "swing_mode": "swing" } },
+            "swing_horizontal_mode": { "value": "split", "domain": "climate", "service": "set_swing_horizontal_mode", "data": { "swing_horizontal_mode": "split" } }
+        },
+        "notViaProperties": [
+            "current_temperature",
+            "hvac_action",
+            "state",
+            "last_changed",
+            "supported_features"
+        ],
+        "functions": [
+            "climate.turn_on",
+            "climate.turn_off",
+            "climate.set_hvac_mode",
+            "climate.set_temperature",
+            "climate.set_fan_mode",
+            "climate.set_swing_mode",
+            "climate.set_swing_horizontal_mode"
+        ]
+    }
+}

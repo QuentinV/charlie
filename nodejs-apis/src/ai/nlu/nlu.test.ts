@@ -1,6 +1,32 @@
 import { findIntent } from './nlu';
 
 describe('findIntent', () => {
+    test('setTemperature (capability-driven climate commands)', async () => {
+        // "mets la clim à 22" — the AC synonym + the number slot. The device is
+        // resolved by the action (defaulting to thermostat) so the trigger may
+        // legitimately consume the device word.
+        const ac = await findIntent('mets la clim à 22');
+        expect(ac?.name).toBe('setTemperature');
+        expect(ac?.slots?.number).toBe('22');
+
+        // when the device word stays in the free text, the slot resolves too
+        const explicit = await findIntent('mets la temperature de la clim à 22');
+        expect(explicit?.name).toBe('setTemperature');
+        expect(explicit?.slots?.deviceType).toBe('ac');
+
+        expect((await findIntent('règle la température à 20'))?.name).toBe(
+            'setTemperature'
+        );
+        expect((await findIntent('chauffe à 23 degrés'))?.name).toBe(
+            'setTemperature'
+        );
+
+        // the specific climate trigger must not steal the generic pause intent
+        expect((await findIntent('mets en pause la télé'))?.name).toBe(
+            'pauseDevice'
+        );
+    });
+
     test('greet', async () => {
         expect(await findIntent('salut')).toStrictEqual({
             name: 'greet',

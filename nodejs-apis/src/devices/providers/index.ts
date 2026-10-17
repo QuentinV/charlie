@@ -1,5 +1,4 @@
 import ikea from './ikea';
-import sony_bravia_tv from './sony_bravia_tv';
 import nanoleaf from './nanoleafs';
 import tuya from './tuya';
 import default_custom from './default_custom';
@@ -10,7 +9,6 @@ import homeassistant from './homeassistant';
 
 export default {
     ikea,
-    sony_bravia_tv,
     nanoleaf,
     tuya,
     default_custom,

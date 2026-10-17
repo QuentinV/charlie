@@ -9,6 +9,7 @@ export const DeviceToggle = ({
     type,
     power,
     level,
+    unit,
     onStateChange,
     compact = false,
     disabled = false,
@@ -27,15 +28,29 @@ export const DeviceToggle = ({
         setLoading(false);
     };
 
+    // `level` is the device's canonical numeric value (see the backend's
+    // `LEVEL_SOURCES`): a percentage for most domains, the ambient temperature
+    // for a thermostat — whose schema unit is °C.
+    const levelUnit = type === DeviceType.thermostat ? '°C' : (unit ?? '');
+
+    // A reading (a sensor measurement, a thermostat's ambient temperature) has
+    // no on/off colour: red would read as a fault.
+    const levelColor =
+        type === DeviceType.sensor || type === DeviceType.thermostat
+            ? 'text.primary'
+            : power === 'on'
+              ? 'primary.main'
+              : 'error.main';
+
     const renderLevel = () => (
         <Typography
             variant={compact ? 'caption' : 'body2'}
             sx={{
-                color: power === 'on' ? 'primary.main' : 'error.main',
+                color: levelColor,
                 fontWeight: 600,
             }}
         >
-            {level ?? power}
+            {level != null ? `${level} ${levelUnit}`.trim() : power}
         </Typography>
     );
 

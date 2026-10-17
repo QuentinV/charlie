@@ -342,6 +342,54 @@ export const haGetEntities = () => haWsRequest('config/entity_registry/list');
 export const haGetDevices = () => haWsRequest('config/device_registry/list');
 export const haGetServices = () => haWsRequest('get_services');
 
+// ===== Entity registry (memoized) =====
+
+export interface HaRegistryEntry {
+    entity_id: string;
+    /** Integration that owns the entity (`platform`), whatever it is. */
+    platform?: string;
+    device_id?: string | null;
+    device_class?: string | null;
+    unit_of_measurement?: string | null;
+    /** Per-entity capability attributes (`hvac_modes`, `min_temp`, …). */
+    capabilities?: Record<string, any>;
+    supported_features?: number;
+    original_name?: string | null;
+}
+
+const ENTITY_REGISTRY_TTL_MS = 5 * 60 * 1000;
+let entityRegistryCache: {
+    at: number;
+    entries: HaRegistryEntry[];
+} | null = null;
+
+/**
+ * Entity registry list, memoized (5 min): capabilities resolution happens on
+ * every device page load and the registry changes only when integrations are
+ * added/removed. Failures are not cached.
+ */
+export async function haGetEntityRegistry(): Promise<HaRegistryEntry[]> {
+    const now = Date.now();
+    if (
+        entityRegistryCache &&
+        now - entityRegistryCache.at < ENTITY_REGISTRY_TTL_MS
+    ) {
+        return entityRegistryCache.entries;
+    }
+
+    const entries = ((await haGetEntities()) ?? []) as HaRegistryEntry[];
+    entityRegistryCache = { at: now, entries };
+    return entries;
+}
+
+/** Registry entry of a single entity (undefined when unknown/unavailable). */
+export async function haGetRegistryEntry(
+    entityId: string
+): Promise<HaRegistryEntry | undefined> {
+    const entries = await haGetEntityRegistry().catch(() => []);
+    return entries.find((e) => e?.entity_id === entityId);
+}
+
 export function haSubscribeEvents(
     eventType: string,
     handler: (event: any) => void

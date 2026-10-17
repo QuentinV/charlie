@@ -1,0 +1,34 @@
+{
+    "description": "`binary_sensor` with `device_class: power` (captured live from the Shelly relay): the entity state is `on`/`off`, published as a boolean under HA's own class name (`properties.power`), so a panel never has to know which integration produced it.",
+    "provider": "homeassistant",
+    "entity": {
+        "entity_id": "binary_sensor.shelly1minig3_e4b063f29288_input_0",
+        "state": "off",
+        "attributes": {
+            "device_class": "power",
+            "friendly_name": "shelly1minig3-e4b063f29288 Input 0"
+        },
+        "last_changed": "2026-10-17T12:46:39.428996+00:00"
+    },
+    "registry": {
+        "entity_id": "binary_sensor.shelly1minig3_e4b063f29288_input_0",
+        "platform": "shelly",
+        "device_id": "90928d38c32869e756d2bca4315de73a",
+        "supported_features": 0,
+        "capabilities": {}
+    },
+    "services": {
+        "binary_sensor": {}
+    },
+    "expect": {
+        "type": "sensor",
+        "power": "off",
+        "stateKeys": [],
+        "writes": {},
+        "stateValues": {
+            "power": false,
+            "device_class": "power",
+            "state": "off"
+        }
+    }
+}

@@ -1,63 +1,14 @@
 import React from 'react';
-import { Typography } from '@mui/material';
-import { TypePanel } from './typeShell';
-import { updateState } from '../utils';
-import { DebouncedSlider } from '../DebouncedSlider';
-import { SECTION_LABEL, TYPE_COLORS } from './typeStyles';
+import { MediaPanel } from '../panels/MediaPanel';
 
 /**
- * Default `tv` control panel: power button + volume slider
- * (`properties.volume_level` when exposed by the provider).
- * Richer vendor panels (e.g. `sony_bravia_tv`) take precedence via
- * `CUSTOM_CONTROLS` in the DeviceControls registry.
+ * `tv` control panel — the same media panel as any `media_player`-backed
+ * device, so every television renders identically whatever its gateway.
+ *
+ * The panel is driven by the standard device contract (`state.power`,
+ * `state.level`, the properties bag) plus the provider functions
+ * (`remote.send_command`, `media_player.select_source`, `media_player.media_*`).
  */
-export const TVDefaultControls = ({ device, onStateChange }) => {
-    const state = device?.state ?? {};
-    const props = state?.properties ?? {};
-    const power = state?.power === 'on';
-    const volume =
-        props.volume_level !== undefined
-            ? props.volume_level
-            : (state?.level ?? 0);
-
-    const setPower = (on) =>
-        updateState(device, { power: on ? 'on' : 'off' }, onStateChange);
-    const setVolume = (next) =>
-        updateState(
-            device,
-            { properties: { ...props, volume_level: next / 100 } },
-            onStateChange
-        );
-
-    return (
-        <TypePanel
-            type="tv"
-            title="Téléviseur"
-            power={power}
-            onTogglePower={setPower}
-        >
-            <Typography sx={SECTION_LABEL}>Volume</Typography>
-            <DebouncedSlider
-                value={power ? volume * 100 : 0}
-                min={0}
-                max={100}
-                step={1}
-                size="small"
-                disabled={!power}
-                valueLabelDisplay="auto"
-                onChangeCommitted={setVolume}
-                sx={{ color: TYPE_COLORS.tv }}
-            />
-            <Typography
-                variant="body2"
-                sx={{ color: 'text.secondary', mt: 0.5 }}
-            >
-                {power
-                    ? `Volume réglé à ${volume * 100}%`
-                    : 'Allumez le téléviseur pour régler le volume.'}
-            </Typography>
-        </TypePanel>
-    );
-};
+export const TVDefaultControls = (props) => <MediaPanel {...props} />;
 
 export default TVDefaultControls;

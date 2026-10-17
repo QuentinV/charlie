@@ -1,0 +1,132 @@
+{
+    "description": "Sony Bravia exposed through HA (platform braviatv). HA models it as a `media_player` that CANNOT power itself (supported_features 22845 has no TURN_ON) next to a `remote` sibling of the same device that owns turn_on/turn_off; the two merge into one charlie tv because `remote` is a function domain (no integration name is involved). `remote.send_command.command` is a free field — HA publishes no key vocabulary — asserted by `freeFields`. `button.*` siblings (restart / terminate_apps) are deliberately out of scope. Volume is written through DeviceState.level, not the properties bag.",
+    "provider": "homeassistant",
+    "entity": {
+        "entity_id": "media_player.bravia_kd_49xd8077",
+        "state": "playing",
+        "attributes": {
+            "friendly_name": "Bravia KD-49XD8077",
+            "volume_level": 0.5,
+            "is_volume_muted": false,
+            "source": "HDMI 1",
+            "source_list": ["HDMI 1", "HDMI 2", "Netflix"],
+            "supported_features": 22845
+        },
+        "last_changed": "2026-01-01T00:00:00Z"
+    },
+    "registry": {
+        "entity_id": "media_player.bravia_kd_49xd8077",
+        "platform": "braviatv",
+        "device_id": "bravia-1",
+        "supported_features": 22845,
+        "capabilities": {}
+    },
+    "siblings": [
+        {
+            "entity": {
+                "entity_id": "remote.bravia_kd_49xd8077",
+                "state": "on",
+                "attributes": { "friendly_name": "Bravia KD-49XD8077" }
+            },
+            "registry": {
+                "entity_id": "remote.bravia_kd_49xd8077",
+                "platform": "braviatv",
+                "device_id": "bravia-1",
+                "supported_features": 0,
+                "capabilities": {}
+            }
+        }
+    ],
+    "services": {
+        "media_player": {
+            "media_play": {},
+            "media_pause": {},
+            "volume_set": {
+                "fields": {
+                    "volume_level": {
+                        "selector": { "number": { "min": 0, "max": 1, "step": 0.01 } }
+                    }
+                }
+            },
+            "volume_mute": {
+                "fields": { "is_volume_muted": { "selector": { "boolean": {} } } }
+            },
+            "select_source": {
+                "fields": { "source": { "selector": { "text": {} } } }
+            },
+            "turn_on": {
+                "target": {
+                    "entity": {
+                        "supported_features": ["media_player.MediaPlayerEntityFeature.TURN_ON"]
+                    }
+                }
+            },
+            "turn_off": {
+                "target": {
+                    "entity": {
+                        "supported_features": ["media_player.MediaPlayerEntityFeature.TURN_OFF"]
+                    }
+                }
+            }
+        },
+        "remote": {
+            "turn_on": {},
+            "turn_off": {},
+            "send_command": {
+                "fields": {
+                    "command": { "selector": { "text": {} } },
+                    "num_repeats": {
+                        "selector": { "number": { "min": 1, "max": 10 } }
+                    }
+                }
+            }
+        }
+    },
+    "expect": {
+        "type": "tv",
+        "power": "on",
+        "stateKeys": ["level"],
+        "state": {
+            "level": { "type": "range", "unit": "%", "min": 0, "max": 100, "step": 1 }
+        },
+        "writes": {},
+        "notViaProperties": ["level", "volume_level", "state"],
+        "functions": [
+            "media_player.media_play",
+            "media_player.media_pause",
+            "media_player.volume_set",
+            "media_player.volume_mute",
+            "media_player.select_source",
+            "media_player.turn_off",
+            "remote.turn_on",
+            "remote.turn_off",
+            "remote.send_command"
+        ],
+        "functionEntity": {
+            "media_player.volume_set": "media_player.bravia_kd_49xd8077",
+            "remote.turn_on": "remote.bravia_kd_49xd8077",
+            "remote.send_command": "remote.bravia_kd_49xd8077"
+        },
+        "powerTarget": "remote.bravia_kd_49xd8077",
+        "inputSchema": {
+            "media_player.select_source": [
+                {
+                    "key": "source",
+                    "label": "Source",
+                    "type": "string",
+                    "options": [
+                        { "value": "HDMI 1" },
+                        { "value": "HDMI 2" },
+                        { "value": "Netflix" }
+                    ]
+                }
+            ],
+            "media_player.volume_set": [
+                { "key": "volume_level", "type": "number" }
+            ]
+        },
+        "freeFields": {
+            "remote.send_command": ["command"]
+        }
+    }
+}

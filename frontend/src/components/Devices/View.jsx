@@ -48,8 +48,12 @@ export const ViewDevice = ({ device }) => {
             const rooms = await api('rooms');
             setRooms(rooms ?? []);
             setRoomId(
-                rooms.find((r) => r.devices?.find((did) => deviceId))?._id ??
-                    null
+                rooms.find((r) =>
+                    r.devices?.some(
+                        (device) =>
+                            device === deviceId || device?._id === deviceId
+                    )
+                )?._id ?? null
             );
 
             const provs = await api('providers');
@@ -60,10 +64,13 @@ export const ViewDevice = ({ device }) => {
     const debouncedUpdate = (data) => {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
-            const { state, ...rest } = data;
+            // The device record is saved without its state: state has its own
+            // endpoint (`devices/:id/state`) and the history log.
+            const body = { ...data };
+            delete body.state;
             api(`devices`, {
                 method: 'POST',
-                body: JSON.stringify(rest),
+                body: JSON.stringify(body),
             });
         }, 500);
     };
@@ -74,7 +81,6 @@ export const ViewDevice = ({ device }) => {
 
     if (!data) return null;
     const { _id, name, externalId, provider, type } = data;
-    const codesource = providers?.find((p) => p._id === provider)?.codesource;
 
     return (
         <Stack spacing={2}>
@@ -82,7 +88,6 @@ export const ViewDevice = ({ device }) => {
                 <CardContent>
                     <DeviceDetailControls
                         device={data}
-                        codesource={codesource}
                         state={state}
                         loading={stateLoading}
                         onStateChange={(newState) =>

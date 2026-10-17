@@ -55,6 +55,28 @@ intents:
             - predefinedRoom
             - room
 
+    # "mets la clim à 22", "règle la température à 20", "chauffe à 23"
+    setTemperature:
+        starts:
+            - mets la clim
+            - mets le thermostat
+            - mets la temperature
+            - mets la temp
+            - regle la clim
+            - règle la clim
+            - regle la temperature
+            - règle la temperature
+            - regle le thermostat
+            - chauffe a
+            - chauffe à
+            - passe la clim
+            - temperature
+        slots:
+            - number
+            - deviceType
+            - predefinedRoom
+            - room
+
     playMusic:
         starts:
             - joue la musique

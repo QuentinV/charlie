@@ -182,6 +182,10 @@ export const DeviceCard = ({
                                 power={device?.state?.power}
                                 type={device?.type}
                                 level={device?.state?.level}
+                                unit={
+                                    device?.state?.properties
+                                        ?.unit_of_measurement
+                                }
                                 compact={compact}
                                 onStateChange={(newState) => {
                                     if (newState) {

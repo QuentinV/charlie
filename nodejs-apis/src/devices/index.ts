@@ -154,7 +154,15 @@ export async function getDeviceCapabilities(
     );
 
     if (capabilities) {
-        capabilitiesCache.set(deviceId, capabilities);
+        // Providers historically declared their property schema as
+        // `stateSchema` (Home Assistant, nanoleaf) while every consumer reads
+        // `capabilities.state` — normalize once, on the way into the cache.
+        const normalized: DeviceCapabilities = {
+            ...capabilities,
+            state: capabilities.state ?? capabilities.stateSchema,
+        };
+        capabilitiesCache.set(deviceId, normalized);
+        return normalized;
     }
     return capabilities;
 }

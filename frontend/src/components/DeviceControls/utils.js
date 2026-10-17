@@ -20,3 +20,18 @@ export const updateState = async (device, state, onStateChange) => {
     }
     return undefined;
 };
+
+/**
+ * Call a device function advertised through `capabilities.functions`
+ * (`POST devices/:id/functions/:name`).
+ *
+ * @param {string} deviceId
+ * @param {string} name Function name, as advertised (`media_player.media_play`)
+ * @param {Record<string, any>} [params] Function input values
+ * @returns {Promise<any>}
+ */
+export const callDeviceFunction = (deviceId, name, params = undefined) =>
+    api(`devices/${deviceId}/functions/${name}`, {
+        method: 'POST',
+        body: JSON.stringify(params ?? {}),
+    });

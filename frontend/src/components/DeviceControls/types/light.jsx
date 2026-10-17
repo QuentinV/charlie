@@ -7,11 +7,18 @@ import { SECTION_LABEL, TYPE_COLORS } from './typeStyles';
 
 /**
  * Default `light` control panel: power button + brightness slider.
+ *
+ * The slider exists only when the provider advertises `level`, i.e. when the
+ * gateway proves the bulb can dim (HA `brightness` / a colour mode other than
+ * `onoff`): an on/off bulb keeps the power button only.
  */
-export const LightControls = ({ device, onStateChange }) => {
+export const LightControls = ({ device, onStateChange, capabilities }) => {
     const state = device?.state ?? {};
     const power = state?.power === 'on';
     const level = state?.level ?? 0;
+    const hasLevel = (capabilities?.state ?? []).some(
+        (field) => field.key === 'level'
+    );
 
     const setPower = (on) =>
         updateState(device, { power: on ? 'on' : 'off' }, onStateChange);
@@ -25,26 +32,30 @@ export const LightControls = ({ device, onStateChange }) => {
             power={power}
             onTogglePower={setPower}
         >
-            <Typography sx={SECTION_LABEL}>Luminosité</Typography>
-            <DebouncedSlider
-                value={power ? level : 0}
-                min={0}
-                max={100}
-                step={1}
-                size="small"
-                disabled={!power}
-                valueLabelDisplay="auto"
-                onChangeCommitted={setLevel}
-                sx={{ color: TYPE_COLORS.light }}
-            />
-            <Typography
-                variant="body2"
-                sx={{ color: 'text.secondary', mt: 0.5 }}
-            >
-                {power
-                    ? `Niveau réglé à ${level}%`
-                    : 'Allumez la lampe pour régler la luminosité.'}
-            </Typography>
+            {hasLevel && (
+                <>
+                    <Typography sx={SECTION_LABEL}>Luminosité</Typography>
+                    <DebouncedSlider
+                        value={power ? level : 0}
+                        min={0}
+                        max={100}
+                        step={1}
+                        size="small"
+                        disabled={!power}
+                        valueLabelDisplay="auto"
+                        onChangeCommitted={setLevel}
+                        sx={{ color: TYPE_COLORS.light }}
+                    />
+                    <Typography
+                        variant="body2"
+                        sx={{ color: 'text.secondary', mt: 0.5 }}
+                    >
+                        {power
+                            ? `Niveau réglé à ${level}%`
+                            : 'Allumez la lampe pour régler la luminosité.'}
+                    </Typography>
+                </>
+            )}
         </TypePanel>
     );
 };

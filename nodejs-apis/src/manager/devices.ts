@@ -190,7 +190,8 @@ const routes: RestApis = {
             return cs.devices.find(filter).toArray();
         },
         post: async ({ body }) => {
-            const { name, externalId, provider, type }: Device = body;
+            const { name, externalId, provider, type, integration }: Device =
+                body;
             let id = body?._id;
 
             if (!id && externalId && provider) {
@@ -214,6 +215,9 @@ const routes: RestApis = {
                         externalId,
                         provider,
                         type,
+                        // HA/gateway platform (melcloud, tradfri…): only set it
+                        // when known so other providers keep a clean document.
+                        ...(integration ? { integration } : {}),
                     },
                 },
                 { upsert: true }

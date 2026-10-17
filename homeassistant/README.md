@@ -46,6 +46,64 @@ The wizard lists HA's `flow_handlers`, i.e. **core** integrations only
 that are **not** in core — Meross, LocalTuya, Xiaomi Miot, Frigate, … — live
 in the community and must be installed first (next section).
 
+### Making it a good Charlie device
+
+Installing an integration makes HA see the entity; making it a **good Charlie
+device** is data, not code (see `.clinerules` → *Adding a Device Type (HA)*):
+
+1. **Capture** the live entity payload (`/api/states/<entity_id>`), its
+   `core.entity_registry` entry and the `get_services` slice of its domain.
+2. **Add rows for the domain** in
+   `nodejs-apis/src/devices/providers/homeassistant/domains.ts` — only when HA's
+   generic attribute/service mapping is not enough. Keys are HA's own attribute
+   names, `options` names the attribute carrying the value list, `write` the
+   service + field.
+3. **Fixture** it in `nodejs-apis/src/devices/__tests__/fixtures/ha-<domain>.json`.
+   The conformance suite auto-discovers it and checks the schema, option lists,
+   readings, writes — and that everything advertised is readable from that payload.
+4. **Nothing to do per brand in the frontend**: the UI is one panel per **device
+   type** (`frontend/src/components/DeviceControls/types/` → `panels/`), so any
+   integration of a supported domain renders through the existing panel. A
+   provider only advertises `capabilities.control` when it wants a premium panel
+   (`clim` → `ClimatePanel`).
+
+**Brand-free rule.** The provider names no integration and no brand: a capability
+comes from a domain, an entity attribute (`PARAM_OPTION_SOURCES`) or the services
+catalogue. HA publishes no remote-key vocabulary (`remote.send_command.command`
+is free text, like in HA's own UI), so the TV panel renders a text field, and the
+sibling merge is domain-only (`siblingDomainsFor`) — every TV behaves the same,
+whoever makes it.
+
+Known limitation, HA-side: a TV whose integration does not implement power-on
+(it needs Wake-on-LAN) refuses `turn_on` until a `turn_on` trigger/automation
+registers the action **in HA**. Charlie surfaces HA's error verbatim; nothing is
+hardcoded on this side.
+
+Known trap: HA keeps some semantics **outside** the attribute bag. A
+`climate` / `water_heater` mode IS the entity state — there is no `hvac_mode`
+attribute — and a water heater's list attribute is `operation_list` (not
+`operation_modes`). The provider publishes such values as properties (it does for
+the climate mode) and the fixture proves they are readable; otherwise the UI
+silently falls back to a default and shows the wrong mode.
+
+The same rule covers measurements and levels. A `sensor` / `binary_sensor` keeps
+its value in the entity state and names it with `device_class`, so the provider
+publishes `properties.temperature` / `properties.motion` (an `unavailable` entity
+publishes no reading). `level` is Charlie's canonical numeric value, so **every
+domain that has one publishes it** (`LEVEL_SOURCES`: brightness, cover position,
+volume, fan percentage, humidity, ambient temperature for a `climate` /
+`water_heater`, a `sensor` reading, `battery_level` where nothing else is
+numeric), taking a measured value before a setpoint. A *writable* level is a
+second, narrower table (`LEVEL_FIELDS`) advertised only when the gateway proves
+it (the attribute or the HA feature bit), so an on/off bulb has no slider, a
+media player without `VOLUME_SET` keeps the step service, and a thermostat shows
+its ambient temperature without offering a level control — writing `level` there
+is ignored, the setpoint is the `temperature` property. A domain whose support is
+only its services catalogue (`lock`, `vacuum`, `fan`, `camera`, `humidifier`)
+renders through the domain-agnostic function list: one control per advertised
+function, `inputSchema`-driven, free fields as text. No per-brand command list
+exists anywhere.
+
 ## Community integrations (HACS-compatible)
 
 Charlie installs community integrations **natively** — no HACS UI, no GitHub

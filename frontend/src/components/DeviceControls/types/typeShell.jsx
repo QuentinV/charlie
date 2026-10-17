@@ -1,8 +1,8 @@
 import React from 'react';
-import { Box, ButtonBase, Stack, Typography } from '@mui/material';
-import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+import { Box, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { GOLD, GOLD_DARK, TYPE_COLORS, glow } from './typeStyles';
+import { GOLD, TYPE_COLORS } from './typeStyles';
+import { PowerButton } from '../primitives/PowerButton';
 
 /**
  * Shared container for the per-device-type control panels. Frameless on
@@ -47,30 +47,12 @@ export const TypePanel = ({
                     </Box>
 
                     {onTogglePower && (
-                        <ButtonBase
-                            aria-label={power ? 'Éteindre' : 'Allumer'}
-                            onClick={() => onTogglePower(!power)}
-                            sx={{
-                                width: 46,
-                                height: 46,
-                                borderRadius: '50%',
-                                minWidth: 0,
-                                color: power
-                                    ? GOLD_DARK
-                                    : 'rgba(245,245,220,0.55)',
-                                backgroundColor: power
-                                    ? alpha(GOLD, 0.22)
-                                    : 'transparent',
-                                border: `1px solid ${alpha(GOLD, 0.35)}`,
-                                boxShadow: power ? glow(GOLD, 0.25) : 'none',
-                                transition: 'all .25s ease',
-                                '&:hover': {
-                                    backgroundColor: alpha(GOLD, 0.3),
-                                },
-                            }}
-                        >
-                            <PowerSettingsNewIcon fontSize="small" />
-                        </ButtonBase>
+                        <PowerButton
+                            variant="outline"
+                            power={power}
+                            size={46}
+                            onToggle={onTogglePower}
+                        />
                     )}
                 </Stack>
             )}

@@ -8,7 +8,7 @@ import {
 } from '../../../types';
 import { cs } from '../../../core/db';
 import Fuse from 'fuse.js';
-import { changeDeviceState, getDeviceState } from '../../../devices';
+import { changeDeviceState, getDeviceCapabilities, getDeviceState } from '../../../devices';
 import { normalizeAndSplit } from './../../../ai/nlu/utils';
 import { log } from '../../../manager/services/activities';
 import * as memory from '../../../ai/memory';
@@ -51,6 +51,27 @@ async function getRoom(q: string): Promise<Room | undefined> {
     return (fuse.search(q)[0]?.item as Room) ?? null;
 }
 
+/**
+ * NLU device-type synonyms → charlie `DeviceTypes`.
+ *
+ * The NLU synonym list speaks user language (`ac`, `heater`, `speaker`) while
+ * devices are stored with charlie types, so a slot value that isn't a type must
+ * be translated before filtering (otherwise "allume la clim" matched nothing).
+ * Adding a device family = one entry here.
+ */
+const DEVICE_TYPE_ALIASES: Record<string, string[]> = {
+    ac: [DeviceTypes.thermostat],
+    heater: [DeviceTypes.thermostat],
+    thermostat: [DeviceTypes.thermostat],
+    speaker: [DeviceTypes.tv],
+    television: [DeviceTypes.tv],
+};
+
+/** Types a `deviceType` slot refers to (identity when it already is a type). */
+function typesForSlot(deviceType: string): string[] {
+    return DEVICE_TYPE_ALIASES[deviceType] ?? [deviceType];
+}
+
 async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
     DeviceTypes;
     // Explicit target coming from memory (implicit reference like "éteins-la").
@@ -84,10 +105,11 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
     }
 
     if (req.slots?.deviceType && req.slots?.deviceType !== 'house') {
-        filter.type = req.slots.deviceType;
+        const types = typesForSlot(req.slots.deviceType);
+        filter.type = types.length === 1 ? types[0] : { $in: types };
         log(
             'devices-actions',
-            `filter by device type = ${req.slots.deviceType}`
+            `filter by device type = ${req.slots.deviceType} (${types.join(', ')})`
         );
     }
 
@@ -210,7 +232,8 @@ async function findLevelTargets(
 
 /** Fallback when free text does not name a device: whole type (scoped to room). */
 async function findByType(req: DeviceRequest): Promise<Device[]> {
-    const filter: any = { type: req.slots?.deviceType };
+    const types = typesForSlot(req.slots?.deviceType);
+    const filter: any = { type: types.length === 1 ? types[0] : { $in: types } };
     if (req.slots?.room) {
         const room = await getRoom(req.slots.room);
         if (room?.devices?.length) {
@@ -244,7 +267,64 @@ async function applyLevel(
     return true;
 }
 
+/**
+ * Canonical capability property carrying the target temperature — the skin of
+ * every climate device (`providers/homeassistant/domains.ts`), so this works
+ * for any climate device without per-provider code.
+ */
+const TEMPERATURE_KEY = 'temperature';
+
+/**
+ * Apply a temperature to the devices matched by the request, clamped to the
+ * range the device advertises through its capabilities.
+ */
+async function applyTemperature(
+    req: DeviceRequest,
+    resolve: (current: number | undefined) => number | undefined
+): Promise<boolean | string> {
+    const targets = await findLevelTargets(req, DeviceTypes.thermostat);
+    if (typeof targets === 'string') return targets;
+
+    for (const device of targets) {
+        if (!device._id) continue;
+
+        const capabilities = await getDeviceCapabilities(device._id);
+        const field = capabilities?.state?.find(
+            (f) => f.key === TEMPERATURE_KEY
+        );
+        if (!field) {
+            return `${device.name} n'a pas de réglage de température.`;
+        }
+
+        const current = Number(device.state?.properties?.[TEMPERATURE_KEY]);
+        const wanted = resolve(
+            Number.isFinite(current) ? current : undefined
+        );
+        if (wanted === undefined) return false;
+
+        const min = field.min ?? 16;
+        const max = field.max ?? 30;
+        const value = Math.min(max, Math.max(min, wanted));
+
+        const changed = await changeDeviceState(device._id, {
+            properties: { [TEMPERATURE_KEY]: value },
+        });
+        if (!changed) {
+            return `Impossible de régler la température de ${device.name}.`;
+        }
+    }
+
+    memory.setActiveDevice(scopeOf(req), targets[0]._id, targets[0].name);
+    return true;
+}
+
 function describeDeviceState(device: Device, state?: DeviceState): string {
+    // A measurement's value IS its state: report the reading with the gateway's
+    // own unit instead of speaking about power (a sensor is never "on").
+    if (device.type === DeviceTypes.sensor && state?.level != null) {
+        const unit = state.properties?.unit_of_measurement;
+        return `${device.name} : ${state.level}${unit ? ` ${unit}` : ''}.`;
+    }
     if (!state?.power) {
         return `${device.name}: je ne connais pas son état.`;
     }
@@ -256,7 +336,13 @@ function describeDeviceState(device: Device, state?: DeviceState): string {
               : 'éteint';
     let description = `${device.name} est ${power}`;
     if (state.level != null) {
-        description += ` à ${state.level}%`;
+        // `level` is the device's canonical numeric value: a percentage for most
+        // domains, the ambient temperature for a thermostat (see the provider's
+        // `LEVEL_SOURCES`).
+        description +=
+            device.type === DeviceTypes.thermostat
+                ? ` (${state.level} °C)`
+                : ` à ${state.level}%`;
     }
     return `${description}.`;
 }
@@ -334,6 +420,21 @@ export const tools: Tools = {
             applyLevel(req, 'tv', (current) =>
                 clampLevel((current ?? 50) - 10)
             ),
+    },
+    setTemperature: {
+        exec: async (req: DeviceRequest) => {
+            const value = Number(req.slots?.number);
+            if (!req.slots?.number || Number.isNaN(value)) return false;
+            return applyTemperature(req, () => value);
+        },
+    },
+    temperatureUp: {
+        exec: (req: DeviceRequest) =>
+            applyTemperature(req, (current) => (current ?? 20) + 1),
+    },
+    temperatureDown: {
+        exec: (req: DeviceRequest) =>
+            applyTemperature(req, (current) => (current ?? 20) - 1),
     },
 };
 
