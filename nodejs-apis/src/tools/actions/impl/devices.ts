@@ -85,7 +85,7 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
         filter.type = req.slots.deviceType;
         log(
             'devices-actions',
-            `filter by device type = ${req.slots.deviceType} (${types.join(', ')})`
+            `filter by device type = ${req.slots.deviceType})`
         );
     }
 
@@ -216,6 +216,7 @@ async function findLevelTargets(
 /** Fallback when free text does not name a device: whole type (scoped to room). */
 async function findByType(req: DeviceRequest): Promise<Device[]> {
     const type = req.slots?.deviceType;
+    if (!type) return [];
     const filter: any = { type };
     if (req.slots?.room) {
         const room = await getRoom(req.slots.room);
