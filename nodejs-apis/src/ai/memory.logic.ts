@@ -17,6 +17,8 @@ export interface IntentLike {
 const DEVICE_INTENTS = new Set([
     'turnOnDevice',
     'turnOffDevice',
+    'openDevice',
+    'closeDevice',
     'pauseDevice',
     'deviceStateQuery',
     'setBrightness',

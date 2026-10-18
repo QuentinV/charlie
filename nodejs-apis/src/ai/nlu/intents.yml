@@ -27,14 +27,33 @@ intents:
             - deviceType
             - text
 
+    openDevice:
+        starts:
+            - ouvre
+            - remonte
+            - relève
+        slots:
+            - plurial
+            - deviceType
+            - predefinedRoom
+            - room
+
+    closeDevice:
+        starts:
+            - ferme
+            - descends
+            - abaisse
+        slots:
+            - plurial
+            - deviceType
+            - predefinedRoom
+            - room
+
     turnOnDevice:
         starts:
             - allume
             - mets en marche
             - active
-            - ouvre
-            - remonte
-            - relève
         slots:
             - plurial
             - deviceType
@@ -46,9 +65,6 @@ intents:
             - étein
             - coupe
             - désactive
-            - ferme
-            - descends
-            - abaisse
         slots:
             - plurial
             - deviceType
@@ -365,13 +381,11 @@ synonyms:
         - volet
         - store
         - rideau
-    heater:
+    thermostat:
         - chauffage
         - radiateur
-    thermostat:
         - termostat
         - thermostate
-    ac:
         - clim
         - climatiseur
         - climatisation
