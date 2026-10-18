@@ -85,6 +85,15 @@ export interface ConversationConfig {
     /** Ends a session (transports pass `endSession`). Injected to stay pure. */
     endSession?: (sessionId: string) => void;
     /**
+     * How long a session lives:
+     * - `'window'` (echo, default): the session ends with the follow-up window
+     *   — the next wake word starts a new one;
+     * - `'connection'` (web chat page): the session is the socket, so typed
+     *   turns minutes apart still share the conversation memory. The window
+     *   only tells the client whether to keep the microphone open.
+     */
+    sessionScope?: 'window' | 'connection';
+    /**
      * What to do with a bare wake word (wake word, no command):
      * - `'ignore'` (echo): drop it when idle, use the full text in-window;
      * - `'wake'` (web UI): report `wakeOnly` so the caller can answer.
@@ -117,6 +126,7 @@ export class Conversation {
     private readonly timeoutMs: number;
     private readonly endSession?: (sessionId: string) => void;
     private readonly bareWake: 'ignore' | 'wake';
+    private readonly sessionScope: 'window' | 'connection';
     private readonly now: () => number;
 
     private sessionId?: string;
@@ -127,6 +137,7 @@ export class Conversation {
         this.timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
         this.endSession = config.endSession;
         this.bareWake = config.bareWake ?? 'ignore';
+        this.sessionScope = config.sessionScope ?? 'window';
         this.now = config.now ?? Date.now;
     }
 
@@ -142,10 +153,14 @@ export class Conversation {
     resolve(text: string, options: { manual?: boolean } = {}): TurnDecision {
         const inConversation = this.now() < this.until;
 
-        // Window lapsed → the session is over.
+        // Window lapsed → the session is over (echo). On a web chat page the
+        // session is the connection: only the microphone window closes, so a
+        // typed turn sent minutes later still belongs to the conversation.
         if (!inConversation && this.sessionId) {
-            this.endSession?.(this.sessionId);
-            this.sessionId = undefined;
+            if (this.sessionScope === 'window') {
+                this.endSession?.(this.sessionId);
+                this.sessionId = undefined;
+            }
             this.until = 0;
         }
 
@@ -171,11 +186,18 @@ export class Conversation {
         }
 
         const hasTurn = !!command || wakeOnly;
+        const sessionId = hasTurn
+            ? (this.sessionId ?? randomUUID())
+            : undefined;
+        // Pin the conversation to the connection (web chat page).
+        if (sessionId && this.sessionScope === 'connection') {
+            this.sessionId = sessionId;
+        }
         return {
             command,
             wakeOnly,
             inConversation,
-            sessionId: hasTurn ? (this.sessionId ?? randomUUID()) : undefined,
+            sessionId,
         };
     }
 
@@ -185,12 +207,16 @@ export class Conversation {
         this.until = this.now() + (timeoutMs ?? this.timeoutMs);
     }
 
-    /** End a session and close the window. */
+    /**
+     * Close the follow-up window. On the echo this ends the session; on a web
+     * chat page the session lives until the socket closes (`close()`).
+     */
     release(sessionId?: string): void {
+        this.until = 0;
+        if (this.sessionScope === 'connection') return;
         const id = sessionId ?? this.sessionId;
         if (id) this.endSession?.(id);
         this.sessionId = undefined;
-        this.until = 0;
     }
 
     /** End whatever session is active (socket closing). */

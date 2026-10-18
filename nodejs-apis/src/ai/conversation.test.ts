@@ -167,4 +167,35 @@ describe('Conversation', () => {
         expect(ended).toEqual([d.sessionId]);
         expect(c.session).toBeUndefined();
     });
+
+    test('connection scope keeps the conversation across turns and gaps', () => {
+        const c = make({ sessionScope: 'connection' });
+
+        const first = c.resolve('allume la lumière', { manual: true });
+        expect(typeof first.sessionId).toBe('string');
+
+        // A statement reply closes the microphone window but must not end the
+        // conversation: the chat page keeps its memory.
+        c.release(first.sessionId);
+        expect(ended).toEqual([]);
+        expect(c.session).toBe(first.sessionId);
+
+        // Typing again minutes later still reuses the same session.
+        clock += 5 * 60 * 1000;
+        const second = c.resolve('éteins la lumière', { manual: true });
+        expect(second.inConversation).toBe(false);
+        expect(second.command).toBe('éteins la lumière');
+        expect(second.sessionId).toBe(first.sessionId);
+        expect(ended).toEqual([]);
+    });
+
+    test('connection scope ends the conversation when the socket closes', () => {
+        const c = make({ sessionScope: 'connection' });
+        const d = c.resolve('bonjour', { manual: true });
+        c.release(d.sessionId);
+
+        c.close();
+        expect(ended).toEqual([d.sessionId]);
+        expect(c.session).toBeUndefined();
+    });
 });

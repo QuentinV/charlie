@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { cs } from '../core/db';
 import { settings } from '../manager/services/settings';
+import { ConversationMemory } from '../types';
 import {
     ConversationContext,
     ConversationEntry,
@@ -13,6 +14,7 @@ import {
     capMemory,
     contextKey,
     emptyMemory,
+    hasExecutedIntent,
     mergeSummary,
     renderForPrompt,
 } from './memory.logic';
@@ -209,6 +211,28 @@ export function getConversation(
 
 export function clearConversation(sessionId?: string): void {
     if (sessionId) conversations.delete(sessionId);
+}
+
+// --- conversation memory handed to tool executors ---
+
+/** True when one of these intents was already executed in this conversation. */
+export function wasIntentExecuted(
+    sessionId: string | undefined,
+    intents: string[]
+): boolean {
+    if (!sessionId) return false;
+    return hasExecutedIntent(
+        conversations.get(sessionId)?.entries ?? [],
+        intents
+    );
+}
+
+/**
+ * Read-only accessor passed to a tool executor (`exec(params, ctx)`) so an
+ * action can adapt to what was already said in the current conversation.
+ */
+export function conversationMemory(sessionId?: string): ConversationMemory {
+    return { hasIntent: (intents) => wasIntentExecuted(sessionId, intents) };
 }
 
 // --- summarizer output ---

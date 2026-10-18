@@ -217,6 +217,22 @@ export function renderForPrompt(view: MemoryView, maxChars = 1200): string {
     return out;
 }
 
+/**
+ * Whether the conversation log already contains one of these executed intents.
+ * Only NLU fragments (`role: 'action'`) count: the free text of a user or an
+ * assistant turn is not an intent.
+ */
+export function hasExecutedIntent(
+    entries: ConversationEntry[],
+    intents: string[]
+): boolean {
+    const wanted = new Set(intents);
+    const res = (entries ?? []).some(
+        (e) => e.role === 'action' && wanted.has(e.intent)
+    );
+    return res;
+}
+
 /** Flatten a conversation log to text for the summarizer prompt. */
 export function renderConversation(entries: ConversationEntry[]): string {
     return (entries ?? [])

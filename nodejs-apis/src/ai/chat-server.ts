@@ -41,6 +41,9 @@ export function setupChatServer(server: any) {
             strip: wordWakeWords(WEB_WAKE_WORDS),
             bareWake: 'wake',
             endSession,
+            // A chat page is one conversation from first turn to disconnect:
+            // the follow-up window only drives the microphone.
+            sessionScope: 'connection',
         });
 
         let audioBuffer: Buffer[] = [];

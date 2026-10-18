@@ -1,6 +1,13 @@
-import { Tools } from '../../../types';
+import { ToolExecutionContext, Tools } from '../../../types';
 import { settings } from '../../../manager/services/settings';
 import { t } from '../langs';
+
+/**
+ * Intents whose reply asks a follow-up question. Several of them share the
+ * policy: only one question per conversation, otherwise answering it matches
+ * the same intent again and the exact same question loops forever.
+ */
+const SMALL_TALK_INTENTS = ['greet', 'howAreYou'];
 
 export const tools: Tools = {
     askTime: {
@@ -48,7 +55,10 @@ export const tools: Tools = {
         },
     },
     howAreYou: {
-        exec: async () => t('howAreYou.response'),
+        exec: async (_req, ctx?: ToolExecutionContext) =>
+            ctx?.memory?.hasIntent(SMALL_TALK_INTENTS)
+                ? t('howAreYou.again')
+                : t('howAreYou.response'),
     },
     whoAreYou: {
         exec: async () => t('whoAreYou.response'),

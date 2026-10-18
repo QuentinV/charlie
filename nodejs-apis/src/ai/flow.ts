@@ -1,5 +1,5 @@
 import { getActions } from '../tools/actions';
-import { Tools } from '../types';
+import { ToolExecutionContext, Tools } from '../types';
 import { findIntent } from './nlu/nlu';
 import { log } from '../manager/services/activities';
 import { settings } from '../manager/services/settings';
@@ -58,6 +58,14 @@ export function longTextFor(result: unknown): string {
     if (result === null) return random(doesNotUnderstandAnswers);
     if (result === false) return random(notPossibleAnswers);
     return random(positiveAnswers);
+}
+
+/** Outcome label recorded in the conversation log for an executed intent. */
+function actionOutcome(response: unknown): string {
+    if (response === true) return 'done';
+    if (response === false) return 'not-possible';
+    if (typeof response === 'string') return 'answered';
+    return 'none';
 }
 
 // Sentence the user is asked to repeat so we capture a clean, long enough
@@ -122,6 +130,7 @@ export async function ask(
     const isLog = options?.log ?? true;
     const sessionId = options?.sessionId;
     const audio = options?.audio;
+    
     try {
         // A voice profile registration in progress consumes the next
         // utterance(s): first the name, then the repeated voice sample.
@@ -150,10 +159,24 @@ export async function ask(
                 sessionId,
             });
             const resolved = memory.resolveIntentWithMemory(res, view);
-            const response = await actions[resolved.name].exec({
-                ...resolved,
+            const ctx: ToolExecutionContext = {
                 user: options?.user,
                 sessionId,
+                memory: memory.conversationMemory(sessionId),
+            };
+            const response = await actions[resolved.name].exec(
+                { ...resolved, user: options?.user, sessionId },
+                ctx
+            );
+
+            // NLU fragments belong to the conversation: the log lets later
+            // turns (and the end-of-session summarizer) see what was executed.
+            memory.logTurn(sessionId, options?.user, {
+                role: 'action',
+                intent: resolved.name,
+                slots: resolved.slots,
+                outcome: actionOutcome(response),
+                at: Date.now(),
             });
 
             // Implicit preference learning: only from explicitly provided

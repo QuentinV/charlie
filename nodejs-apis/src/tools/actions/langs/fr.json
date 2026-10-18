@@ -11,11 +11,13 @@
         "response": "Au revoir, à bientôt !"
     },
     "greet": {
-        "response": "Salut, comment tu vas aujourd'hui ?"
+        "response": "Salut, comment tu vas aujourd'hui ?",
+        "again": "Salut !"
     },
     "group": {},
     "howAreYou": {
-        "response": "Ça va bien, merci. Et toi ?"
+        "response": "Ça va bien, merci. Et toi ?",
+        "again": "Ça va bien, merci !"
     },
     "music": {},
     "memory": {

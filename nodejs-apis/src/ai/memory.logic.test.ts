@@ -2,6 +2,7 @@ import {
     capMemory,
     contextKey,
     emptyMemory,
+    hasExecutedIntent,
     LIGHT_LEVEL_PREF,
     learnedPreferences,
     mergeSummary,
@@ -10,7 +11,7 @@ import {
     resolveIntentWithMemory,
     TV_VOLUME_PREF,
 } from './memory.logic';
-import { MemoryView, UserMemory } from './memory.types';
+import { ConversationEntry, MemoryView, UserMemory } from './memory.types';
 
 function view(overrides: Partial<MemoryView> = {}): MemoryView {
     return {
@@ -124,11 +125,34 @@ describe('memory.logic', () => {
         expect(long.length).toBeLessThanOrEqual(101);
     });
 
+    test('detects an intent already executed in the conversation', () => {
+        const entries: ConversationEntry[] = [
+            { role: 'user', text: 'bonjour', at: 0 },
+            { role: 'assistant', text: 'Salut !', at: 0 },
+            { role: 'action', intent: 'greet', outcome: 'answered', at: 0 },
+        ];
+
+        expect(hasExecutedIntent(entries, ['greet'])).toBe(true);
+        expect(hasExecutedIntent(entries, ['howAreYou', 'greet'])).toBe(true);
+        expect(hasExecutedIntent(entries, ['howAreYou'])).toBe(false);
+        // prose mentions the intent name but is not an NLU fragment
+        expect(
+            hasExecutedIntent(
+                [{ role: 'user', text: 'howAreYou', at: 0 }],
+                ['howAreYou']
+            )
+        ).toBe(false);
+        expect(hasExecutedIntent([], ['greet'])).toBe(false);
+    });
+
     test('renders the conversation transcript', () => {
         const text = renderConversation([
             { role: 'user', text: 'allume', at: 0 },
+            { role: 'action', intent: 'turnOnDevice', outcome: 'done', at: 0 },
             { role: 'assistant', text: "C'est fait.", at: 0 },
         ]);
-        expect(text).toBe("[user] allume\n[assistant] C'est fait.");
+        expect(text).toBe(
+            "[user] allume\n[action] turnOnDevice (done)\n[assistant] C'est fait."
+        );
     });
 });

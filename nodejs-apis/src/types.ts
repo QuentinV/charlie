@@ -32,10 +32,17 @@ export type RestApiFullHandler = (
 export type RestApis = { [route: string]: RestApi };
 
 // --- Tools
+
+export interface ConversationMemory {
+    /** True when one of these intents was already executed in the conversation. */
+    hasIntent: (intent: string[]) => boolean;
+}
+
 /** Runtime context passed to a tool executor (recognized user / session). */
 export interface ToolExecutionContext {
     user?: string;
     sessionId?: string;
+    memory?: ConversationMemory;
 }
 
 export interface ToolExecutor<P> {
