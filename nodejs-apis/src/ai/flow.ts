@@ -8,6 +8,7 @@ import { tts } from './tts';
 import * as voiceProfile from './voiceProfile';
 import * as memory from './memory';
 import { expectsFollowUp } from './conversation';
+import { t } from '../tools/actions/langs';
 import { v4 as uuid } from 'uuid';
 
 export { expectsFollowUp };
@@ -68,12 +69,26 @@ function actionOutcome(response: unknown): string {
     return 'none';
 }
 
-// Sentence the user is asked to repeat so we capture a clean, long enough
-// voice sample for the profile registration.
-const REPEAT_SENTENCE = 'Bonjour Charlie, je suis prêt.';
+// Minimum number of quality retries for the same sentence before giving up.
+const MAX_SAMPLE_RETRIES = voiceProfile.MAX_SAMPLE_RETRIES;
 
-// Minimum sample length: 0.5s of PCM16 16kHz mono.
-const MIN_SAMPLE_BYTES = 16000;
+/**
+ * Prompt asking for the sample at `index`. The sentence is spoken verbatim by
+ * TTS: it is what the user has to repeat, so it must never be paraphrased.
+ */
+function samplePrompt(name: string | undefined, index: number): string {
+    const sentence = voiceProfile.sentenceFor(index);
+    if (index <= 0) {
+        return t('profile.firstSentence', { name, sentence });
+    }
+    if (index === voiceProfile.BASE_SAMPLE_COUNT - 1) {
+        return t('profile.lastSentence', { sentence });
+    }
+    if (index < voiceProfile.BASE_SAMPLE_COUNT) {
+        return t('profile.nextSentence', { sentence });
+    }
+    return t('profile.extraSentence', { sentence });
+}
 
 export interface AskOptions {
     log?: boolean;
@@ -86,9 +101,14 @@ export interface AskOptions {
 }
 
 /**
- * Handle the 2-turn voice profile registration when one is pending for the
- * session. Returns the answer to speak, or `undefined` when the utterance is
- * not part of a registration and should flow through the normal pipeline.
+ * Handle the multi-turn voice profile registration when one is pending for
+ * the session. Returns the answer to speak, or `undefined` when the utterance
+ * is not part of a registration and should flow through the normal pipeline.
+ *
+ * Flow: name → 3 sentences (the last one held out as a verification) → up to
+ * 2 extra sentences when the profile is not convincing. Every prompt is
+ * spoken by TTS (`answer()` routes the returned string through `tts`), which
+ * is how the user hears the sentence to repeat.
  */
 async function handlePendingRegistration(
     sessionId: string,
@@ -98,13 +118,20 @@ async function handlePendingRegistration(
     const pending = voiceProfile.getPending(sessionId);
     if (!pending) return undefined;
 
+    // "annule" / "laisse tomber": never enrol a sentence spoken for another
+    // reason.
+    if (voiceProfile.isAbortPhrase(text)) {
+        voiceProfile.clearPending(sessionId);
+        return t('profile.aborted');
+    }
+
     if (pending.phase === 'name') {
         const name = voiceProfile.extractName(text);
         if (!name) {
-            return "Je n'ai pas bien compris ton nom. Comment t'appelles-tu ?";
+            return t('profile.askNameAgain');
         }
         voiceProfile.advanceToSample(sessionId, name);
-        return `Merci ${name}. Pour enregistrer ta voix, répète après moi : « ${REPEAT_SENTENCE} »`;
+        return samplePrompt(name, 0);
     }
 
     // phase === 'sample'
@@ -113,14 +140,59 @@ async function handlePendingRegistration(
         voiceProfile.clearPending(sessionId);
         return false;
     }
-    if (audio.length < MIN_SAMPLE_BYTES) {
-        return `Je n'ai pas bien entendu. Répète après moi : « ${REPEAT_SENTENCE} »`;
+
+    const stats = voiceProfile.audioStats(audio);
+    if (!stats.usable) {
+        const rejections = voiceProfile.markRejectedSample(sessionId);
+        if (rejections >= MAX_SAMPLE_RETRIES) {
+            voiceProfile.clearPending(sessionId);
+            return t('profile.notConfirmed');
+        }
+        return t('profile.notHeard', {
+            sentence: voiceProfile.sentenceFor(
+                voiceProfile.getSamples(sessionId).length
+            ),
+        });
     }
-    const ok = await voiceProfile.register(name, audio);
+
+    const attempts = voiceProfile.addSample(sessionId, audio);
+    if (attempts < voiceProfile.BASE_SAMPLE_COUNT) {
+        return samplePrompt(name, attempts);
+    }
+
+    const report = await voiceProfile.enroll(
+        name,
+        voiceProfile.getSamples(sessionId)
+    );
+    const step = voiceProfile.nextStep(report, attempts);
+
+    if (step === 'done') {
+        voiceProfile.clearPending(sessionId);
+        return t('profile.enrolled', { name });
+    }
+
+    if (step === 'retry') {
+        // The profiler refused the recording itself: drop it and ask for the
+        // same sentence again, not the next one.
+        voiceProfile.popSample(sessionId);
+        const rejections = voiceProfile.markRejectedSample(sessionId);
+        if (rejections >= MAX_SAMPLE_RETRIES) {
+            voiceProfile.clearPending(sessionId);
+            return t('profile.notConfirmed');
+        }
+        return t('profile.notHeard', {
+            sentence: voiceProfile.sentenceFor(
+                voiceProfile.getSamples(sessionId).length
+            ),
+        });
+    }
+
+    if (step === 'more') {
+        return samplePrompt(name, attempts);
+    }
+
     voiceProfile.clearPending(sessionId);
-    return ok
-        ? `C'est fait, ${name}. Ton profil vocal est enregistré.`
-        : "Je n'ai pas pu enregistrer ton profil. Réessaie plus tard.";
+    return report ? t('profile.notConfirmed') : t('profile.serviceDown');
 }
 
 export async function ask(

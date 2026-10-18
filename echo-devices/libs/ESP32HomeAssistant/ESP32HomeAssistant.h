@@ -158,6 +158,9 @@ private:
     bool isWsConnected = false;
 
     volatile bool expectFollowUp = false;
+    // Follow-up window for the current prompt: the server may stretch it
+    // (voice-profile registration asks for a long sentence to repeat).
+    uint32_t followUpTimeoutMs = 10000;
 
     String serverip;
     float wakeUpWordAccuracy;

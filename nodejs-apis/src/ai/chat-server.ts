@@ -13,6 +13,21 @@ import {
 const WAKE_UP_REPLY = 'Oui ? Dis-moi ce que je peux faire pour toi.';
 
 /**
+ * How much of the chat session is kept for speaker identification. A short
+ * command yields a noisy embedding; concatenating the recent turns gives the
+ * extractor a stable window (same rule as the echo transport).
+ */
+const IDENTIFY_MAX_BYTES = 16000 * 2 * 8;
+
+/**
+ * The device keeps its follow-up window open for a registration prompt: the
+ * sentence to repeat is long to speak back.
+ */
+function followUpTimeout(registering: boolean): number | undefined {
+    return registering ? REGISTRATION_TIMEOUT_MS : undefined;
+}
+
+/**
  * Chat WebSocket endpoint (`/ws/chat`).
  *
  * The browser streams raw PCM16 (16 kHz, mono) audio instead of doing speech
@@ -47,6 +62,8 @@ export function setupChatServer(server: any) {
         });
 
         let audioBuffer: Buffer[] = [];
+        // Recent turns, used for a stable speaker-identification window.
+        let sessionAudio = Buffer.alloc(0);
         let manual = false;
         let processing = false;
 
@@ -123,7 +140,13 @@ export function setupChatServer(server: any) {
                 send({ c: 'text', v: a.text });
                 send({ c: 'feedback', v: a.short });
                 ws.send(a.audio, { binary: true });
-                send({ c: 'playAudio', conversation: a.conversation });
+                send({
+                    c: 'playAudio',
+                    conversation: a.conversation,
+                    timeout: followUpTimeout(
+                        !!getPending(decision.sessionId)
+                    ),
+                });
             } catch (e) {
                 console.log('chat ws error', e);
                 conversation.release(decision.sessionId);
@@ -150,12 +173,19 @@ export function setupChatServer(server: any) {
             processing = true;
             try {
                 const pcm = Buffer.concat(chunks);
+                // A chat page is one conversation: identify the speaker on
+                // the last ~8 s rather than on the single short command.
+                const contextPcm = Buffer.concat([
+                    sessionAudio,
+                    pcm,
+                ]).subarray(-IDENTIFY_MAX_BYTES);
+                sessionAudio = contextPcm;
                 // ASR and speaker identification both consume the same
                 // utterance, so run them in parallel. Identification is
                 // best-effort: a down voiceprofiler must never break the chat.
                 const [text, speaker] = await Promise.all([
                     stt(chunks, { record: false }),
-                    identify(pcm).catch(() => undefined),
+                    identify(contextPcm).catch(() => undefined),
                 ]);
 
                 const user =
@@ -164,7 +194,12 @@ export function setupChatServer(server: any) {
                         : undefined;
 
                 if (user) {
-                    send({ c: 'user', v: user, score: speaker?.score ?? 0 });
+                    send({
+                        c: 'user',
+                        v: user,
+                        score: speaker?.score ?? 0,
+                        confidence: speaker?.confidence ?? 0,
+                    });
                 }
                 if (!text || typeof text !== 'string') return;
 

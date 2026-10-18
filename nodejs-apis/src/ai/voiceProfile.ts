@@ -15,10 +15,48 @@ const httpHost = process.env.VOICE_PROFILER_HTTP_HOST ?? 'voiceprofiler:8000';
 
 const IDENTIFY_TIMEOUT_MS = 5000;
 
-// Registration is a 2-turn conversation: first the name, then a repeated
-// sentence used as the voice sample. A pending registration expires if the
-// user stops responding.
+// Registration is a multi-turn conversation: the name, then three sentences
+// (the last one is held out to verify the profile), then optional rescue
+// sentences. Every recorded sample refreshes the TTL; an abandoned
+// registration simply expires.
 const PENDING_TTL_MS = 30000;
+
+// Consecutive unusable recordings (silence, too short, unverifiable) before
+// the flow gives up instead of looping forever.
+export const MAX_SAMPLE_RETRIES = 3;
+
+/**
+ * Sentences the user repeats during enrolment. They are deliberately varied
+ * (nasals, fricatives, plosives, different lengths) so the profile does not
+ * depend on a single phonetic context.
+ *
+ * The third sentence is the verification sample: it is scored against the
+ * profile built from the first two, which is exactly the comparison
+ * identification performs later.
+ */
+export const ENROLLMENT_SENTENCES = [
+    "Bonjour Charlie, j'active mon profil vocal aujourd'hui.",
+    'Le grand chêne sombre cache la maison sous la pluie.',
+    "S'il te plaît, vérifie mon identité pour continuer.",
+];
+
+/** Additional sentences offered when the verification is not convincing. */
+export const EXTRA_SENTENCES = [
+    'Les vagues brillantes dansent sur le sable mouillé.',
+    'Mon chat gris dort près de la fenêtre ouverte.',
+    'Nous partirons demain matin avant le lever du soleil.',
+];
+
+export const BASE_SAMPLE_COUNT = ENROLLMENT_SENTENCES.length;
+export const MAX_ENROLLMENT_SAMPLES = BASE_SAMPLE_COUNT + 2;
+
+// 1.2 s of PCM16 16 kHz mono: below this an embedding is too noisy.
+export const MIN_SAMPLE_BYTES = 16000 * 2 * 1.2;
+
+// ~-54 dBFS in normalised float samples: only near-silence is rejected here.
+// The profiler applies the authoritative level gate (-55 dBFS by default);
+// echo captures measure around -44 dBFS, so this must stay well below it.
+const MIN_SAMPLE_RMS = 0.002;
 
 export type PendingPhase = 'name' | 'sample';
 
@@ -26,6 +64,10 @@ export interface PendingRegistration {
     phase: PendingPhase;
     /** Resolved name, only known from the `sample` phase onwards. */
     name?: string;
+    /** Audio samples recorded so far, in sentence order. */
+    samples: Buffer[];
+    /** Consecutive rejected attempts (silence, too short, unverifiable). */
+    rejections: number;
     until: number;
 }
 
@@ -34,6 +76,96 @@ const pending = new Map<string, PendingRegistration>();
 export interface SpeakerIdentification {
     speaker: string;
     score: number;
+    /** Display-only mapping of `score` to 0..1 (set by the profiler). */
+    confidence?: number;
+    /** Cosine a speaker must reach to be named (set by the profiler). */
+    threshold?: number;
+    /** Number of enrolment samples behind the matching profile. */
+    samples?: number;
+}
+
+export interface EnrollmentScores {
+    /** Held-out sample vs the profile of the previous ones. */
+    test: number;
+    /** Worst leave-one-out consistency of the enrolment samples. */
+    looMin: number;
+    /** Mean leave-one-out consistency of the enrolment samples. */
+    looMean: number;
+    /** Mean sample-to-centroid similarity. */
+    centroidMean: number;
+}
+
+export interface EnrollmentReport {
+    status: 'success' | 'low_confidence' | 'rejected';
+    accepted: boolean;
+    committed: boolean;
+    samples: number;
+    keptSamples?: number;
+    confidence?: number;
+    threshold?: number;
+    scores?: EnrollmentScores;
+    /** Index (0-based) of the rejected sample, when `status` is `rejected`. */
+    sampleIndex?: number;
+    reason?: string;
+}
+
+/** What the flow should do after an enrolment attempt. */
+export type EnrollmentStep = 'done' | 'more' | 'retry' | 'abort';
+
+/** Sentence to speak for the sample at `index` (base list, then extras). */
+export function sentenceFor(index: number): string {
+    if (index <= 0) return ENROLLMENT_SENTENCES[0];
+    if (index < BASE_SAMPLE_COUNT) return ENROLLMENT_SENTENCES[index];
+    const extra = index - BASE_SAMPLE_COUNT;
+    return EXTRA_SENTENCES[extra % EXTRA_SENTENCES.length];
+}
+
+export interface AudioStats {
+    seconds: number;
+    rms: number;
+    usable: boolean;
+}
+
+/**
+ * Cheap client-side check before spending a round-trip on the profiler: a
+ * silent or too-short recording is re-prompted rather than enrolled.
+ */
+export function audioStats(pcm: Buffer): AudioStats {
+    const sampleCount = Math.floor((pcm?.length ?? 0) / 2);
+    const seconds = sampleCount / 16000;
+    if (!sampleCount) return { seconds: 0, rms: 0, usable: false };
+
+    // Averaging on a subsample keeps this O(1) for long utterances.
+    const stride = Math.max(1, Math.floor(sampleCount / 48000));
+    let sum = 0;
+    let count = 0;
+    for (let index = 0; index < sampleCount; index += stride) {
+        const value = pcm.readInt16LE(index * 2) / 32768;
+        sum += value * value;
+        count += 1;
+    }
+    const rms = Math.sqrt(sum / count);
+    return {
+        seconds,
+        rms,
+        usable: pcm.length >= MIN_SAMPLE_BYTES && rms >= MIN_SAMPLE_RMS,
+    };
+}
+
+/**
+ * Decide what to ask next after an enrolment attempt.
+ *
+ * `retry` means the profiler rejected the recording itself (silence, clipping,
+ * too short): the same sentence is asked again, without adding a sample.
+ */
+export function nextStep(
+    report: EnrollmentReport | undefined,
+    attempts: number
+): EnrollmentStep {
+    if (!report) return 'abort';
+    if (report.accepted) return 'done';
+    if (report.status === 'rejected') return 'retry';
+    return attempts < MAX_ENROLLMENT_SAMPLES ? 'more' : 'abort';
 }
 
 /**
@@ -176,6 +308,9 @@ export async function identify(
                 done({
                     speaker: data?.speaker ?? 'unknown',
                     score: data?.score ?? 0,
+                    confidence: data?.confidence,
+                    threshold: data?.threshold,
+                    samples: data?.samples,
                 });
             }
         }
@@ -186,42 +321,88 @@ export async function identify(
 }
 
 
+function num(value: unknown): number {
+    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+/** Map the profiler's snake_case enrolment report onto the client type. */
+function toEnrollmentReport(data: any): EnrollmentReport {
+    const scores = data?.scores ?? {};
+    let status: EnrollmentReport['status'] = 'low_confidence';
+    if (data?.status === 'rejected') status = 'rejected';
+    else if (data?.accepted) status = 'success';
+
+    return {
+        status,
+        accepted: !!data?.accepted,
+        committed: !!data?.committed,
+        samples: num(data?.samples),
+        keptSamples: num(data?.kept_samples),
+        confidence: num(data?.confidence),
+        threshold: num(data?.threshold),
+        scores: {
+            test: num(scores.test),
+            looMin: num(scores.loo_min),
+            looMean: num(scores.loo_mean),
+            centroidMean: num(scores.centroid_mean),
+        },
+        sampleIndex:
+            typeof data?.sample_index === 'number'
+                ? data.sample_index
+                : undefined,
+        reason: typeof data?.reason === 'string' ? data.reason : undefined,
+    };
+}
+
 /**
- * Register (or update) a voice profile from a raw PCM16 (16kHz, mono)
- * utterance. Wraps the PCM in a WAV container and posts it to the FastAPI
- * `register` endpoint. Returns `false` when the service is unreachable.
+ * Enrol (or re-enrol) a voice profile from the recorded sentences.
+ *
+ * The profiler keeps one embedding per sample and builds a centroid from
+ * them; the last sample is held out and scored against the others, so the
+ * profile is only replaced when the new recording actually verifies. Returns
+ * `undefined` when the service is unreachable or the request is invalid.
  */
-export async function register(
+export async function enroll(
     username: string,
-    pcm: Buffer
-): Promise<boolean> {
+    samples: Buffer[]
+): Promise<EnrollmentReport | undefined> {
     try {
-        const wav = pcmToWav(pcm);
+        if (!username || samples.length < 2) return;
+
         const form = new FormData();
-        form.append(
-            'file',
-            new Blob([wav], { type: 'audio/wav' }),
-            'sample.wav'
-        );
+        samples.forEach((pcm, index) => {
+            form.append(
+                'files',
+                new Blob([pcmToWav(pcm)], { type: 'audio/wav' }),
+                `sample-${index + 1}.wav`
+            );
+        });
 
         const res = await fetch(
-            `http://${httpHost}/register/${encodeURIComponent(username)}`,
+            `http://${httpHost}/enroll/${encodeURIComponent(username)}`,
             { method: 'POST', body: form }
         );
-        if (!res.ok) {
-            return false;
-        }
         const data: any = await res.json().catch(() => undefined);
-        const ok = data?.status === 'success';
+        if (!res.ok) {
+            console.error(
+                `[voiceProfile] enroll ${username} failed: ${res.status}`
+            );
+            return;
+        }
+
+        const report = toEnrollmentReport(data);
         console.log(
-            `[voiceProfile] register ${username} => ${ok ? 'success' : 'failed'}`
+            `[voiceProfile] enroll ${username}: ${report.status}` +
+                ` (samples=${report.samples}, test=${report.scores?.test ?? 0},` +
+                ` loo_min=${report.scores?.looMin ?? 0},` +
+                ` committed=${report.committed})`
         );
-        return ok;
+        return report;
     } catch (e) {
         console.error(
-            `[voiceProfile] register failed: ${(e as any)?.message ?? e}`
+            `[voiceProfile] enroll failed: ${(e as any)?.message ?? e}`
         );
-        return false;
+        return;
     }
 }
 
@@ -237,13 +418,32 @@ export async function listUsers(): Promise<string[]> {
     }
 }
 
-/** Arm the 2-turn registration flow for a session. */
+function freshRegistration(
+    phase: PendingPhase,
+    fields: Partial<PendingRegistration> = {}
+): PendingRegistration {
+    return {
+        phase,
+        samples: [],
+        rejections: 0,
+        until: Date.now() + PENDING_TTL_MS,
+        ...fields,
+    };
+}
+
+/** Drop expired registrations (a user who walked away). */
+function pruneExpired(): void {
+    const now = Date.now();
+    for (const [sessionId, registration] of pending) {
+        if (now > registration.until) pending.delete(sessionId);
+    }
+}
+
+/** Arm the multi-turn registration flow for a session. */
 export function beginRegistration(sessionId: string): void {
     if (!sessionId) return;
-    pending.set(sessionId, {
-        phase: 'name',
-        until: Date.now() + PENDING_TTL_MS,
-    });
+    pruneExpired();
+    pending.set(sessionId, freshRegistration('name'));
 }
 
 /** Return the active pending registration for a session, if any. */
@@ -262,16 +462,73 @@ export function getPending(
 
 /** Move a pending registration from the `name` to the `sample` phase. */
 export function advanceToSample(sessionId: string, name: string): void {
-    pending.set(sessionId, {
-        phase: 'sample',
-        name,
-        until: Date.now() + PENDING_TTL_MS,
-    });
+    if (!sessionId) return;
+    pending.set(sessionId, freshRegistration('sample', { name }));
+}
+
+/**
+ * Store a recorded sentence and refresh the registration TTL. Returns the
+ * number of samples collected so far.
+ */
+export function addSample(sessionId: string, pcm: Buffer): number {
+    const registration = pending.get(sessionId);
+    if (!registration) return 0;
+    registration.samples.push(pcm);
+    registration.rejections = 0;
+    registration.until = Date.now() + PENDING_TTL_MS;
+    return registration.samples.length;
+}
+
+/** Drop the last recorded sample (it was rejected by the profiler). */
+export function popSample(sessionId: string): void {
+    pending.get(sessionId)?.samples.pop();
+}
+
+/** A copy of the samples recorded so far, in sentence order. */
+export function getSamples(sessionId?: string): Buffer[] {
+    if (!sessionId) return [];
+    return [...(pending.get(sessionId)?.samples ?? [])];
+}
+
+/**
+ * Record an unusable attempt (silence, short recording, failed verification).
+ * Returns the number of consecutive rejections.
+ */
+export function markRejectedSample(sessionId: string): number {
+    const registration = pending.get(sessionId);
+    if (!registration) return 0;
+    registration.rejections += 1;
+    registration.until = Date.now() + PENDING_TTL_MS;
+    return registration.rejections;
 }
 
 /** Cancel any pending registration for a session. */
 export function clearPending(sessionId?: string): void {
     if (sessionId) pending.delete(sessionId);
+}
+
+// Ways of abandoning the registration instead of recording a sample.
+const ABORT_PHRASES = [
+    'annule',
+    'annuler',
+    'laisse tomber',
+    'stop',
+    'arrete',
+    'oublie',
+    'pas maintenant',
+];
+
+/**
+ * Whether the utterance is the user cancelling the registration ("annule",
+ * "laisse tomber"…). Checked before treating the audio as a voice sample, so
+ * an aborted flow does not enrol a sentence spoken for another reason.
+ */
+export function isAbortPhrase(raw: string): boolean {
+    const text = normalize(raw ?? '');
+    if (!text) return false;
+    return ABORT_PHRASES.some(
+        (phrase) => text === phrase || text.startsWith(`${phrase} `)
+    );
 }
 
 // Common French ways of giving one's name, normalized (accents/punctuation

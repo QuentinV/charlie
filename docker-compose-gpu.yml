@@ -96,6 +96,19 @@ services:
         build: ./voiceprofiler
         container_name: charlie-voice-profiler
         restart: unless-stopped
+        environment:
+            # Cosine a mystery utterance must reach to be named.
+            - VOICE_MATCH_THRESHOLD=${VOICE_MATCH_THRESHOLD:-0.65}
+            # Held-out verification score required to commit a new profile.
+            - VOICE_ENROLL_THRESHOLD=${VOICE_ENROLL_THRESHOLD:-0.50}
+            # Minimum leave-one-out agreement between enrolment samples.
+            - VOICE_MIN_CONSISTENCY=${VOICE_MIN_CONSISTENCY:-0.45}
+            # Quality gates for a recorded sentence.
+            - VOICE_MIN_SAMPLE_SECONDS=${VOICE_MIN_SAMPLE_SECONDS:-1.2}
+            - VOICE_MIN_RMS_DB=${VOICE_MIN_RMS_DB:--55}
+            # Raw-score range mapped to the display-only 0..1 confidence.
+            - VOICE_SCORE_FLOOR=${VOICE_SCORE_FLOOR:-0.20}
+            - VOICE_SCORE_CEIL=${VOICE_SCORE_CEIL:-0.80}
         ports:
             - "9309:10400"
             - "9310:8000"

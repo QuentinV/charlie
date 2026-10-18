@@ -242,6 +242,7 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
                 String command = doc["c"];
                 if (command == "playAudio") {
                     this->expectFollowUp = doc["conversation"] | false;
+                    this->followUpTimeoutMs = doc["timeout"] | this->_cfg.conversationTimeoutMs;
                     this->_playBufferedAudio();
                     this->setLed(0, 0, 0);
                 } else if (command == "setWakeUpWordAccuracy") {
@@ -555,7 +556,7 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                 recordMode = true;
                 silenceStart = 0;
                 startTime = time(NULL);
-            } else if (millis() - followUpWaitStart > this->_cfg.conversationTimeoutMs) {
+            } else if (millis() - followUpWaitStart > this->followUpTimeoutMs) {
                 // No follow-up: close the window and resume wake word.
                 Serial.println("Conversation timeout, back to wake word.");
                 this->expectFollowUp = false;
