@@ -27,6 +27,15 @@ interface DeviceRequest {
     sessionId?: string;
 }
 
+type VerbIntentType = 'onoff' | 'open' | 'close' | 'all';
+
+const deviceTypesFallbackVerbIntent = {
+    'all': [DeviceTypes.light, DeviceTypes.shutter, DeviceTypes.tv],
+    'onoff': [DeviceTypes.light],
+    'open': [DeviceTypes.shutter],
+    'close': [DeviceTypes.shutter, DeviceTypes.tv]
+}
+
 /** Memory scope derived from the NLU request. */
 function scopeOf(req: DeviceRequest): { user?: string; sessionId?: string } {
     return { user: req?.user, sessionId: req?.sessionId };
@@ -51,7 +60,7 @@ async function getRoom(q: string): Promise<Room | undefined> {
     return (fuse.search(q)[0]?.item as Room) ?? null;
 }
 
-async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
+async function findDevices(req: DeviceRequest, verbIntent: VerbIntentType): Promise<Device[] | undefined> {
     if (req.slots?.deviceId) {
         const d = await cs.devices.findOne({ _id: req.slots.deviceId });
         if (d) {
@@ -60,9 +69,10 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
     }
 
     if (req.slots?.predefinedRoom === 'house') {
-        log('devices-actions', 'house requested, use all shutters devices');
+        const types = req.slots?.deviceType ? [req.slots.deviceType] : deviceTypesFallbackVerbIntent[verbIntent];
+        log('devices-actions', `house requested, use all ${types.join(', ')} devices`);
         return cs.devices
-            .find({ type: { $in: [DeviceTypes.shutter] } })
+            .find({ type: { $in: types } })
             .toArray();
     }
 
@@ -91,14 +101,15 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
 
     let devices = await cs.devices.find(filter).toArray();
     if (devices?.length) {
-        if (!req.slots?.deviceType) {
-            const lights = devices.filter( d => d.type === 'light' );
-            if (lights?.length) {
-                log('devices-actions', 'room found without device type so look for lights');
-                return lights;
+        if (room && !req.slots?.deviceType) {
+            const devs = devices.filter( d => deviceTypesFallbackVerbIntent[verbIntent].includes(d.type) );
+            if (devs?.length) {
+                log('devices-actions', `room found without device type so look for ${deviceTypesFallbackVerbIntent[verbIntent].join(', ')}`);
+                return devs;
             }
         }
-        if (req.slots?.deviceType === 'tv') {
+
+        if (req.slots?.deviceType === DeviceTypes.tv) {
             return [devices[0]];
         }
 
@@ -106,6 +117,7 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
             log('devices-actions', 'pick all devices because plurial');
             return devices;
         }
+        
         if (room && req.slots?.deviceType) {
             log(
                 'devices-actions',
@@ -146,9 +158,10 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
 
 async function changeDevice(
     req: DeviceRequest,
-    power: PowerType
+    power: PowerType,
+    verbIntent: VerbIntentType
 ): Promise<boolean | string> {
-    const devices = await findDevices(req);
+    const devices = await findDevices(req, verbIntent);
     if (devices?.length) {
         // Turning a device on may carry a remembered level (preference).
         const state: DeviceState = { power };
@@ -191,7 +204,7 @@ async function findLevelTargets(
         },
     };
 
-    const found = await findDevices(effective);
+    const found = await findDevices(effective, 'onoff');
     const devices = found?.length ? found : await findByType(effective);
     if (!devices?.length) {
         return "Je ne trouves pas l'appareil demandé.";
@@ -333,13 +346,19 @@ function describeDeviceState(device: Device, state?: DeviceState): string {
 
 export const tools: Tools = {
     turnOnDevice: {
-        exec: async (req: DeviceRequest) => changeDevice(req, 'on'),
+        exec: async (req: DeviceRequest) => changeDevice(req, 'on', 'onoff'),
     },
     turnOffDevice: {
-        exec: async (req: DeviceRequest) => changeDevice(req, 'off'),
-    },
+        exec: async (req: DeviceRequest) => changeDevice(req, 'off', 'onoff'),
+    },    
     pauseDevice: {
-        exec: async (req: DeviceRequest) => changeDevice(req, 'pause'),
+        exec: async (req: DeviceRequest) => changeDevice(req, 'pause', 'all'),
+    },
+    openDevice: {
+        exec: async (req: DeviceRequest) => changeDevice(req, 'on', 'open'),
+    },
+    closeDevice: {
+        exec: async (req: DeviceRequest) => changeDevice(req, 'off', 'close'),
     },
     deviceStateQuery: {
         exec: async (req: DeviceRequest) => {
@@ -348,7 +367,7 @@ export const tools: Tools = {
                 // (e.g. "est ce que tu peux ...").
                 return false;
             }
-            const devices = await findDevices(req);
+            const devices = await findDevices(req, 'all');
             if (!devices?.length) {
                 return "Je ne trouves pas l'appareil demandé.";
             }

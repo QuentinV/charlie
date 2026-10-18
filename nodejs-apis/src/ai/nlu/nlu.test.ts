@@ -12,7 +12,7 @@ describe('findIntent', () => {
         // when the device word stays in the free text, the slot resolves too
         const explicit = await findIntent('mets la temperature de la clim à 22');
         expect(explicit?.name).toBe('setTemperature');
-        expect(explicit?.slots?.deviceType).toBe('ac');
+        expect(explicit?.slots?.deviceType).toBe('thermostat');
 
         expect((await findIntent('règle la température à 20'))?.name).toBe(
             'setTemperature'
@@ -214,7 +214,7 @@ describe('findIntent', () => {
         });
 
         expect(await findIntent('ouvre le volet du salon')).toStrictEqual({
-            name: 'turnOnDevice',
+            name: 'openDevice',
             freeText: 'le volet du salon',
             slots: {
                 deviceType: 'shutter',
@@ -223,7 +223,7 @@ describe('findIntent', () => {
         });
 
         expect(await findIntent('ouvre la maison')).toStrictEqual({
-            name: 'turnOnDevice',
+            name: 'openDevice',
             freeText: 'la maison',
             slots: {
                 predefinedRoom: 'house',
@@ -232,7 +232,7 @@ describe('findIntent', () => {
 
         expect(await findIntent('ouvre les volets de la maison')).toStrictEqual(
             {
-                name: 'turnOnDevice',
+                name: 'openDevice',
                 freeText: 'les volets de la maison',
                 slots: {
                     deviceType: 'shutter',
@@ -283,7 +283,7 @@ describe('findIntent', () => {
         });
 
         expect(await findIntent('ferme le volet du salon')).toStrictEqual({
-            name: 'turnOffDevice',
+            name: 'closeDevice',
             freeText: 'le volet du salon',
             slots: {
                 deviceType: 'shutter',
