@@ -51,30 +51,7 @@ async function getRoom(q: string): Promise<Room | undefined> {
     return (fuse.search(q)[0]?.item as Room) ?? null;
 }
 
-/**
- * NLU device-type synonyms → charlie `DeviceTypes`.
- *
- * The NLU synonym list speaks user language (`ac`, `heater`, `speaker`) while
- * devices are stored with charlie types, so a slot value that isn't a type must
- * be translated before filtering (otherwise "allume la clim" matched nothing).
- * Adding a device family = one entry here.
- */
-const DEVICE_TYPE_ALIASES: Record<string, string[]> = {
-    ac: [DeviceTypes.thermostat],
-    heater: [DeviceTypes.thermostat],
-    thermostat: [DeviceTypes.thermostat],
-    speaker: [DeviceTypes.tv],
-    television: [DeviceTypes.tv],
-};
-
-/** Types a `deviceType` slot refers to (identity when it already is a type). */
-function typesForSlot(deviceType: string): string[] {
-    return DEVICE_TYPE_ALIASES[deviceType] ?? [deviceType];
-}
-
 async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
-    DeviceTypes;
-    // Explicit target coming from memory (implicit reference like "éteins-la").
     if (req.slots?.deviceId) {
         const d = await cs.devices.findOne({ _id: req.slots.deviceId });
         if (d) {
@@ -105,8 +82,7 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
     }
 
     if (req.slots?.deviceType && req.slots?.deviceType !== 'house') {
-        const types = typesForSlot(req.slots.deviceType);
-        filter.type = types.length === 1 ? types[0] : { $in: types };
+        filter.type = req.slots.deviceType;
         log(
             'devices-actions',
             `filter by device type = ${req.slots.deviceType} (${types.join(', ')})`
@@ -239,8 +215,8 @@ async function findLevelTargets(
 
 /** Fallback when free text does not name a device: whole type (scoped to room). */
 async function findByType(req: DeviceRequest): Promise<Device[]> {
-    const types = typesForSlot(req.slots?.deviceType);
-    const filter: any = { type: types.length === 1 ? types[0] : { $in: types } };
+    const type = req.slots?.deviceType;
+    const filter: any = { type };
     if (req.slots?.room) {
         const room = await getRoom(req.slots.room);
         if (room?.devices?.length) {

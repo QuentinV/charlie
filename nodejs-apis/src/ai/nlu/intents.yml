@@ -365,13 +365,11 @@ synonyms:
         - volet
         - store
         - rideau
-    heater:
+    thermostat:
         - chauffage
         - radiateur
-    thermostat:
         - termostat
         - thermostate
-    ac:
         - clim
         - climatiseur
         - climatisation
