@@ -115,6 +115,13 @@ async function findDevices(req: DeviceRequest): Promise<Device[] | undefined> {
 
     let devices = await cs.devices.find(filter).toArray();
     if (devices?.length) {
+        if (!req.slots?.deviceType) {
+            const lights = devices.filter( d => d.type === 'light' );
+            if (lights?.length) {
+                log('devices-actions', 'room found without device type so look for lights');
+                return lights;
+            }
+        }
         if (req.slots?.deviceType === 'tv') {
             return [devices[0]];
         }
