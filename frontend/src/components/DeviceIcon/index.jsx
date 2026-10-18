@@ -10,16 +10,19 @@ import SmartButtonIcon from '@mui/icons-material/SmartButton';
 import SensorsIcon from '@mui/icons-material/Sensors';
 import BlindsIcon from '@mui/icons-material/Blinds';
 
-const icons = {
-    light: <LightbulbIcon />,
-    switch: <SwitchLeftIcon />,
-    shutter: <BlindsIcon />,
-    sprinkler: <WaterDropIcon />,
-    tv: <TvIcon />,
-    sensor: <SensorsIcon />,
-    button: <SmartButtonIcon />,
-    thermostat: <DeviceThermostatIcon />,
-    doorbell: <DoorbellIcon />,
+const iconMap = {
+    light: LightbulbIcon,
+    switch: SwitchLeftIcon,
+    shutter: BlindsIcon,
+    sprinkler: WaterDropIcon,
+    tv: TvIcon,
+    sensor: SensorsIcon,
+    button: SmartButtonIcon,
+    thermostat: DeviceThermostatIcon,
+    doorbell: DoorbellIcon,
 };
 
-export const DeviceIcon = ({ type }) => icons[type] ?? <PowerIcon />;
+export const DeviceIcon = ({ type, color }) => {
+    const IconComponent = iconMap[type ?? ''] ?? PowerIcon;
+    return <IconComponent sx={{ color }} />;
+};

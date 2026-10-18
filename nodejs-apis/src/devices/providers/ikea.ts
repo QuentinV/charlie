@@ -1,14 +1,6 @@
 import { TradfriClient, discoverGateway } from 'node-tradfri-client';
-import { ProvidersApis } from '../../types';
-
-// https://www.npmjs.com/package/node-tradfri-client
-
-/*
-type === AccessoryTypes.remote
-                ? DeviceTypes.switch
-                : type === AccessoryTypes.lightbulb
-                ? DeviceTypes.light
-                : DeviceTypes.unknown,*/
+import { AccessoryTypes } from 'node-tradfri-client';
+import { ProvidersApis, DiscoveryResult } from '../../types';
 
 let client: TradfriClient | null = null;
 let initialized = false;
@@ -32,24 +24,40 @@ const apis: ProvidersApis = {
             await client.on('device updated', () => count++).observeDevices();
 
             initialized = true;
+            return true;
         },
-        discover: async () =>
-            Object.values(client?.devices ?? {}).map(
-                ({ name, instanceId, type }) => ({
+        discover: async (): Promise<DiscoveryResult> => ({
+            devices: Object.values(client?.devices ?? {}).map(
+                ({ name, instanceId, type }: any) => ({
                     name,
-                    instanceId,
-                    type,
+                    externalId: String(instanceId),
+                    type:
+                        type === AccessoryTypes.remote
+                            ? 'switch'
+                            : type === AccessoryTypes.lightbulb
+                              ? 'light'
+                              : 'unknown',
                 })
             ),
-        changeDeviceState: async ({ device: { externalId } }, { power }) =>
-            !!client?.operateLight(client?.devices?.[externalId], {
+        }),
+        changeDeviceState: async (
+            { device: { externalId } },
+            { power, properties }
+        ) => {
+            const brightness = properties?.brightness ?? properties?.level;
+            return !!client?.operateLight(client?.devices?.[externalId], {
                 onOff: power === 'on',
-            }),
+                ...(brightness !== undefined && { dimmer: brightness }),
+            });
+        },
         getDeviceState: async ({ device: { externalId } }) => {
             const state = client?.devices[externalId]?.lightList[0];
             return {
                 power: state?.onOff ? 'on' : 'off',
                 level: state?.dimmer ?? 100,
+                properties: {
+                    brightness: state?.dimmer ?? 100,
+                },
             };
         },
         isInitialized: async () => initialized,

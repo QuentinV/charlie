@@ -50,6 +50,29 @@ Use `docker-compose.windows.yml` to run the full stack locally. ASR requires clo
 
 Use `docker-compose.yml` — it will automatically fetch and build `qwen-asr` from GitHub.
 
+### 🎮 GPU (NVIDIA)
+
+Use `docker-compose-gpu.yml` to run the `llm` service on GPU. It builds `llm/Dockerfile` with `LLAMA_BASE=ghcr.io/ggml-org/llama.cpp:server-cuda` and reserves the NVIDIA device, offloading all layers (`LLAMA_ARG_N_GPU_LAYERS`, default `99`).
+
+Prerequisites on the host:
+
+- an NVIDIA GPU with a recent driver installed
+- [`nvidia-container-toolkit`](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) configured for Docker
+
+▶️ Running
+
+```bash
+docker compose -f docker-compose-gpu.yml up llm --build
+```
+
+Or the full stack:
+
+```bash
+docker compose -f docker-compose-gpu.yml up --build
+```
+
+Tune the offload with `LLAMA_ARG_N_GPU_LAYERS` (e.g. `LLAMA_ARG_N_GPU_LAYERS=0` falls back to CPU while keeping the CUDA image).
+
 ## 🐍 Backend
 
 A Python/FastAPI service responsible for running AI models and acting as an MCP client proxy. It exposes REST endpoints consumed by the Node.js backend.
@@ -69,6 +92,26 @@ docker compose up llm --build
 Starts on **port 9308** with a UI available on [http://localhost:9308](http://localhost:9308)
 
 The orchestration logic is done through nodejs therefore no tools can be called from this UI.
+
+### 🏠 Home Assistant — background device-provider layer
+
+Since v2 there is no need to maintain my own device providers: a headless
+**Home Assistant** instance (folder `homeassistant/`, port `:8123`, loopback
+only) provides the device integrations. Charlie keeps its brain and frontend,
+and talks to HA:
+
+- **Zero-touch auth** — the brain auto-onboards HA once (creates a single
+  owner) and then logs in through HA's `trusted_networks` provider from inside
+  the Docker internal network. No tokens to generate, no browser step.
+- **Configure integrations from Charlie** — Providers page → Home Assistant →
+  Integrations renders HA's config-flow wizard natively (no HA UI needed).
+- **Discovery** — entities appear in the Discovery page; you select which ones
+  become Charlie devices.
+- **State/history** — HA `state_changed` events update existing Charlie devices.
+
+See [`homeassistant/README.md`](homeassistant/README.md) and
+[`plans/home-assistant-background-provider.md`](plans/home-assistant-background-provider.md)
+for details.
 
 ### 🟢 Orchestrator `nodejs-apis`
 
@@ -110,6 +153,16 @@ ECHO_CONTINOUS_AUDIO_TEST=true          # optional
 
 ASR_MODEL_SIZE=large                    # optional: large | small
 ASR_MODEL_PATH=./asr/models             # optional
+
+# Home Assistant (background device-provider layer) — all optional
+HA_HOST=localhost                       # default: homeassistant (compose service name)
+HA_PORT=8123
+# HA_AUTO_PROVISION=true
+# HA_TRUSTED_NETWORKS=172.16.0.0/12,127.0.0.1   # HA container env (comma CIDRs)
+# HA_ONBOARD_USERNAME=charlie           # owner user created on first HA boot
+# HA_ONBOARD_PASSWORD=charlie
+# HA_LOCATION_NAME=Charlie Home
+# HA_TIME_ZONE=Europe/Paris
 ```
 
 ### 🎤 ASR

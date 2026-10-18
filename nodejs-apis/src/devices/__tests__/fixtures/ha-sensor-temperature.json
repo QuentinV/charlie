@@ -1,0 +1,38 @@
+{
+    "description": "Room-temperature `sensor` exactly as HA publishes it (captured live): the value is the entity state and its name is the `device_class`. HA has no `temperature` attribute, so the provider publishes `properties.temperature` from the state — the same rule as the climate mode — and the panel, the NLU and the agent read the measurement with no translation table.",
+    "provider": "homeassistant",
+    "entity": {
+        "entity_id": "sensor.salon_room_temperature",
+        "state": "24.5",
+        "attributes": {
+            "state_class": "measurement",
+            "unit_of_measurement": "°C",
+            "device_class": "temperature",
+            "friendly_name": "Salon Room temperature"
+        },
+        "last_changed": "2026-10-17T16:10:40.563718+00:00"
+    },
+    "registry": {
+        "entity_id": "sensor.salon_room_temperature",
+        "platform": "melcloud",
+        "device_id": "7a863a1b5260f5f4e59664e1c28f7d89",
+        "supported_features": 0,
+        "capabilities": {}
+    },
+    "services": {
+        "sensor": {}
+    },
+    "expect": {
+        "type": "sensor",
+        "power": "off",
+        "level": 24.5,
+        "stateKeys": [],
+        "writes": {},
+        "stateValues": {
+            "temperature": 24.5,
+            "device_class": "temperature",
+            "unit_of_measurement": "°C",
+            "state": "24.5"
+        }
+    }
+}

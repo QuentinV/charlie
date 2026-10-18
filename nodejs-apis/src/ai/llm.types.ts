@@ -17,6 +17,7 @@ export interface LlmChatMessage {
 export interface LlmChatCompletionsRequest {
     messages: LlmChatMessage[];
     tools: LlmChatCompletionsTools[];
+    response_format?: any;
 }
 
 export interface LlmChatCompletionsChoicesTool {

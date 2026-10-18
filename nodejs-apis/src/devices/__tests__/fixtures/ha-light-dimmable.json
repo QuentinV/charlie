@@ -1,0 +1,53 @@
+{
+    "description": "Dimmable `light` captured live from the gateway at a moment its integration was offline (`unavailable`, `restored: true`): the payload still proves the brightness capability through `supported_color_modes`, which is what the provider gates `level` on — an on/off-only bulb gets no slider. Brightness is written through DeviceState.level, never the properties bag.",
+    "provider": "homeassistant",
+    "entity": {
+        "entity_id": "light.tradfri_bulb_3",
+        "state": "unavailable",
+        "attributes": {
+            "restored": true,
+            "supported_color_modes": [
+                "brightness"
+            ],
+            "friendly_name": "TRADFRI bulb 3",
+            "supported_features": 32
+        },
+        "last_changed": "2026-10-13T21:21:13.480259+00:00"
+    },
+    "registry": {
+        "entity_id": "light.tradfri_bulb_3",
+        "platform": "tradfri",
+        "device_id": "1896815e8e248987a3141515dc4aa8f8",
+        "supported_features": 32,
+        "capabilities": {}
+    },
+    "services": {
+        "light": {}
+    },
+    "expect": {
+        "type": "light",
+        "power": "off",
+        "stateKeys": [
+            "level"
+        ],
+        "state": {
+            "level": {
+                "type": "range",
+                "unit": "%",
+                "min": 0,
+                "max": 100,
+                "step": 1
+            }
+        },
+        "writes": {},
+        "notViaProperties": [
+            "level",
+            "state",
+            "supported_color_modes"
+        ],
+        "optionalValues": [
+            "level"
+        ],
+        "functions": []
+    }
+}

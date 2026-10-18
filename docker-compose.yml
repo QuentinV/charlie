@@ -5,6 +5,9 @@ services:
         environment:
             - NODE_ENV=production
             - PULSE_SERVER=unix:/tmp/pulse/native
+            # HA config dir: lets the brain install community integrations
+            # (custom_components/) directly. See homeassistant/README.md.
+            - HA_CONFIG_DIR=/ha-config
         volumes:
             - ./nodejs-apis/src:/app/src
             - ./nodejs-apis/.env:/app/.env
@@ -13,6 +16,7 @@ services:
             - ${XDG_RUNTIME_DIR}/pulse/native:/tmp/pulse/native
             - ./nodejs-apis/recordings:/app/recordings
             - ./echo-devices:/echo-devices
+            - ./homeassistant/config:/ha-config
         ports:
             - '9300:9300' # http server
             - '9303:9303' # audio udp
@@ -51,29 +55,16 @@ services:
         networks:
             - internal
     asr:
-        build:
-            context: https://github.com/QuentinV/qwen-asr.git
-            dockerfile: Dockerfile
         container_name: charlie-asr
         ports:
-            - '9307:5000'
+            - '9307:10300'
+        build: ./asr
         environment:
-            - MODEL_SIZE=${ASR_MODEL_SIZE:-large}
-            - MODEL_DIR=/model
+            - MODEL_SIZE=${ASR_MODEL_SIZE:-0.6B}
+            - NUM_THREADS=${NUM_THREADS:-4}
+        restart: unless-stopped
         volumes:
-            - ${ASR_MODEL_PATH:-./asr/models}/${ASR_MODEL_SIZE:-large}:/model
-            - ./nodejs-apis/src/echo/__tests__/rec-2026-03-09T20-38-20-462Z.wav:/warmup.wav
-        command:
-            [
-                '--ws',
-                '--skip-silence',
-                '--language',
-                'French',
-                '--prompt',
-                'This is a conversation with an assistant named Charlie.',
-                '--warmup',
-                '/warmup.wav',
-            ]
+            - ./asr/models:/app/models
         networks:
             - internal
     llm:
@@ -88,6 +79,46 @@ services:
         environment:
             - LLAMA_ARG_THREADS=${LLAMA_ARG_THREADS:-6}
         restart: unless-stopped
+    voiceprofiler:
+        build: ./voiceprofiler
+        container_name: charlie-voice-profiler
+        restart: unless-stopped
+        environment:
+            # Cosine a mystery utterance must reach to be named.
+            - VOICE_MATCH_THRESHOLD=${VOICE_MATCH_THRESHOLD:-0.65}
+            # Held-out verification score required to commit a new profile.
+            - VOICE_ENROLL_THRESHOLD=${VOICE_ENROLL_THRESHOLD:-0.50}
+            # Minimum leave-one-out agreement between enrolment samples.
+            - VOICE_MIN_CONSISTENCY=${VOICE_MIN_CONSISTENCY:-0.45}
+            # Quality gates for a recorded sentence.
+            - VOICE_MIN_SAMPLE_SECONDS=${VOICE_MIN_SAMPLE_SECONDS:-1.2}
+            - VOICE_MIN_RMS_DB=${VOICE_MIN_RMS_DB:--55}
+            # Raw-score range mapped to the display-only 0..1 confidence.
+            - VOICE_SCORE_FLOOR=${VOICE_SCORE_FLOOR:-0.20}
+            - VOICE_SCORE_CEIL=${VOICE_SCORE_CEIL:-0.80}
+        ports:
+            - "9309:10400"
+            - "9310:8000"
+        volumes:
+            - ./voiceprofiler/data:/app/data
+            - ./voiceprofiler/models:/app/models
+        networks:
+            - internal
+    vision:
+        image: ghcr.io/ggml-org/llama.cpp:server
+        container_name: charlie-vision
+        ports:
+            - "9311:8080"
+        volumes:
+            - ./vision/models:/models
+        command: >
+            -m /models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+            --mmproj /models/mmproj-Qwen3VL-4B-Instruct-F16.gguf
+            --host 0.0.0.0
+            --port 8080
+            --threads 4
+            -c 2048
+        restart: unless-stopped
     db:
         container_name: charlie-db
         image: mongo
@@ -101,27 +132,30 @@ services:
             - MONGO_INITDB_ROOT_PASSWORD=
         networks:
             - internal
+    homeassistant:
+        build: ./homeassistant
+        container_name: charlie-homeassistant
+        environment:
+            - TZ=Europe/Paris
+            # - HA_TRUSTED_NETWORKS=172.16.0.0/12,127.0.0.1  # optional override
+        volumes:
+            - ./homeassistant/config:/config
+        ports:
+            #    - '127.0.0.1:8123:8123' # loopback only (device-provider layer)
+            - '8123:8123'
+        restart: unless-stopped
+        networks:
+            - internal
     frontend:
         build: ./frontend
         container_name: charlie-frontend
-        environment:
-            - NODE_ENV=production
-            - API_HOST=http://api:9300
-        volumes:
-            - ./frontend/src:/app/src
-            - ./frontend/.env:/app/.env
-            - ./frontend/vite.config.js:/app/vite.config.js
-            - ./frontend/public:/app/public
-            - ./certs:/certs
         ports:
-            - '9305:3000'
-        command: 'yarn start --host'
+            - '9305:80'
         depends_on:
             - api
         restart: unless-stopped
         networks:
             - internal
-
 networks:
     internal:
         driver: bridge

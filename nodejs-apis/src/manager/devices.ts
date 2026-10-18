@@ -2,30 +2,24 @@ import { cs } from '../core/db';
 import {
     callDeviceFunction,
     changeDeviceState,
+    getDeviceCapabilities,
     getDeviceState,
     getProviderFunctions,
-    getProvidersApis,
     toggleDeviceState,
 } from '../devices';
+import { discoverDevices } from '../devices/discover';
 import { Device, RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
-import { manageDeviceRoom } from './services/rooms';
 
 const routes: RestApis = {
     'devices/discover': {
-        get: async () => {
-            const apis = await getProvidersApis();
-
-            const res = await Promise.allSettled(
-                apis.map(async (a) => {
-                    await a.api?.init?.(a.provider);
-                    return {
-                        provider: a.provider.name,
-                        data: await a.api?.discover?.(a.provider),
-                    };
-                })
-            );
-            return res.map((s: any) => s.value);
+        get: async () => discoverDevices(),
+    },
+    'devices/:id/capabilities': {
+        get: {
+            handler: async ({ params }) => getDeviceCapabilities(params.id),
+            description:
+                'Get capabilities (state schema + functions) of a device',
         },
     },
     'devices/:id/functions': {
@@ -196,7 +190,8 @@ const routes: RestApis = {
             return cs.devices.find(filter).toArray();
         },
         post: async ({ body }) => {
-            const { name, externalId, provider, type }: Device = body;
+            const { name, externalId, provider, type, integration }: Device =
+                body;
             let id = body?._id;
 
             if (!id && externalId && provider) {
@@ -220,6 +215,9 @@ const routes: RestApis = {
                         externalId,
                         provider,
                         type,
+                        // HA/gateway platform (melcloud, tradfri…): only set it
+                        // when known so other providers keep a clean document.
+                        ...(integration ? { integration } : {}),
                     },
                 },
                 { upsert: true }

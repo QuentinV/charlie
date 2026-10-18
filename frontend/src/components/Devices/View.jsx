@@ -1,5 +1,7 @@
 import {
-    Box,
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
     Card,
     CardContent,
     Divider,
@@ -8,34 +10,50 @@ import {
     InputLabel,
     MenuItem,
     Select,
-    Switch,
+    Stack,
     TextField,
     Typography,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { api } from '../../api/charlie';
-import { DeviceToggle } from './Toggle';
 import { DeviceType } from './constants';
 import HistoricalDeviceChart from '../DeviceStateChart';
+import { DeviceDetailControls } from '../DeviceControls';
 
 let timeout = null;
 
-export const ViewDevice = ({ deviceId }) => {
-    const [data, setData] = useState(null);
+export const ViewDevice = ({ device }) => {
+    const [data, setData] = useState(device);
+    const [state, setState] = useState(null);
+    const [stateLoading, setStateLoading] = useState(true);
     const [roomId, setRoomId] = useState(null);
     const [rooms, setRooms] = useState([]);
     const [providers, setProviders] = useState([]);
 
+    const deviceId = device?._id;
+
     useEffect(() => {
+        setData(device);
+    }, [device]);
+
+    useEffect(() => {
+        if (!deviceId) return;
         (async () => {
-            const device = await api(`devices/${deviceId}`);
-            setData(device ?? null);
+            const stateRes = await api(`devices/${deviceId}/state`).catch(
+                () => null
+            );
+            setState(stateRes?.state ?? null);
+            setStateLoading(false);
 
             const rooms = await api('rooms');
             setRooms(rooms ?? []);
             setRoomId(
-                rooms.find((r) => r.devices?.find((did) => deviceId))?._id ??
-                    null
+                rooms.find((r) =>
+                    r.devices?.some(
+                        (device) =>
+                            device === deviceId || device?._id === deviceId
+                    )
+                )?._id ?? null
             );
 
             const provs = await api('providers');
@@ -46,10 +64,13 @@ export const ViewDevice = ({ deviceId }) => {
     const debouncedUpdate = (data) => {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
-            const { state, ...rest } = data;
+            // The device record is saved without its state: state has its own
+            // endpoint (`devices/:id/state`) and the history log.
+            const body = { ...data };
+            delete body.state;
             api(`devices`, {
                 method: 'POST',
-                body: JSON.stringify(rest),
+                body: JSON.stringify(body),
             });
         }, 500);
     };
@@ -59,31 +80,35 @@ export const ViewDevice = ({ deviceId }) => {
     };
 
     if (!data) return null;
-    const { _id, name, externalId, provider, type, state } = data;
+    const { _id, name, externalId, provider, type } = data;
 
     return (
-        <Box>
+        <Stack spacing={2}>
             <Card>
                 <CardContent>
-                    <Grid container spacing={2} sx={{ alignItems: 'center' }}>
-                        <Typography variant="h6" gutterBottom>
-                            {name}
-                        </Typography>
-
-                        <div>
-                            <DeviceToggle
-                                deviceId={deviceId}
-                                power={state?.power}
-                                type={type}
-                                level={state?.level}
-                                onStateChange={(newState) =>
-                                    newState &&
-                                    setData({ ...data, state: newState })
-                                }
-                            />
-                        </div>
-                    </Grid>
-
+                    <DeviceDetailControls
+                        device={data}
+                        state={state}
+                        loading={stateLoading}
+                        onStateChange={(newState) =>
+                            newState && setState(newState)
+                        }
+                    />
+                </CardContent>
+            </Card>
+            <Accordion
+                defaultExpanded={false}
+                sx={{
+                    boxShadow: 'none',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                }}
+            >
+                <AccordionSummary>
+                    <Typography variant="h6">Propriétés</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
                     <Grid container direction="column" spacing={1}>
                         <Grid>
                             <TextField
@@ -201,11 +226,11 @@ export const ViewDevice = ({ deviceId }) => {
                             </FormControl>
                         </Grid>
                     </Grid>
-                </CardContent>
-            </Card>
+                </AccordionDetails>
+            </Accordion>
             <Card>
                 <HistoricalDeviceChart deviceId={_id} />
             </Card>
-        </Box>
+        </Stack>
     );
 };

@@ -6,6 +6,8 @@ import assistant from '../ai/api';
 import echo from '../echo/api';
 import activities from './activities';
 import settings from './settings';
+import notifications from './notifications';
+import memory from './memory';
 
 export default {
     ...assistant,
@@ -16,4 +18,6 @@ export default {
     ...routines,
     ...echo,
     ...settings,
+    ...memory,
+    ...notifications,
 };

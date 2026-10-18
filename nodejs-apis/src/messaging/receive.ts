@@ -1,10 +1,14 @@
-import subscribers from './subscribers';
+import { getAllSubscribers } from './subscribers';
 import Aedes from 'aedes';
 import net from 'net';
 import mqtt from 'mqtt';
 import { log } from '../manager/services/activities';
+import { MqttSubscriber } from '../types';
 
 export let mqttClient = null;
+
+// Resolved at MQTT connect (after all provider modules are evaluated).
+let subscribers: Record<string, MqttSubscriber> = {};
 
 export function setupMqttServer() {
     const aedes = new Aedes();
@@ -18,6 +22,7 @@ export function setupMqttServer() {
     mqttClient = mqtt.connect(`mqtt://localhost:` + mqttPort);
     mqttClient.on('connect', () => {
         console.log('[MQTT] client connected to broker');
+        subscribers = getAllSubscribers();
         Object.keys(subscribers).forEach((s) => {
             mqttClient.subscribe(s);
             console.log(`[MQTT] subscribe to ${s}`);

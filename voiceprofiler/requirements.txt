@@ -1,0 +1,7 @@
+wyoming==1.5.0
+sherpa-onnx>=1.10.0
+numpy
+fastapi
+uvicorn
+soundfile
+python-multipart

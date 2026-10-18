@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 export const RoutinesList = () => {
     const navigate = useNavigate();
-    const [routines, setRoutines] = useState([]);
+    const [routines, setRoutines] = useState(/** @type {any[]} */ ([]));
 
     useEffect(() => {
         (async () => {
@@ -56,12 +56,22 @@ export const RoutinesList = () => {
                 alignItems="center"
                 mb={3}
             >
-                <Typography variant="h5" fontWeight="900" color="black">
+                <Typography variant="h4" fontWeight={700}>
                     Routines
                 </Typography>
-                <Typography variant="body2" color="primary" fontWeight="bold">
+                <Box
+                    sx={{
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: 99,
+                        bgcolor: 'rgba(255, 215, 0, 0.12)',
+                        color: 'primary.main',
+                        fontWeight: 700,
+                        fontSize: '0.8125rem',
+                    }}
+                >
                     {routines.filter((r) => r.active).length} actives
-                </Typography>
+                </Box>
             </Box>
 
             <Box
@@ -81,7 +91,7 @@ export const RoutinesList = () => {
                             borderStyle: 'dashed',
                         }}
                     >
-                        <Typography color="textSecondary">
+                        <Typography sx={{ color: 'text.secondary' }}>
                             Aucune routines
                         </Typography>
                     </Paper>

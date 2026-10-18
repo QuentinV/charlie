@@ -1,5 +1,14 @@
 [
     {
+        "version": "1.5",
+        "description": "Server-driven conversation mode: the server adds a 'conversation' flag to the playAudio command to tell the device whether to keep the microphone open for a follow-up turn (no wake word) until N ms of silence (config: conversationTimeoutMs). No device flag required; the server keeps one LLM session per echo connection for multi-turn memory.",
+        "devices": [
+            "echo-zero",
+            "echo-zero-screen",
+            "echo-dashbord"
+        ]
+    },
+    {
         "version": "1.4",
         "description": "Add support for multiple screens & temperature sensor with 'Echo dasboard' + JSON text commands",
         "devices": [

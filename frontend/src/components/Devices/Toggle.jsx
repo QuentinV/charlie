@@ -9,7 +9,10 @@ export const DeviceToggle = ({
     type,
     power,
     level,
+    unit,
     onStateChange,
+    compact = false,
+    disabled = false,
 }) => {
     const [loading, setLoading] = useState(false);
 
@@ -25,15 +28,39 @@ export const DeviceToggle = ({
         setLoading(false);
     };
 
+    // `level` is the device's canonical numeric value (see the backend's
+    // `LEVEL_SOURCES`): a percentage for most domains, the ambient temperature
+    // for a thermostat — whose schema unit is °C.
+    const levelUnit = type === DeviceType.thermostat ? '°C' : (unit ?? '');
+
+    // A reading (a sensor measurement, a thermostat's ambient temperature) has
+    // no on/off colour: red would read as a fault.
+    const levelColor =
+        type === DeviceType.sensor || type === DeviceType.thermostat
+            ? 'text.primary'
+            : power === 'on'
+              ? 'primary.main'
+              : 'error.main';
+
     const renderLevel = () => (
-        <Typography sx={{ color: power === 'on' ? 'yellow' : 'red' }}>
-            {level ?? power}
+        <Typography
+            variant={compact ? 'caption' : 'body2'}
+            sx={{
+                color: levelColor,
+                fontWeight: 600,
+            }}
+        >
+            {level != null ? `${level} ${levelUnit}`.trim() : power}
         </Typography>
     );
 
     const render = () => {
         if (type === DeviceType.sensor) {
-            return <Box sx={{ marginRight: '20px' }}>{renderLevel()}</Box>;
+            return (
+                <Box sx={{ marginRight: compact ? '12px' : '20px' }}>
+                    {renderLevel()}
+                </Box>
+            );
         }
 
         if (type === DeviceType.button) {
@@ -43,7 +70,12 @@ export const DeviceToggle = ({
                     size="small"
                     variant="contained"
                     onClick={toggleState}
-                    loading={loading}
+                    loading={loading || disabled}
+                    disabled={disabled}
+                    sx={{
+                        px: compact ? 1.5 : 2,
+                        py: compact ? 0.5 : 1,
+                    }}
                 >
                     Toggle
                 </Button>
@@ -57,7 +89,8 @@ export const DeviceToggle = ({
                     checked={power === 'on'}
                     onChange={toggleState}
                     color="primary"
-                    disabled={loading}
+                    disabled={loading || disabled}
+                    size={compact ? 'small' : 'medium'}
                 />
             </>
         );
@@ -65,6 +98,7 @@ export const DeviceToggle = ({
 
     return (
         <Box
+            onClick={(e) => e.stopPropagation()}
             sx={{
                 display: 'flex',
                 alignItems: 'center',

@@ -168,18 +168,39 @@ void ESP32HomeAssistant::_setupTempSensor() {
     Serial.println("AHT10 initialized successfully.");
 }
 
+bool ESP32HomeAssistant::_isMicMuted() {
+    return this->mute || this->ttsStreaming;
+}
+
+void ESP32HomeAssistant::_resetInferenceBuffer() {
+    size_t bytes = this->inference.n_samples * sizeof(int16_t);
+    if (this->inference.buffer != NULL) memset(this->inference.buffer, 0, bytes);
+    if (this->inference_window != NULL) memset(this->inference_window, 0, bytes);
+    this->inference.buf_count = 0;
+}
+
 void ESP32HomeAssistant::_playBufferedAudio() {
+    this->ttsStreaming = false;
+
     if (this->totalPlaybackSamples == 0 || this->playbackBuffer == NULL) return;
 
     size_t bytes_to_write = this->totalPlaybackSamples * sizeof(int16_t);
     size_t bytes_written = 0;
 
+    this->mute = true;
     i2s_write(this->_cfg.I2S_SPK_PORT, (const char*)this->playbackBuffer, bytes_to_write, &bytes_written, portMAX_DELAY);
 
+    // i2s_write returns once the bytes are queued, the DAC / room tail is still audible.
+    vTaskDelay(pdMS_TO_TICKS(this->_cfg.ttsMuteTailMs));
+
     this->totalPlaybackSamples = 0;
+    this->mute = false;
 }
 
 void ESP32HomeAssistant::_handleIncomingAudio(uint8_t *payload, size_t length) {
+    // TTS audio is on its way: never feed the speaker output back into the mic.
+    this->ttsStreaming = true;
+
     size_t samplesInPayload = length / 2;
     if (this->totalPlaybackSamples + samplesInPayload > MAX_SAMPLES_PLAYBACK) {
         Serial.println("Buffer full!");
@@ -203,6 +224,7 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
     switch(type) {
         case WStype_DISCONNECTED:
             this->isWsConnected = false;
+            this->ttsStreaming = false;
             break;
         case WStype_CONNECTED:
             this->isWsConnected = true;
@@ -219,6 +241,8 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
 
                 String command = doc["c"];
                 if (command == "playAudio") {
+                    this->expectFollowUp = doc["conversation"] | false;
+                    this->followUpTimeoutMs = doc["timeout"] | this->_cfg.conversationTimeoutMs;
                     this->_playBufferedAudio();
                     this->setLed(0, 0, 0);
                 } else if (command == "setWakeUpWordAccuracy") {
@@ -359,6 +383,7 @@ void ESP32HomeAssistant::_sendAudioWS() {
     }
 
     this->setLed(128, 0, 128);
+    this->expectFollowUp = false;
     this->webSocket.sendTXT("start");
     
     size_t samples_sent = 0;
@@ -403,6 +428,12 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
     silenceStart = 0;
     time_t startTime = 0;
     bool recordMode = false;
+    unsigned long followUpWaitStart = 0;
+
+    // Microphone ducking while the assistant is speaking
+    bool micMuted = false;
+    bool micWarmupDone = true;
+    size_t micWarmupSamples = 0;
 
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(2));
@@ -419,6 +450,31 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
             continue;
         }
 
+        if (this->_isMicMuted()) {
+            if (!micMuted) {
+                micMuted = true;
+                recordMode = false;
+                silenceStart = 0;
+                followUpWaitStart = 0;
+                startTime = 0;
+                samples_since_last_inference = 0;
+                this->totalRecordedSamples = 0;
+                this->_resetInferenceBuffer();
+            }
+            continue;
+        }
+
+        if (micMuted) {
+            // Speaker is quiet again: resume from a clean slate.
+            micMuted = false;
+            micWarmupDone = false;
+            micWarmupSamples = 0;
+            silenceStart = 0;
+            followUpWaitStart = 0;
+            samples_since_last_inference = 0;
+            this->_resetInferenceBuffer();
+        }
+
         size_t frames_read = capture_bytes_read / sizeof(int32_t);
         for (size_t i = 0; i < frames_read; i++) {
             // Convert 32‑bit I2S to 16‑bit PCM && apply gain
@@ -430,8 +486,7 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                 if (this->totalRecordedSamples < MAX_SAMPLES) {
                     this->bufferCaptureAudio[this->totalRecordedSamples++] = capture_pcm16[i];
                 }
-            } else {
-                // Push to circular buffer (inference.buffer should be size 16000)
+            } else if (!this->expectFollowUp) {
                 this->inference.buffer[this->inference.buf_count] = capture_pcm16[i];
                 this->inference.buf_count = (this->inference.buf_count + 1) % window;
             }
@@ -448,7 +503,7 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                 memset(this->inference.buffer, 0, window * sizeof(int16_t));
                 this->inference.buf_count = 0;
                 samples_since_last_inference = 0;
-                
+
                 continue;
             }
 
@@ -473,13 +528,51 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
                     memset(this->inference.buffer, 0, window * sizeof(int16_t));
                     this->inference.buf_count = 0;
                     samples_since_last_inference = 0;
-                    
+
                     continue;
                 }
             } else {
                 silenceStart = 0;
             }
+        } else if (this->expectFollowUp) {
+            // ===== Follow-up (no wake word): wait for the user to speak =====
+            if (followUpWaitStart == 0) {
+                followUpWaitStart = millis();
+                this->setLed(255, 255, 255);
+                this->_drawListeningScreen();
+            }
+
+            int64_t sumsq = 0;
+            for (size_t i = 0; i < frames_read; i++) {
+                int32_t s = capture_pcm16[i];
+                sumsq += (int64_t)s * s;
+            }
+            int rms = sqrt((double)sumsq / frames_read);
+
+            if (rms >= MIC_THRESHOLD_SOUND) {
+                // Speech detected: record the follow-up utterance.
+                this->expectFollowUp = false;
+                followUpWaitStart = 0;
+                recordMode = true;
+                silenceStart = 0;
+                startTime = time(NULL);
+            } else if (millis() - followUpWaitStart > this->followUpTimeoutMs) {
+                // No follow-up: close the window and resume wake word.
+                Serial.println("Conversation timeout, back to wake word.");
+                this->expectFollowUp = false;
+                followUpWaitStart = 0;
+                this->setLed(0, 0, 0);
+            }
         } else {
+            followUpWaitStart = 0;
+
+            // Require a full, clean window before classifying again after TTS.
+            if (!micWarmupDone) {
+                micWarmupSamples += frames_read;
+                if (micWarmupSamples < window) continue;
+                micWarmupDone = true;
+            }
+
             samples_since_last_inference += frames_read;
 
             // Only run AI every 'hop' (200ms), but use the full 1s 'window'

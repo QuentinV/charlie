@@ -21,41 +21,43 @@ All settings are defined through the `HAConfig` struct. Create an instance, set 
 
 ### `HAConfig` fields
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `apName` | `const char*` | `"HomeAssistantEcho"` | WiFi AP SSID for the configuration portal |
-| `apPassword` | `const char*` | `"HomeAssistantEcho123"` | WiFi AP password for the configuration portal |
-| `deviceType` | `const char*` | `"echo-zero"` | Device type identifier sent to the server (used for OTA firmware lookup) |
-| `WAKE_UP_WORD_ACCURACY` | `float` | `0.8f` | Minimum classification confidence threshold (0.0 – 1.0) to trigger recording |
-| `overwriteServerip` | `String` | empty | Override the saved server IP (avoids the need for the WiFi manager portal) |
-| `neoPixelPin` | `uint8_t` | `GPIO_NUM_48` | NeoPixel data pin |
-| `neoPixelCount` | `uint8_t` | `1` | Number of NeoPixels in the chain |
-| `neoPixelBright` | `uint8_t` | `50` | NeoPixel brightness (0 – 255) |
-| `I2S_MIC_PORT` | `i2s_port_t` | `I2S_NUM_0` | I2S peripheral number for the microphone |
-| `I2S_MIC_WS` | `gpio_num_t` | `GPIO_NUM_17` | Microphone WS (word select / LRCLK) pin |
-| `I2S_MIC_SD` | `gpio_num_t` | `GPIO_NUM_18` | Microphone SD (serial data) pin |
-| `I2S_MIC_SCK` | `gpio_num_t` | `GPIO_NUM_16` | Microphone SCK (bit clock) pin |
-| `I2S_SPK_PORT` | `i2s_port_t` | `I2S_NUM_1` | I2S peripheral number for the speaker |
-| `I2S_SPK_LRC` | `gpio_num_t` | `GPIO_NUM_7` | Speaker LRC (left/right clock) pin |
-| `I2S_SPK_BCLK` | `gpio_num_t` | `GPIO_NUM_6` | Speaker BCLK (bit clock) pin |
-| `I2S_SPK_DIN` | `gpio_num_t` | `GPIO_NUM_5` | Speaker DIN (data) pin |
-| `displays` | `std::vector<I2CScreen>` | empty | List of OLED displays (see [`I2CScreen`](#i2cscreen-struct)) |
-| `OLED_SDA` | `gpio_num_t` | `GPIO_NUM_17` | I2C SDA pin for the OLED displays (used when `displays` is non‑empty) |
-| `OLED_SCL` | `gpio_num_t` | `GPIO_NUM_18` | I2C SCL pin for the OLED displays |
-| `TEMP_SDA` | `gpio_num_t` | `GPIO_NUM_41` | I2C SDA pin for the temperature sensor |
-| `TEMP_SCL` | `gpio_num_t` | `GPIO_NUM_42` | I2C SCL pin for the temperature sensor |
-| `feedbackScreenEnabled` | `bool` | `false` | Show server text feedback and listening animation on the first display |
-| `tempSensorEnabled` | `bool` | `false` | Enable the AHT10/AHT20 temperature/humidity sensor |
+| Field                   | Type                     | Default                  | Description                                                                                                                          |
+| ----------------------- | ------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `apName`                | `const char*`            | `"HomeAssistantEcho"`    | WiFi AP SSID for the configuration portal                                                                                            |
+| `apPassword`            | `const char*`            | `"HomeAssistantEcho123"` | WiFi AP password for the configuration portal                                                                                        |
+| `deviceType`            | `const char*`            | `"echo-zero"`            | Device type identifier sent to the server (used for OTA firmware lookup)                                                             |
+| `WAKE_UP_WORD_ACCURACY` | `float`                  | `0.8f`                   | Minimum classification confidence threshold (0.0 – 1.0) to trigger recording                                                         |
+| `overwriteServerip`     | `String`                 | empty                    | Override the saved server IP (avoids the need for the WiFi manager portal)                                                           |
+| `neoPixelPin`           | `uint8_t`                | `GPIO_NUM_48`            | NeoPixel data pin                                                                                                                    |
+| `neoPixelCount`         | `uint8_t`                | `1`                      | Number of NeoPixels in the chain                                                                                                     |
+| `neoPixelBright`        | `uint8_t`                | `50`                     | NeoPixel brightness (0 – 255)                                                                                                        |
+| `I2S_MIC_PORT`          | `i2s_port_t`             | `I2S_NUM_0`              | I2S peripheral number for the microphone                                                                                             |
+| `I2S_MIC_WS`            | `gpio_num_t`             | `GPIO_NUM_17`            | Microphone WS (word select / LRCLK) pin                                                                                              |
+| `I2S_MIC_SD`            | `gpio_num_t`             | `GPIO_NUM_18`            | Microphone SD (serial data) pin                                                                                                      |
+| `I2S_MIC_SCK`           | `gpio_num_t`             | `GPIO_NUM_16`            | Microphone SCK (bit clock) pin                                                                                                       |
+| `I2S_SPK_PORT`          | `i2s_port_t`             | `I2S_NUM_1`              | I2S peripheral number for the speaker                                                                                                |
+| `I2S_SPK_LRC`           | `gpio_num_t`             | `GPIO_NUM_7`             | Speaker LRC (left/right clock) pin                                                                                                   |
+| `I2S_SPK_BCLK`          | `gpio_num_t`             | `GPIO_NUM_6`             | Speaker BCLK (bit clock) pin                                                                                                         |
+| `I2S_SPK_DIN`           | `gpio_num_t`             | `GPIO_NUM_5`             | Speaker DIN (data) pin                                                                                                               |
+| `displays`              | `std::vector<I2CScreen>` | empty                    | List of OLED displays (see [`I2CScreen`](#i2cscreen-struct))                                                                         |
+| `OLED_SDA`              | `gpio_num_t`             | `GPIO_NUM_17`            | I2C SDA pin for the OLED displays (used when `displays` is non‑empty)                                                                |
+| `OLED_SCL`              | `gpio_num_t`             | `GPIO_NUM_18`            | I2C SCL pin for the OLED displays                                                                                                    |
+| `TEMP_SDA`              | `gpio_num_t`             | `GPIO_NUM_41`            | I2C SDA pin for the temperature sensor                                                                                               |
+| `TEMP_SCL`              | `gpio_num_t`             | `GPIO_NUM_42`            | I2C SCL pin for the temperature sensor                                                                                               |
+| `feedbackScreenEnabled` | `bool`                   | `false`                  | Show server text feedback and listening animation on the first display                                                               |
+| `tempSensorEnabled`     | `bool`                   | `false`                  | Enable the AHT10/AHT20 temperature/humidity sensor                                                                                   |
+| `conversationTimeoutMs` | `uint32_t`               | `10000`                  | How long the device waits for the user to start a follow-up before returning to wake-word detection. Follow-ups are enabled by the server per turn. |
+| `ttsMuteTailMs`         | `uint32_t`               | `300`                    | How long the microphone stays cut after a TTS reply finished playing (covers the I2S/DAC and room tail). |
 
 ### `I2CScreen` struct
 
 Defines a single OLED display connected through the I2C bus (optionally via a TCA9548A multiplexer).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `w` | `uint8_t` | Display width in pixels (e.g. 128) |
-| `h` | `uint8_t` | Display height in pixels (e.g. 32, 64) |
-| `r` | `uint8_t` | Rotation in degrees (e.g. 0, 90) |
+| Field     | Type      | Description                                                                        |
+| --------- | --------- | ---------------------------------------------------------------------------------- |
+| `w`       | `uint8_t` | Display width in pixels (e.g. 128)                                                 |
+| `h`       | `uint8_t` | Display height in pixels (e.g. 32, 64)                                             |
+| `r`       | `uint8_t` | Rotation in degrees (e.g. 0, 90)                                                   |
 | `channel` | `uint8_t` | TCA9548A multiplexer channel (0 – 7). Ignored when only one display is configured. |
 
 ### Basic usage (single display, zero‑screen variant)
@@ -170,28 +172,57 @@ Prints a memory usage report (internal free / min free, PSRAM free, task stack h
 
 The device connects to `ws://{serverIp}:9303/ws/echo` and communicates using JSON commands. The server sends the following commands:
 
-| Command | Payload | Description |
-|---------|---------|-------------|
-| `playAudio` | — | Play the previously received audio buffer |
-| `setWakeUpWordAccuracy` | `{ "v": <float> }` | Adjust wake word sensitivity |
-| `setServerIp` | `{ "v": "<ip>" }` | Change the Charlie server IP and reboot |
-| `OTA` | — | Trigger over‑the‑air firmware update from the server |
-| `feedback` | `{ "v": "<text>" }` | Show text on the feedback display |
-| `updateDisplays` | `{ "v": [ { "k": <idx>, "texts": [...] } ] }` | Update individual screen contents |
+| Command                 | Payload                                       | Description                                          |
+| ----------------------- | --------------------------------------------- | ---------------------------------------------------- |
+| `playAudio`             | `{ "conversation": <bool> }`                  | Play the buffered audio; `conversation` asks the device to keep listening for a follow-up |
+| `setWakeUpWordAccuracy` | `{ "v": <float> }`                            | Adjust wake word sensitivity                         |
+| `setServerIp`           | `{ "v": "<ip>" }`                             | Change the Charlie server IP and reboot              |
+| `OTA`                   | —                                             | Trigger over‑the‑air firmware update from the server |
+| `feedback`              | `{ "v": "<text>" }`                           | Show text on the feedback display                    |
+| `updateDisplays`        | `{ "v": [ { "k": <idx>, "texts": [...] } ] }` | Update individual screen contents                    |
 
 The device sends:
+
 - `"start"` (text) – begins an audio upload
 - Binary audio data – 16‑bit PCM samples at the model's sampling rate
 - `"end"` (text) – signals the end of the audio upload
+
+## Conversation mode
+
+Conversation mode is **driven by the server** – there is no device flag. Each turn, the server appends a `conversation` boolean to the `playAudio` command:
+
+```json
+{ "c": "playAudio", "conversation": true }   // keep the microphone open
+{ "c": "playAudio", "conversation": false }  // return to wake‑word mode
+```
+
+1. The wake word ("charlie") is detected locally and the utterance is recorded and sent; the device then goes back to wake‑word detection.
+2. The assistant's reply is received and played back. When playback finishes, the device checks the `conversation` flag.
+3. If the server asked for a follow‑up, the device re‑opens the microphone (LED white) **without requiring the wake word again**.
+4. If the user starts speaking, the follow‑up utterance is recorded and sent, and the cycle repeats with the server deciding again whether to continue.
+5. If no speech is detected within `conversationTimeoutMs`, the window closes (LED off) and the device returns to wake‑word detection.
+
+The Charlie server sets the flag from the assistant's answer: when the reply is a question (ends with `?`), it keeps the conversation open – this also covers the voice‑profile registration prompts. It also keeps one LLM session per connection, so follow‑ups have memory across turns.
+
+## Microphone muting during playback
+
+The microphone would otherwise pick up the speaker and feed the assistant's own voice back into the wake‑word detector (and into the follow‑up detection), which makes the device talk to itself in an endless loop. To prevent this the microphone is **cut for the whole TTS turn**:
+
+1. On the first audio chunk of a reply (`WStype_BIN`) the microphone is muted – samples are still read from I2S so the DMA never overflows, but they are discarded.
+2. Playback keeps the mute engaged until `i2s_write()` returned **and** `ttsMuteTailMs` has elapsed, so the DAC and the acoustic tail are covered too.
+3. When the mute is released the inference buffers are zeroed and a full clean 1 s window is captured before wake‑word detection runs again; the conversation timeout restarts at that point as well.
+4. A dropped WebSocket resets the mute, so the microphone can never stay cut after a failed stream.
+
+Muting is entirely software based – the I2S RX driver keeps running, which keeps the DMA drained and avoids stopping a driver that another task is blocking on. The LED stays purple while a reply is received / played.
 
 ## Persisted settings (Preferences)
 
 The library stores the following values in NVS namespace `config`:
 
-| Key | Type | Description |
-|-----|------|-------------|
-| `serverIp` | String | Charlie server IP address (set via the WiFi portal or the `setServerIp` command) |
-| `wordAccuracy` | float | Wake word accuracy threshold (set via the `setWakeUpWordAccuracy` command) |
+| Key            | Type   | Description                                                                      |
+| -------------- | ------ | -------------------------------------------------------------------------------- |
+| `serverIp`     | String | Charlie server IP address (set via the WiFi portal or the `setServerIp` command) |
+| `wordAccuracy` | float  | Wake word accuracy threshold (set via the `setWakeUpWordAccuracy` command)       |
 
 ## Startup behaviour
 
@@ -208,12 +239,12 @@ The library stores the following values in NVS namespace `config`:
 
 ## LED status colours
 
-| Colour | Meaning |
-|--------|---------|
-| Green | Booting |
-| Blue | Ready, waiting for WebSocket connection |
-| Red | Not connected to WebSocket |
-| Purple (flash) | Sending audio / playing audio |
-| White | Wake word detected, recording audio |
-| Cyan | OTA update in progress |
-| Off | Idle (no activity) |
+| Colour         | Meaning                                 |
+| -------------- | --------------------------------------- |
+| Green          | Booting                                 |
+| Blue           | Ready, waiting for WebSocket connection |
+| Red            | Not connected to WebSocket              |
+| Purple (flash) | Sending audio / receiving or playing a TTS reply (microphone muted) |
+| White          | Wake word detected, recording audio     |
+| Cyan           | OTA update in progress                  |
+| Off            | Idle (no activity)                      |

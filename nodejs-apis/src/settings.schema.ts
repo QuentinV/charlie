@@ -44,6 +44,26 @@ const schema: JSONSchema7 = {
             title: 'Enable discovery of devices',
             tags: ['Devices', 'Experimental'],
         },
+        'devices.providers.homeassistant.enabled': {
+            type: 'boolean',
+            title: 'Enable Home Assistant provider (background device layer)',
+            tags: ['Devices', 'restart'],
+        },
+        'devices.providers.homeassistant.history': {
+            type: 'boolean',
+            title: 'Log Home Assistant device state history',
+            tags: ['Devices'],
+        },
+        'devices.providers.homeassistant.community.enabled': {
+            type: 'boolean',
+            title: 'Enable Home Assistant community integrations (HACS-compatible)',
+            tags: ['Devices', 'Experimental'],
+        },
+        'devices.providers.homeassistant.community.githubToken': {
+            type: 'string',
+            title: 'GitHub token used to browse community integrations (optional)',
+            tags: ['Devices', 'Experimental'],
+        },
         'musics.show': {
             type: 'boolean',
             title: 'Enable music assistant iframe',
@@ -73,6 +93,36 @@ const schema: JSONSchema7 = {
             type: 'boolean',
             title: 'Enable AI chat',
             tags: ['AI', 'Experimental'],
+        },
+        'weather.latitude': {
+            type: 'number',
+            title: 'Home latitude used for weather questions',
+            tags: ['Weather'],
+        },
+        'weather.longitude': {
+            type: 'number',
+            title: 'Home longitude used for weather questions',
+            tags: ['Weather'],
+        },
+        'memory.maxFacts': {
+            type: 'number',
+            title: 'Maximum number of facts kept per user',
+            tags: ['AI', 'Memory'],
+        },
+        'memory.maxTopics': {
+            type: 'number',
+            title: 'Maximum number of topics kept per user',
+            tags: ['AI', 'Memory'],
+        },
+        'memory.promptMaxChars': {
+            type: 'number',
+            title: 'Maximum characters of memory injected in the LLM prompt',
+            tags: ['AI', 'Memory'],
+        },
+        'memory.contextTtlMs': {
+            type: 'number',
+            title: 'Conversation context time-to-live (ms)',
+            tags: ['AI', 'Memory'],
         },
     },
 };

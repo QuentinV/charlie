@@ -1,15 +1,56 @@
 {
     "brightness": {},
+    "confirm": {
+        "response": "Très bien."
+    },
+    "deny": {
+        "response": "D'accord, on laisse tomber."
+    },
     "devices": {},
+    "goodbye": {
+        "response": "Au revoir, à bientôt !"
+    },
     "greet": {
-        "response": "Salut, comment tu vas aujourd'hui ?"
+        "response": "Salut, comment tu vas aujourd'hui ?",
+        "again": "Salut !"
     },
     "group": {},
+    "howAreYou": {
+        "response": "Ça va bien, merci. Et toi ?",
+        "again": "Ça va bien, merci !"
+    },
     "music": {},
+    "memory": {
+        "remembered": "D'accord, je m'en souviendrai.",
+        "forgotten": "C'est oublié."
+    },
+    "profile": {
+        "askName": "Très bien. Quel est ton nom ?",
+        "askNameAgain": "Je n'ai pas bien compris ton nom. Comment t'appelles-tu ?",
+        "firstSentence": "Merci %{name}. On va enregistrer ta voix. Répète cette phrase : %{sentence}",
+        "nextSentence": "Parfait. Répète cette phrase : %{sentence}",
+        "lastSentence": "Merci. Dernière phrase, celle qui me permet de vérifier ta voix : %{sentence}",
+        "extraSentence": "Merci. Pour être plus sûr, répète encore : %{sentence}",
+        "notHeard": "Je n'ai pas bien entendu. Répète la même phrase : %{sentence}",
+        "enrolled": "C'est fait, %{name}. Ton profil vocal est enregistré.",
+        "notConfirmed": "Je n'ai pas réussi à confirmer ta voix. Ton profil n'a pas été modifié. Réessaie en disant : configure mon profil.",
+        "serviceDown": "Je n'ai pas pu joindre le service de reconnaissance vocale. Réessaie plus tard.",
+        "aborted": "D'accord, j'annule l'enregistrement du profil vocal."
+    },
     "temperature": {},
+    "thanks": {
+        "response": "Avec plaisir."
+    },
     "timer": {},
     "volume": {},
     "weather": {
-        "answer": "A %{town} en %{country} il fait actuellement %{temp} degrée. Avec %{rain}mm de pluie et %{windspeed} km/s de vent."
+        "answer": "Il fait actuellement %{temp}°C, avec %{rain} mm de pluie et %{windspeed} km/h de vent."
+    },
+    "whoAmI": {
+        "response": "Tu es %{name}.",
+        "unknown": "Je ne te reconnais pas encore. Dis « configure mon profil » pour enregistrer ta voix."
+    },
+    "whoAreYou": {
+        "response": "Je suis Charlie, ton assistant de maison."
     }
 }

@@ -1,4 +1,8 @@
-FROM ghcr.io/ggml-org/llama.cpp:server
+# Base image is parameterizable so a single Dockerfile serves both CPU and GPU:
+#   CPU (default): ghcr.io/ggml-org/llama.cpp:server
+#   GPU (CUDA)   : ghcr.io/ggml-org/llama.cpp:server-cuda
+ARG LLAMA_BASE=ghcr.io/ggml-org/llama.cpp:server
+FROM ${LLAMA_BASE}
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
 

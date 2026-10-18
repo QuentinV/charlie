@@ -2,6 +2,7 @@ import { cs } from '../core/db';
 import { NotFoundError } from '../errors';
 import {
     Device,
+    DeviceCapabilities,
     DeviceState,
     Provider,
     ProviderApi,
@@ -17,7 +18,7 @@ import defaultProviders from './providers';
 
 type ProvidersApisByName = { [name: string]: ProvidersApis };
 
-type ProvidersDevicesApis = {
+export type ProvidersDevicesApis = {
     provider: Provider;
     api: ProviderApi;
 };
@@ -68,20 +69,30 @@ export async function getProvidersTools(): Promise<Tools> {
 
 export async function getProvidersRestApis(): Promise<RestApis> {
     const pa = await providersApis();
-    return (await cs.providers.find().toArray()).reduce(
-        (prev: RestApis, p: Provider) => {
-            const def = pa[p.codesource]?.restApi;
-            if (!def) return prev;
 
-            const basePath = p.name.trim().replace(' ', '-').toLowerCase();
-            Object.entries(def).forEach(([key, api]) => {
-                prev[`${basePath}/${key}`] = api;
-            });
+    // Module-defined base paths: providers that own their REST surface get
+    // mounted regardless of whether a provider row exists yet (e.g.
+    // Home Assistant → restApiBasePath 'ha' → /api/ha/integrations).
+    const prev: RestApis = {};
+    Object.values(pa).forEach((mod) => {
+        if (!mod?.restApiBasePath || !mod.restApi) return;
+        Object.entries(mod.restApi).forEach(([key, api]) => {
+            prev[`${mod.restApiBasePath}/${key}`] = api;
+        });
+    });
 
-            return prev;
-        },
-        {}
-    );
+    // Legacy name-based paths, per provider row (e.g. ikea/discoverGateway).
+    (await cs.providers.find().toArray()).forEach((p: Provider) => {
+        const mod = pa[p.codesource];
+        if (!mod?.restApi || mod.restApiBasePath) return;
+
+        const basePath = p.name.trim().replace(' ', '-').toLowerCase();
+        Object.entries(mod.restApi).forEach(([key, api]) => {
+            prev[`${basePath}/${key}`] = api;
+        });
+    });
+
+    return prev;
 }
 
 async function call(
@@ -121,14 +132,47 @@ async function call(
     }
 }
 
+// In-memory capabilities cache, kept until server restart
+const capabilitiesCache = new Map<string, DeviceCapabilities>();
+
+export async function getDeviceCapabilities(
+    deviceId: string
+): Promise<DeviceCapabilities | undefined> {
+    const cached = capabilitiesCache.get(deviceId);
+    if (cached) return cached;
+
+    log('devices', 'getDeviceCapabilities', { context: { deviceId } });
+
+    const capabilities = await call(
+        deviceId,
+        async ({ device, api, provider }) => {
+            if (api.getCapabilities) {
+                return api.getCapabilities({ device, provider });
+            }
+            return undefined;
+        }
+    );
+
+    if (capabilities) {
+        // Providers historically declared their property schema as
+        // `stateSchema` (Home Assistant, nanoleaf) while every consumer reads
+        // `capabilities.state` — normalize once, on the way into the cache.
+        const normalized: DeviceCapabilities = {
+            ...capabilities,
+            state: capabilities.state ?? capabilities.stateSchema,
+        };
+        capabilitiesCache.set(deviceId, normalized);
+        return normalized;
+    }
+    return capabilities;
+}
+
 export async function getProviderFunctions(
     deviceId: string
 ): Promise<ProviderFunctionDef[]> {
     log('devices', 'getProviderFunctions', { context: { deviceId } });
-    return call(deviceId, ({ device, api, provider }) => {
-        if (!api.getFunctions) throw new NotFoundError();
-        return api.getFunctions({ device, provider });
-    });
+    const capabilities = await getDeviceCapabilities(deviceId);
+    return capabilities?.functions ?? [];
 }
 
 export async function changeDeviceState(
