@@ -469,7 +469,17 @@ async function haChangeDeviceState(
             );
             return true;
 
-        case 'cover':
+        case 'cover': {
+            if (power === 'pause') {
+                // HA's cover has no `paused` state: STOP halts the motion where it
+                // is. The state we return is the one read BEFORE the call, because
+                // a cover reports `opening` / `closing` while moving and a lagging
+                // read-back must not make the panel believe it moved.
+                const before = await haGetState(entityId).catch(() => null);
+                await haCallService('cover', 'stop_cover', data);
+                return before ? haStateToDeviceState(before) : true;
+            }
+
             if (params?.level != null) {
                 await haCallService('cover', 'set_cover_position', {
                     ...data,
@@ -483,6 +493,7 @@ async function haChangeDeviceState(
                 );
             }
             return true;
+        }
 
         case 'fan':
             if (params?.level != null) {

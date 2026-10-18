@@ -796,6 +796,65 @@ describe('homeassistant climate writes (write-through)', () => {
     });
 });
 
+describe('homeassistant cover writes (pause = stop)', () => {
+    /** A shutter the gateway reports as open, part-way (OPEN|CLOSE|SET_POSITION|STOP). */
+    const coverEntity = {
+        entity_id: 'cover.salon',
+        state: 'open',
+        attributes: {
+            current_position: 40,
+            device_class: 'shutter',
+            supported_features: 1 | 2 | 4 | 8,
+        },
+    };
+
+    test('pause stops the cover where it is', async () => {
+        getState.mockResolvedValueOnce(coverEntity);
+        callService.mockClear();
+
+        const res = (await apis.api.changeDeviceState!(
+            { device: { externalId: 'cover.salon' } } as any,
+            { power: 'pause' }
+        )) as any;
+
+        expect(callService).toHaveBeenCalledTimes(1);
+        expect(callService).toHaveBeenCalledWith('cover', 'stop_cover', {
+            entity_id: 'cover.salon',
+        });
+        // The state read before the stop is returned: the shutter keeps the
+        // position it reached, and `pause` is never persisted as its power.
+        expect(res.power).toBe('on');
+        expect(res.level).toBe(40);
+    });
+
+    test('open / close / position keep their own services', async () => {
+        callService.mockClear();
+
+        await apis.api.changeDeviceState!(
+            { device: { externalId: 'cover.salon' } } as any,
+            { power: 'on' }
+        );
+        await apis.api.changeDeviceState!(
+            { device: { externalId: 'cover.salon' } } as any,
+            { power: 'off' }
+        );
+        await apis.api.changeDeviceState!(
+            { device: { externalId: 'cover.salon' } } as any,
+            { level: 40 }
+        );
+
+        expect(
+            callService.mock.calls.map(
+                ([domain, service]) => `${domain}.${service}`
+            )
+        ).toEqual([
+            'cover.open_cover',
+            'cover.close_cover',
+            'cover.set_cover_position',
+        ]);
+    });
+});
+
 describe('homeassistant property writes', () => {
     beforeEach(() => callService.mockClear());
 
