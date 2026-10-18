@@ -14,7 +14,8 @@ const apis: ProvidersApis = {
                     qos: 0,
                 }
             );
-            return state;
+
+            return state.power === 'pause' ? 'off' : state;
         },
     },
 };

@@ -12,21 +12,20 @@ import { SECTION_LABEL, TYPE_COLORS } from './typeStyles';
  * Default `shutter` control panel: open / stop / close buttons + position
  * readout (level, 0=closed → 100=open).
  *
- * Every button speaks the canonical `DeviceState`: open/close are `power`
- * `on` / `off`, stop is `power: 'pause'` — the provider routes each one to its
- * gateway's own service (HA's `open_cover` / `close_cover` / `stop_cover`) and
- * returns a state, so the panel updates immediately. A gateway that advertises
- * no stop service gets the position re-asserted instead (weak, but the button
- * stays useful). `level` only renders when the gateway proves it
- * (`SET_POSITION` or a reported position).
+ * Every button speaks the canonical `DeviceState` — open/close are `power`
+ * `on` / `off`, stop is `power: 'pause'` — whatever the provider. Each provider
+ * routes it to its own gateway (HA's `open_cover` / `close_cover` /
+ * `stop_cover`, a Node-RED flow's On/Off/Pause outputs…) and reports the state
+ * back. The stop call deliberately paints nothing: `pause` is a command, not a
+ * state, so a provider echoing it must not make the panel show the shutter as
+ * closed. `level` only renders when the gateway proves it (`SET_POSITION` or a
+ * reported position).
  */
 export const ShutterControls = ({ device, onStateChange, capabilities }) => {
     const state = device?.state ?? {};
     const power = state?.power === 'on';
     const position = state?.level ?? (power ? 100 : 0);
 
-    const functions = capabilities?.functions ?? [];
-    const hasStop = functions.some((fn) => fn.name === 'cover.stop_cover');
     const hasLevel = (capabilities?.state ?? []).some(
         (field) => field.key === 'level'
     );
@@ -43,16 +42,9 @@ export const ShutterControls = ({ device, onStateChange, capabilities }) => {
             hasLevel ? { power: 'off', level: 0 } : { power: 'off' },
             onStateChange
         );
-    const stop = () =>
-        hasStop
-            ? // Canonical stop: the provider maps `pause` to the gateway's own
-              // stop service (HA: `cover.stop_cover`).
-              updateState(device, { power: 'pause' }, onStateChange)
-            : hasLevel
-              ? // Fallback for a gateway without the service: re-assert the
-                // current position to halt any movement.
-                updateState(device, { level: position }, onStateChange)
-              : undefined;
+    // Canonical stop for every provider. No `onStateChange`: `pause` is a
+    // command, and a provider echoing it must not repaint the shutter as closed.
+    const stop = () => updateState(device, { power: 'pause' });
 
     return (
         <TypePanel

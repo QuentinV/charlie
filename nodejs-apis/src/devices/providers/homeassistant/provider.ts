@@ -25,6 +25,7 @@ import {
     LEVEL_STATE_DOMAINS,
     MODE_DOMAINS,
     POWER_FALLBACK_DOMAINS,
+    SUPPORTED_FEATURES,
     propertiesFor,
     siblingDomainsFor,
 } from './domains';
@@ -476,7 +477,31 @@ async function haChangeDeviceState(
                 // a cover reports `opening` / `closing` while moving and a lagging
                 // read-back must not make the panel believe it moved.
                 const before = await haGetState(entityId).catch(() => null);
-                await haCallService('cover', 'stop_cover', data);
+                const registry = await haGetRegistryEntry(entityId).catch(
+                    () => undefined
+                );
+                // Only an entity advertising STOP owns `stop_cover`; missing
+                // metadata keeps the fail-open rule (never hide a capability we
+                // cannot judge).
+                const canStop =
+                    registry?.supported_features == null ||
+                    (registry.supported_features &
+                        SUPPORTED_FEATURES['cover.CoverEntityFeature.STOP']) !==
+                        0;
+
+                if (canStop) {
+                    await haCallService('cover', 'stop_cover', data);
+                } else {
+                    // No STOP service: re-assert the position (weak, but better
+                    // than opening the cover). The gateway's vocabulary lives
+                    // here, never in the panel.
+                    const position = before ? haLevel(before) : undefined;
+                    if (position == null) return false;
+                    await haCallService('cover', 'set_cover_position', {
+                        ...data,
+                        position,
+                    });
+                }
                 return before ? haStateToDeviceState(before) : true;
             }
 

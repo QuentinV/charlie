@@ -827,6 +827,30 @@ describe('homeassistant cover writes (pause = stop)', () => {
         expect(res.level).toBe(40);
     });
 
+    test('a cover without the STOP feature re-asserts its position', async () => {
+        getState.mockResolvedValueOnce(coverEntity);
+        // OPEN | CLOSE only: HA would refuse `stop_cover`.
+        getRegistryEntry.mockResolvedValueOnce({
+            entity_id: 'cover.salon',
+            platform: 'demo',
+            device_id: 'device-1',
+            supported_features: 1 | 2,
+            capabilities: {},
+        });
+        callService.mockClear();
+
+        await apis.api.changeDeviceState!(
+            { device: { externalId: 'cover.salon' } } as any,
+            { power: 'pause' }
+        );
+
+        expect(callService).toHaveBeenCalledTimes(1);
+        expect(callService).toHaveBeenCalledWith('cover', 'set_cover_position', {
+            entity_id: 'cover.salon',
+            position: 40,
+        });
+    });
+
     test('open / close / position keep their own services', async () => {
         callService.mockClear();
 
