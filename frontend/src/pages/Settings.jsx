@@ -3,9 +3,10 @@ import { withTheme } from '@rjsf/core';
 import { Theme as MuiTheme } from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import { useSettings, useSettingsSchema } from '../state/settingsHooks';
-import { Box, Paper, Chip, Typography, Button } from '@mui/material';
+import { Box, Paper, Chip, Typography, Button, Divider } from '@mui/material';
 import { api } from '../api/charlie';
 import { settings } from './../state/settings';
+import { Security } from '../components/Security';
 
 const Form = withTheme(MuiTheme);
 
@@ -50,6 +51,8 @@ export default function SettingsPage() {
     return (
         <Box>
             <Paper sx={{ p: 2 }}>
+                <Security />
+                <Divider sx={{ my: 2 }} />
                 <Typography mb={2} color="green">
                     You need refresh page to reload settings. Restart tag
                     requires server restart.
