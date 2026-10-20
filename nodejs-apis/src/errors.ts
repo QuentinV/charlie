@@ -8,6 +8,13 @@ export class HttpError extends Error {
     }
 }
 
+export class UnauthorizedError extends HttpError {
+    constructor(message?: string) {
+        super(401, message);
+        this.name = 'UnauthorizedError';
+    }
+}
+
 export class ForbiddenError extends HttpError {
     constructor(message?: string) {
         super(403, message);

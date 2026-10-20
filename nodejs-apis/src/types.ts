@@ -13,11 +13,28 @@ export interface RestEndpointDescriptor {
     querySchema?: object;
 }
 
+/** Authenticated caller attached to a request by the auth gate. */
+export interface AuthPrincipal {
+    /** Account name owning the token. */
+    user: string;
+    /** Id of the token record (so a request can revoke itself). */
+    tokenId: string;
+    /** App registration name (`Web UI`, `Node-RED`…). */
+    name: string;
+    kind: 'session' | 'api';
+}
+
 export interface RestApiHandlerParams {
     query: any;
     body: any;
     params: any;
     headers: { [key: string]: string };
+    /** Express request extras used by the auth endpoints. */
+    ip?: string;
+    socket?: any;
+    method?: string;
+    /** Set by `authGate` when the request carries a valid token. */
+    user?: AuthPrincipal;
 }
 
 export type RestApiHandler = (

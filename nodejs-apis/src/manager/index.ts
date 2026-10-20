@@ -8,9 +8,11 @@ import activities from './activities';
 import settings from './settings';
 import notifications from './notifications';
 import memory from './memory';
+import auth from '../auth/api';
 
 export default {
     ...assistant,
+    ...auth,
     ...devices,
     ...rooms,
     ...activities,
