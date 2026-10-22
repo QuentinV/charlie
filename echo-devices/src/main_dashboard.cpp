@@ -30,9 +30,9 @@ void setup() {
     I2CScreen o3;
     o3.w = 128; o3.h = 64; o3.channel = 2;
     I2CScreen o4;
-    o3.w = 128; o3.h = 64; o3.channel = 3;
+    o4.w = 128; o4.h = 64; o4.channel = 3;
     I2CScreen o5;
-    o3.w = 128; o3.h = 64; o3.channel = 4;
+    o5.w = 128; o5.h = 64; o5.channel = 4;
     cfg.displays = { o1, o2, o3, o4, o5 };
 
     delay(2000);
