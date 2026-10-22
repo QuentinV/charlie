@@ -134,23 +134,46 @@ void ESP32HomeAssistant::_setupDisplays() {
 
     int size = this->_cfg.displays.size();
     for (int i = 0; i < this->_cfg.displays.size(); ++i) {
-        if (size > 1) {
-            this->_tcaSelect(this->_cfg.displays[i].channel);
-        }
-        
-        Adafruit_SSD1306* display = new Adafruit_SSD1306(this->_cfg.displays[i].w, this->_cfg.displays[i].h, &Wire1, OLED_RESET);
-        this->_displays.push_back(display);
-        if (display->begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-            display->clearDisplay();
-            display->setRotation(this->_cfg.displays[i].r);
-            display->setTextColor(SSD1306_WHITE);
-            display->setTextSize(2);            
-            display->setCursor(10, 10);          
-            display->println("Hello");
-            display->display();
+        AnyScreen screen;
+        if (this->_cfg.displays[i].tft) {
+            // TFT
+            Adafruit_ST7735* tft = new Adafruit_ST7735(this->_cfg.displays[i].cs, this->_cfg.displays[i].dc, this->_cfg.displays[i].rst);
+            SPI.begin(this->_cfg.displays[i].scl, -1, this->_cfg.displays[i].sda, this->_cfg.displays[i].cs);
+            tft->initR(INITR_BLACKTAB); 
+            tft->fillScreen(ST77XX_BLACK);
+
+            // Print a static test message
+            tft->setCursor(10, 20);
+            tft->setTextColor(ST77XX_WHITE);
+            tft->setTextSize(2);
+            tft->printf("Charlie %d", i);
+
+            Serial.printf("\nBegin tft screen %d", i);
+            screen.tft = tft;
             
-            Serial.printf("\nBegin screen %d", i);
+        } else {
+            // OLED
+            if (size > 1) {
+                this->_tcaSelect(this->_cfg.displays[i].channel);
+            }
+            
+            Adafruit_SSD1306* display = new Adafruit_SSD1306(this->_cfg.displays[i].w, this->_cfg.displays[i].h, &Wire1, OLED_RESET);
+            screen.oled = display;
+            if (display->begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+                display->clearDisplay();
+                display->setRotation(this->_cfg.displays[i].r);
+                display->setTextColor(SSD1306_WHITE);
+                display->setTextSize(2);            
+                display->setCursor(10, 10);          
+                display->printf("Charlie %d", i);
+                display->display();
+                
+                Serial.printf("\nBegin oled screen %d", i);
+            }
         }
+
+        
+        this->_displays.push_back(screen);        
     }
 }
 
@@ -307,7 +330,7 @@ int ESP32HomeAssistant::_setupMicI2S(uint32_t sampling_rate) {
     if (ret != ESP_OK) {
         ei_printf("Error in i2s_set_clk");
     }
-
+    
     ret = i2s_zero_dma_buffer(this->_cfg.I2S_MIC_PORT);
     if (ret != ESP_OK) {
         ei_printf("Error in initializing dma buffer with 0");
@@ -447,8 +470,13 @@ void ESP32HomeAssistant::_listenAndSendTask(void *arg) {
         );
 
         if (capture_err != ESP_OK || capture_bytes_read == 0) {
+            Serial.println("ERROR cannot read from mic = 0");
             continue;
         }
+
+        // Print the first 5 raw samples from the buffer
+        //ei_printf("Raw samples: %ld, %ld, %ld, %ld, %ld\n", 
+        //    capture_raw32[0], capture_raw32[1], capture_raw32[2], capture_raw32[3], capture_raw32[4]);
 
         if (this->_isMicMuted()) {
             if (!micMuted) {
@@ -642,7 +670,7 @@ void ESP32HomeAssistant::displayFeedback(String msg) {
         this->_tcaSelect(0);
     }
 
-    Adafruit_SSD1306* display = this->_displays[0];
+    Adafruit_SSD1306* display = this->_displays[0].oled;
     display->clearDisplay();
     display->setTextSize(2);
 
@@ -663,7 +691,7 @@ void ESP32HomeAssistant::_drawListeningScreen() {
         this->_tcaSelect(0);
     }
 
-    Adafruit_SSD1306* display = this->_displays[0];
+    Adafruit_SSD1306* display = this->_displays[0].oled;
     display->clearDisplay();
 
     display->drawCircle(20, 16, 10, WHITE);
@@ -678,7 +706,7 @@ void ESP32HomeAssistant::_drawListeningScreen() {
 }
 
 void ESP32HomeAssistant::_displayStatusOnScreenTask(void *arg) {
-    Adafruit_SSD1306* display = this->_displays[0];
+    Adafruit_SSD1306* display = this->_displays[0].oled;
 
     while(true) {
         time_t t = time(NULL);
@@ -733,29 +761,40 @@ void ESP32HomeAssistant::_displayStatusOnScreenTask(void *arg) {
 void ESP32HomeAssistant::_updateDisplay(int key, JsonArray texts ) {
     if (key >= this->_displays.size()) return;
     
-    this->_tcaSelect(this->_cfg.displays[key].channel);
-
-    Adafruit_SSD1306* display = this->_displays[key];
-    display->clearDisplay();
+    if (!this->_cfg.displays[key].tft) {
+        this->_tcaSelect(this->_cfg.displays[key].channel);
+    }
+    
+    if (this->_cfg.displays[key].tft) {
+        this->_displays[key].tft->fillScreen(ST77XX_BLACK);
+    } else {
+        this->_displays[key].oled->clearDisplay();
+    }
 
     for (JsonObject text : texts) {
         int ts = text["ts"] | 1;
         int cx = text["cx"] | 0;
         int cy = text["cy"] | 0;
         String t = text["v"] | "";
-        int r = text["r"] | 0;  
-        Serial.printf("ts: %d", ts);
-        Serial.printf("v: %s \n", t);
+        int r = text["r"] | 0;
 
         
-        display->setTextSize(ts);
-        display->setCursor(cx, cy);
-        display->setRotation(r);
-        display->print(t.c_str());
+        if (this->_cfg.displays[key].tft) {
+            this->_displays[key].tft->setTextSize(ts);
+            this->_displays[key].tft->setCursor(cx, cy);
+            this->_displays[key].tft->setRotation(r);
+            this->_displays[key].tft->print(t.c_str());
+        } else {
+            this->_displays[key].oled->setTextSize(ts);
+            this->_displays[key].oled->setCursor(cx, cy);
+            this->_displays[key].oled->setRotation(r);
+            this->_displays[key].oled->print(t.c_str());
+        }
     }
 
-    Serial.println("display");
-    display->display();
+    if (!this->_cfg.displays[key].tft) {
+        this->_displays[key].oled->display();
+    }
 }
 
 void ESP32HomeAssistant::reset() {
@@ -801,7 +840,7 @@ void ESP32HomeAssistant::setLed(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 void ESP32HomeAssistant::begin() {
-    delay(5000);
+    delay(2000);
 
     Serial.println("Hello");
 
@@ -824,12 +863,14 @@ void ESP32HomeAssistant::begin() {
         ei_printf("ERR: Could not allocate audio buffer (size %d), this could be due to the window length of your model\r\n", EI_CLASSIFIER_RAW_SAMPLE_COUNT);
         return;
     }  
-
+    
+    Serial.println("Setup speaker and mic");
     this->_setupSpeakerI2S();
     if (this->_setupMicI2S(EI_CLASSIFIER_FREQUENCY)) {
         ei_printf("Failed to start I2S!");
     }
 
+    Serial.println("Setup time");
     setenv("TZ", "Europe/Paris", 1);
     tzset();
 

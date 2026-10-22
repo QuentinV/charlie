@@ -21,9 +21,10 @@ void setup() {
     cfg.displayScreenTime = true;
     cfg.WAKE_UP_WORD_ACCURACY = 0.65f;
 
-    cfg.displays = { 
-        { 128, 32, 90, 0 }
-    };
+    I2CScreen o1;
+    o1.w = 128; o1.h = 32; o1.r = 90; o1.channel = 0;
+    cfg.displays = { o1 };
+
 
     delay(2000);
     assistant = new ESP32HomeAssistant(cfg);

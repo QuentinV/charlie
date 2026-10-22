@@ -17,6 +17,8 @@
 #include <Adafruit_SSD1306.h>
 #include <vector>
 #include <Adafruit_AHTX0.h>
+#include <Adafruit_ST7735.h>
+#include <SPI.h>
 
 #define WS_PORT 9303
 
@@ -42,8 +44,17 @@
 struct I2CScreen {
     uint8_t w;
     uint8_t h;
-    uint8_t r;   
-    uint8_t channel; 
+    uint8_t r = 0;   
+
+    uint8_t channel = 0; 
+    
+    gpio_num_t sda = GPIO_NUM_NC;
+    gpio_num_t scl = GPIO_NUM_NC;
+    gpio_num_t cs = GPIO_NUM_NC;
+    gpio_num_t dc = GPIO_NUM_NC;
+    gpio_num_t rst = GPIO_NUM_NC;
+
+    bool tft = false;
 };
 
 struct HAConfig {
@@ -92,6 +103,11 @@ struct HAConfig {
 
     // TTS / microphone ducking
     uint32_t ttsMuteTailMs = 300; // keep the mic cut after playback ends (DMA + room tail)
+};
+
+struct AnyScreen {
+    Adafruit_SSD1306* oled;
+    Adafruit_ST7735* tft;
 };
 
 typedef struct {
@@ -148,7 +164,7 @@ private:
     WiFiManager         _wm;
     Adafruit_NeoPixel*  _pixels = nullptr;    
 
-    std::vector<Adafruit_SSD1306*> _displays;
+    std::vector<AnyScreen> _displays;
 
     Adafruit_AHTX0 _tempSensor;
 
