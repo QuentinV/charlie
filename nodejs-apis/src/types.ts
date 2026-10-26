@@ -48,6 +48,48 @@ export type RestApiFullHandler = (
 
 export type RestApis = { [route: string]: RestApi };
 
+// --- Echo
+
+/** Payload of the `versions` message sent by an echo on every connect. */
+export interface EchoVersions {
+    /** ESP32HomeAssistant library version. */
+    lib?: string;
+    /** Device firmware version (`HAConfig::deviceVersion`). */
+    device?: string;
+    /** Device type (`echo-zero`, `echo-dashboard`…). */
+    type?: string;
+    /** MAC address: canonical identity of the device. */
+    mac?: string;
+}
+
+/** Document of the `echo_settings` collection. */
+export interface EchoSettings {
+    _id?: unknown;
+    /** IP of the last connection (the live one while the device is connected). */
+    ip?: string;
+    /** Canonical identity, set as soon as a device reports it. */
+    mac?: string;
+    deviceType?: string;
+    versions?: EchoVersions;
+    serverIp?: string;
+    wakeWordAccuracy?: number;
+    screens?: {
+        refreshTime?: number;
+        screens?: {
+            k: number;
+            texts?: {
+                ts?: number;
+                v: string;
+                cx?: number;
+                cy?: number;
+                r?: number;
+            }[];
+        }[];
+    };
+    /** Last time the device reported its versions. */
+    lastSeen?: Date;
+}
+
 // --- Tools
 
 export interface ConversationMemory {

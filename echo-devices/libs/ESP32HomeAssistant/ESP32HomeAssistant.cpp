@@ -66,12 +66,23 @@ String ESP32HomeAssistant::getDeviceVersion() const {
     return String(this->_cfg.deviceVersion ? this->_cfg.deviceVersion : "");
 }
 
+String ESP32HomeAssistant::getDeviceMac() const {
+    if (WiFi.status() != WL_CONNECTED) {
+        return String("");
+    }
+
+    String mac = WiFi.macAddress();
+    mac.toLowerCase();
+    return mac;
+}
+
 void ESP32HomeAssistant::_sendVersions() {
     JsonDocument doc;
     doc["c"] = "versions";
     doc["v"]["lib"]    = this->getLibraryVersion();
     doc["v"]["device"] = this->getDeviceVersion();
     doc["v"]["type"]   = this->_cfg.deviceType;
+    doc["v"]["mac"]    = this->getDeviceMac();
 
     String out;
     serializeJson(doc, out);

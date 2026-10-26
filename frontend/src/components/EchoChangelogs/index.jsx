@@ -11,12 +11,22 @@ import {
 } from '@mui/lab';
 import UpdateIcon from '@mui/icons-material/Update';
 
+/**
+ * Release notes of the echo firmware. An entry is identified by the date it
+ * was released, or by its version for the entries that predate the date field.
+ */
 export const EchoChangelogs = ({ data }) => {
+    // Newest first; sort() is stable so the entries without a date keep the
+    // order of the file.
+    const releases = [...(data ?? [])].sort((a, b) =>
+        a.date && b.date ? b.date.localeCompare(a.date) : 0
+    );
+
     return (
         <Box>
             <Timeline position="right">
-                {data.map((release, index) => (
-                    <TimelineItem key={release.version}>
+                {releases.map((release, index) => (
+                    <TimelineItem key={release.date ?? release.version}>
                         {/* Left side: Version Number */}
                         <TimelineOppositeContent
                             sx={{ m: 'auto 0', flex: 0.2 }}
@@ -24,7 +34,7 @@ export const EchoChangelogs = ({ data }) => {
                             variant="body2"
                             color="text.secondary"
                         >
-                            v{release.version}
+                            {release.date ?? `v${release.version}`}
                         </TimelineOppositeContent>
 
                         {/* Middle: The Line and Dot */}

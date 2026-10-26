@@ -2,7 +2,8 @@ import { cs } from '../core/db';
 import { getDeviceState } from '../devices';
 import { logDeviceState } from '../devices/history';
 import { log } from '../manager/services/activities';
-import { connectedEchos } from './listen';
+import { connectedEchos, getEchoMacByIp } from './listen';
+import { findEchoSettingsByIp } from './identity';
 import { updateDisplays } from './service';
 
 const intervalHandles: { [ip: string]: ReturnType<typeof setInterval> } = {};
@@ -91,7 +92,9 @@ async function refreshScreensForIp(ip: string): Promise<void> {
             return;
         }
 
-        const settings = await cs.echoSettings.findOne({ ip });
+        // Settings are keyed by the MAC of the device, with the ip as the
+        // fallback for firmware that does not report one.
+        const settings = await findEchoSettingsByIp(ip, getEchoMacByIp(ip));
         if (!settings?.screens?.screens?.length) return;
 
         const screens = settings.screens.screens;
@@ -144,8 +147,8 @@ async function refreshScreensForIp(ip: string): Promise<void> {
 export async function startScreenUpdatesForIp(ip: string): Promise<void> {
     clearScreenUpdatesForIp(ip); // Clear any existing interval first
 
-    // Load settings to get refreshTime
-    const settings = await cs.echoSettings.findOne({ ip });
+    // Load settings to get refreshTime (MAC keyed, ip as fallback).
+    const settings = await findEchoSettingsByIp(ip, getEchoMacByIp(ip));
     if (!settings?.screens?.refreshTime) {
         log(
             `echoScreensUpdates`,

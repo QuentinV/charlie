@@ -22,9 +22,6 @@
 
 // Library version (keep in sync with library.properties)
 #define ESP32HOMEASSISTANT_VERSION       "1.2.0"
-#define ESP32HOMEASSISTANT_VERSION_MAJOR 1
-#define ESP32HOMEASSISTANT_VERSION_MINOR 2
-#define ESP32HOMEASSISTANT_VERSION_PATCH 0
 
 #define WS_PORT 9303
 
@@ -138,6 +135,7 @@ public:
     // Versions
     String getLibraryVersion() const;
     String getDeviceVersion() const;
+    String getDeviceMac() const;
 
     int _ei_get_sliding_window_data(size_t offset, size_t length, float *out_ptr);
     void _listenAndSendTask(void *arg);

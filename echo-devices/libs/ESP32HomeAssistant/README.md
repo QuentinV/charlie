@@ -177,6 +177,10 @@ Returns the version of the ESP32HomeAssistant library (the `ESP32HOMEASSISTANT_V
 
 Returns the device firmware version configured through `HAConfig::deviceVersion`.
 
+### `String getDeviceMac() const`
+
+Returns the MAC address of the WiFi station interface as a lowercase `aa:bb:cc:dd:ee:ff` string (from `WiFi.macAddress()`), or an empty string when the station is not connected. The server uses it as the **stable identity** of the device: the echo settings are keyed by MAC, so they follow the physical device when DHCP hands it another IP.
+
 ## WebSocket protocol
 
 The device connects to `ws://{serverIp}:9303/ws/echo` and communicates using JSON commands. The server sends the following commands:
@@ -196,7 +200,7 @@ The device sends:
 - `"start"` (text) – begins an audio upload
 - Binary audio data – 16‑bit PCM samples at the model's sampling rate
 - `"end"` (text) – signals the end of the audio upload
-- `{"c":"versions","v":{"lib":"<version>","device":"<version>","type":"<deviceType>"}}` (text): sent automatically on every connect, reports the library and device firmware versions
+- `{"c":"versions","v":{"lib":"<version>","device":"<version>","type":"<deviceType>","mac":"<mac>"}}` (text): sent automatically on every connect, reports the library and device firmware versions plus the MAC address used by the server to identify the device
 
 ## Versioning
 
@@ -205,10 +209,10 @@ Two independent versions are reported to the server:
 - Library version: the `ESP32HOMEASSISTANT_VERSION` macro in `ESP32HomeAssistant.h`, kept in sync with the `version` field in `library.properties`.
 - Device version: `HAConfig::deviceVersion`, set by each entry point (`src/main_*.cpp`).
 
-Both follow semantic versioning (`MAJOR.MINOR.PATCH`). The device sends its `versions` message automatically on every WebSocket connect, so the server can detect which firmware a device runs and push the matching OTA update; sending `{ "c": "getVersions" }` asks for the same payload on demand.
+Both follow semantic versioning (`MAJOR.MINOR.PATCH`). The device sends its `versions` message automatically on every WebSocket connect, so the server can detect which firmware a device runs and push the matching OTA update; sending `{ "c": "getVersions" }` asks for the same payload on demand. The message also carries the MAC address (`mac`) reported by `getDeviceMac()`, which the server stores as the identity of the device: settings keyed by MAC survive an IP change, while the IP stays the transport address of the WebSocket connection.
 
 ```json
-{ "c": "versions", "v": { "lib": "1.2.0", "device": "1.0.0", "type": "echo-zero" } }
+{ "c": "versions", "v": { "lib": "1.2.0", "device": "1.0.0", "type": "echo-zero", "mac": "aa:bb:cc:dd:ee:ff" } }
 ```
 
 ## Conversation mode
