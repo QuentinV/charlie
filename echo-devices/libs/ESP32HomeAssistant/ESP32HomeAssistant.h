@@ -20,6 +20,12 @@
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
 
+// Library version (keep in sync with library.properties)
+#define ESP32HOMEASSISTANT_VERSION       "1.2.0"
+#define ESP32HOMEASSISTANT_VERSION_MAJOR 1
+#define ESP32HOMEASSISTANT_VERSION_MINOR 2
+#define ESP32HOMEASSISTANT_VERSION_PATCH 0
+
 #define WS_PORT 9303
 
 #define DRD_TIMEOUT 3
@@ -63,6 +69,7 @@ struct HAConfig {
     const char* apPassword = "HomeAssistantEcho123";
 
     const char* deviceType = "echo-zero";
+    const char* deviceVersion = "0.0.0";
     float WAKE_UP_WORD_ACCURACY = 0.8f;
     String overwriteServerip;
     
@@ -128,6 +135,10 @@ public:
 
     void printMemoryUsage();
 
+    // Versions
+    String getLibraryVersion() const;
+    String getDeviceVersion() const;
+
     int _ei_get_sliding_window_data(size_t offset, size_t length, float *out_ptr);
     void _listenAndSendTask(void *arg);
     void _onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length);
@@ -137,6 +148,7 @@ public:
     static ESP32HomeAssistant* instance;
 private:
     void _runOTA();
+    void _sendVersions();
     void _setWakeUpWordAccuracy(float accuracy);
     void _setServerIp(String serverip);
     void _setupWiFi();

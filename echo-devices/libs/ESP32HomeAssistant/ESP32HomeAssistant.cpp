@@ -58,6 +58,26 @@ void ESP32HomeAssistant::_runOTA() {
     ESP.restart();
 }
 
+String ESP32HomeAssistant::getLibraryVersion() const {
+    return ESP32HOMEASSISTANT_VERSION;
+}
+
+String ESP32HomeAssistant::getDeviceVersion() const {
+    return String(this->_cfg.deviceVersion ? this->_cfg.deviceVersion : "");
+}
+
+void ESP32HomeAssistant::_sendVersions() {
+    JsonDocument doc;
+    doc["c"] = "versions";
+    doc["v"]["lib"]    = this->getLibraryVersion();
+    doc["v"]["device"] = this->getDeviceVersion();
+    doc["v"]["type"]   = this->_cfg.deviceType;
+
+    String out;
+    serializeJson(doc, out);
+    this->webSocket.sendTXT(out);
+}
+
 void ESP32HomeAssistant::_setWakeUpWordAccuracy(float accuracy) {
     this->wakeUpWordAccuracy = accuracy;
     this->_prefs.begin("config", false);
@@ -251,6 +271,7 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
             break;
         case WStype_CONNECTED:
             this->isWsConnected = true;
+            this->_sendVersions();
             break;
         case WStype_TEXT:
             {
@@ -277,6 +298,8 @@ void ESP32HomeAssistant::_onWebSocketEvent(WStype_t type, uint8_t * payload, siz
                     this->_runOTA();
                 } else if (command == "feedback" ) {
                     this->displayFeedback(doc["v"]);
+                } else if (command == "getVersions") {
+                    this->_sendVersions();
                 } else if (command == "updateDisplays") {
                     JsonArray v = doc["v"];
                     for (JsonObject display : v) {

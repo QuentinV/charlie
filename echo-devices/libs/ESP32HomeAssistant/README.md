@@ -26,6 +26,7 @@ All settings are defined through the `HAConfig` struct. Create an instance, set 
 | `apName`                | `const char*`            | `"HomeAssistantEcho"`    | WiFi AP SSID for the configuration portal                                                                                            |
 | `apPassword`            | `const char*`            | `"HomeAssistantEcho123"` | WiFi AP password for the configuration portal                                                                                        |
 | `deviceType`            | `const char*`            | `"echo-zero"`            | Device type identifier sent to the server (used for OTA firmware lookup)                                                             |
+| `deviceVersion`         | `const char*`            | `"0.0.0"`                | Device firmware version reported to the server (semver)                                                                              |
 | `WAKE_UP_WORD_ACCURACY` | `float`                  | `0.8f`                   | Minimum classification confidence threshold (0.0 – 1.0) to trigger recording                                                         |
 | `overwriteServerip`     | `String`                 | empty                    | Override the saved server IP (avoids the need for the WiFi manager portal)                                                           |
 | `neoPixelPin`           | `uint8_t`                | `GPIO_NUM_48`            | NeoPixel data pin                                                                                                                    |
@@ -168,6 +169,14 @@ Clears all saved preferences (WiFi credentials, server IP, wake word accuracy) a
 
 Prints a memory usage report (internal free / min free, PSRAM free, task stack high water mark) to the serial console.
 
+### `String getLibraryVersion() const`
+
+Returns the version of the ESP32HomeAssistant library (the `ESP32HOMEASSISTANT_VERSION` macro, kept in sync with `library.properties`).
+
+### `String getDeviceVersion() const`
+
+Returns the device firmware version configured through `HAConfig::deviceVersion`.
+
 ## WebSocket protocol
 
 The device connects to `ws://{serverIp}:9303/ws/echo` and communicates using JSON commands. The server sends the following commands:
@@ -180,12 +189,27 @@ The device connects to `ws://{serverIp}:9303/ws/echo` and communicates using JSO
 | `OTA`                   | —                                             | Trigger over‑the‑air firmware update from the server |
 | `feedback`              | `{ "v": "<text>" }`                           | Show text on the feedback display                    |
 | `updateDisplays`        | `{ "v": [ { "k": <idx>, "texts": [...] } ] }` | Update individual screen contents                    |
+| `getVersions`           | —                                             | Device replies with the `versions` payload           |
 
 The device sends:
 
 - `"start"` (text) – begins an audio upload
 - Binary audio data – 16‑bit PCM samples at the model's sampling rate
 - `"end"` (text) – signals the end of the audio upload
+- `{"c":"versions","v":{"lib":"<version>","device":"<version>","type":"<deviceType>"}}` (text): sent automatically on every connect, reports the library and device firmware versions
+
+## Versioning
+
+Two independent versions are reported to the server:
+
+- Library version: the `ESP32HOMEASSISTANT_VERSION` macro in `ESP32HomeAssistant.h`, kept in sync with the `version` field in `library.properties`.
+- Device version: `HAConfig::deviceVersion`, set by each entry point (`src/main_*.cpp`).
+
+Both follow semantic versioning (`MAJOR.MINOR.PATCH`). The device sends its `versions` message automatically on every WebSocket connect, so the server can detect which firmware a device runs and push the matching OTA update; sending `{ "c": "getVersions" }` asks for the same payload on demand.
+
+```json
+{ "c": "versions", "v": { "lib": "1.2.0", "device": "1.0.0", "type": "echo-zero" } }
+```
 
 ## Conversation mode
 

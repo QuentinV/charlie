@@ -1,5 +1,15 @@
 [
     {
+        "version": "1.6",
+        "description": "Device and library version reporting over WebSocket: the device sends a 'versions' message (library, device firmware and type) on every connect and answers a 'getVersions' command, so the server can detect which firmware each device runs and push the matching OTA update. The device firmware version is set per entry point through HAConfig::deviceVersion.",
+        "devices": [
+            "echo-zero",
+            "echo-zero-screen",
+            "echo-dashboard",
+            "echo-dashboard-weather"
+        ]
+    },
+    {
         "version": "1.5",
         "description": "Server-driven conversation mode: the server adds a 'conversation' flag to the playAudio command to tell the device whether to keep the microphone open for a follow-up turn (no wake word) until N ms of silence (config: conversationTimeoutMs). No device flag required; the server keeps one LLM session per echo connection for multi-turn memory.",
         "devices": [

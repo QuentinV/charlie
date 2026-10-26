@@ -28,6 +28,7 @@ The library created to interact with Charlie server.
 { "c": "setWakeUpWordAccuracy", "v": "0.60" }
 { "c": "setServerIp", "v": "192.168.1.2" }
 { "c": "OTA" } // trigger remote update
+{ "c": "getVersions" } // Device replies with its library + firmware versions
 { "c": "feedback", "v": "Text" } // Text feedback from server
 {
     "c": "updateDisplays",
@@ -49,3 +50,9 @@ The library created to interact with Charlie server.
 # Versions
 
 View the changelog here: [changelog.json](./changelog.json)
+
+On every WebSocket connect the device also reports its versions, so the server can pick the right firmware:
+
+```json
+{ "c": "versions", "v": { "lib": "1.2.0", "device": "1.0.0", "type": "echo-zero" } }
+```
