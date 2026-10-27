@@ -118,9 +118,9 @@ export function setupEchoListen() {
         };
         versionsTimer = setTimeout(() => {
             versionsTimer = null;
-            maybeStartOtaForSilentDevice(ip).catch((e) =>
-                console.log('[ota] Silent device decision failed:', e)
-            );
+            //maybeStartOtaForSilentDevice(ip).catch((e) =>
+            //    console.log('[ota] Silent device decision failed:', e)
+            //);
         }, VERSIONS_FALLBACK_MS);
 
         // The MAC index only describes live connections: drop the entry as
