@@ -62,6 +62,24 @@ export interface EchoVersions {
     mac?: string;
 }
 
+/**
+ * OTA bookkeeping stored in the settings document of a device.
+ * It keeps the automatic update from turning into a reboot loop when the
+ * firmware that gets flashed keeps reporting the same old version.
+ */
+export interface EchoOtaState {
+    /** Last time the server asked the device to update. */
+    lastAttemptAt?: Date;
+    /** Attempts made while the device reported the same version. */
+    attempts?: number;
+    /** Version the device reported when the attempts were counted. */
+    reportedVersion?: string;
+    /** True when the max attempts were reached: no more automatic retries. */
+    stuck?: boolean;
+    /** Result of the last version check (`up-to-date`, `update-available`…). */
+    lastStatus?: string;
+}
+
 /** Document of the `echo_settings` collection. */
 export interface EchoSettings {
     _id?: unknown;
@@ -88,6 +106,8 @@ export interface EchoSettings {
     };
     /** Last time the device reported its versions. */
     lastSeen?: Date;
+    /** Automatic OTA bookkeeping (cooldown, attempts, stuck flag). */
+    ota?: EchoOtaState;
 }
 
 // --- Tools

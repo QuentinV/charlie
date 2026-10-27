@@ -20,6 +20,7 @@ import {
     registerVersions,
 } from './identity';
 import { EchoVersions } from '../types';
+import { maybeStartOta, maybeStartOtaForSilentDevice } from './ota';
 
 export const connectedEchos: { [key: string]: any } = {};
 
@@ -50,6 +51,13 @@ export function resolveConnectedIp(id?: string | null): string | undefined {
  * material for a stable score.
  */
 const IDENTIFY_MAX_BYTES = 16000 * 2 * 8;
+
+/**
+ * How long a connection waits for the versions message before the server
+ * checks the device from the settings saved for its address. Firmware that
+ * predates version reporting never sends that message on connect.
+ */
+const VERSIONS_FALLBACK_MS = 10 * 1000;
 
 function sendPCMInChunks(
     ws,
@@ -97,9 +105,26 @@ export function setupEchoListen() {
         // on a longer, more stable window than a single short command.
         let sessionAudio = Buffer.alloc(0);
 
+        // Older firmware never sends a versions message: give the device a
+        // short window to report it, then fall back to the settings saved for
+        // its address so it is updated without waiting for a restart.
+        let versionsTimer: ReturnType<typeof setTimeout> | null = null;
+        const cancelVersionsTimer = () => {
+            if (!versionsTimer) return;
+            clearTimeout(versionsTimer);
+            versionsTimer = null;
+        };
+        versionsTimer = setTimeout(() => {
+            versionsTimer = null;
+            maybeStartOtaForSilentDevice(ip).catch((e) =>
+                console.log('[ota] Silent device decision failed:', e)
+            );
+        }, VERSIONS_FALLBACK_MS);
+
         // The MAC index only describes live connections: drop the entry as
         // soon as the device goes away.
         const forgetConnection = () => {
+            cancelVersionsTimer();
             const mac = macByIp[ip];
             delete connectedEchos[ip];
             delete macByIp[ip];
@@ -141,8 +166,12 @@ export function setupEchoListen() {
                 }
 
                 if (data?.c === 'versions') {
+                    cancelVersionsTimer();
                     const versions: EchoVersions = data.v ?? {};
-                    const { mac } = await registerVersions(ip, versions);
+                    const { mac, id, previous } = await registerVersions(
+                        ip,
+                        versions
+                    );
                     if (mac) {
                         macByIp[ip] = mac;
                         ipByMac[mac] = ip;
@@ -156,6 +185,16 @@ export function setupEchoListen() {
                     );
                     
                     startScreenUpdatesForIp(ip);
+
+                    // Automatic OTA: fire-and-forget so a slow settings write
+                    // never delays the socket handler. The previous document
+                    // snapshot avoids a second read in the decision.
+                    maybeStartOta({
+                        ip,
+                        id,
+                        reported: versions,
+                        previous,
+                    }).catch((e) => console.log('[ota] Decision failed:', e));
                 } else {
                     log(`unknown command = ${m}`);
                 }

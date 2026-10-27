@@ -141,6 +141,18 @@ export async function saveEchoSettings(id: string, update: any): Promise<void> {
     );
 }
 
+/** Outcome of `registerVersions`: identity plus the state seen before the write. */
+export interface RegisteredVersions {
+    /** Canonical id the UI uses to address the device. */
+    id: string;
+    mac?: string;
+    /**
+     * Document as it was *before* this connect's versions write. The OTA
+     * decision reuses it to read the previous attempts without another read.
+     */
+    previous: EchoSettings | null;
+}
+
 /**
  * Persist what a device declared in its `versions` message and return the
  * canonical id the UI uses to address it.
@@ -148,7 +160,7 @@ export async function saveEchoSettings(id: string, update: any): Promise<void> {
 export async function registerVersions(
     ip: string,
     versions?: EchoVersions
-): Promise<{ id: string; mac?: string }> {
+): Promise<RegisteredVersions> {
     const plainIp = normalizeIp(ip);
     const mac = normalizeMac(versions?.mac);
     const reported: EchoVersions = { ...(versions ?? {}) };
@@ -165,6 +177,9 @@ export async function registerVersions(
     if (!mac) {
         // Old firmware: nothing identifies the device beyond its address.
         const existing = await cs.echoSettings.findOne({ ip: ipQuery(plainIp) });
+        // Snapshot before the write: the in-memory stand-in used by the tests
+        // mutates the document in place.
+        const previous = existing ? { ...existing } : null;
         if (existing) {
             await cs.echoSettings.updateOne({ _id: existing._id }, { $set });
         } else {
@@ -174,15 +189,16 @@ export async function registerVersions(
                 { upsert: true }
             );
         }
-        return { id: encodeEchoId(plainIp) };
+        return { id: encodeEchoId(plainIp), previous };
     }
 
     $set.mac = mac;
 
     const known = await cs.echoSettings.findOne({ mac });
     if (known) {
+        const previous = { ...known };
         await cs.echoSettings.updateOne({ _id: known._id }, { $set });
-        return { id: encodeEchoId(mac), mac };
+        return { id: encodeEchoId(mac), mac, previous };
     }
 
     // First time this MAC is seen: adopt the document the device used to be
@@ -190,10 +206,11 @@ export async function registerVersions(
     // otherwise create it.
     const legacy = await cs.echoSettings.findOne({ ip: ipQuery(plainIp) });
     if (legacy) {
+        const previous = { ...legacy };
         await cs.echoSettings.updateOne({ _id: legacy._id }, { $set });
-        return { id: encodeEchoId(mac), mac };
+        return { id: encodeEchoId(mac), mac, previous };
     }
 
     await cs.echoSettings.updateOne({ mac }, { $set }, { upsert: true });
-    return { id: encodeEchoId(mac), mac };
+    return { id: encodeEchoId(mac), mac, previous: null };
 }

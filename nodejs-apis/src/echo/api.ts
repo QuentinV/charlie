@@ -14,6 +14,7 @@ import {
     findEchoSettingsByIp,
     saveEchoSettings,
 } from './identity';
+import { checkFirmware, loadFirmwareManifest } from './firmware';
 
 const DIR = '../echo-devices';
 
@@ -59,6 +60,7 @@ const routes: RestApis = {
             handler: async () => {
                 // One entry per connected device, addressed by its canonical id
                 // (the MAC it reports, the ip only for firmware without one).
+                const manifest = loadFirmwareManifest();
                 const ips = Object.keys(connectedEchos);
                 const settings = await Promise.all(
                     ips.map((ip) => findEchoSettingsByIp(ip, getEchoMacByIp(ip)))
@@ -66,13 +68,20 @@ const routes: RestApis = {
                 return ips.map((ip, index) => {
                     const doc = settings[index];
                     const mac = doc?.mac ?? getEchoMacByIp(ip);
+                    const deviceType = doc?.deviceType ?? doc?.versions?.type;
                     return {
                         id: encodeEchoId(mac ?? ip),
                         ip,
                         mac,
-                        deviceType: doc?.deviceType ?? doc?.versions?.type,
+                        deviceType,
                         versions: doc?.versions,
                         lastSeen: doc?.lastSeen,
+                        ota: doc?.ota,
+                        firmware: checkFirmware(
+                            manifest,
+                            deviceType,
+                            doc?.versions?.device
+                        ),
                     };
                 });
             },
@@ -81,11 +90,48 @@ const routes: RestApis = {
     'echo/ota': {
         post: {
             handler: async ({ body }) => {
-                const { id, ip } = body ?? {};
+                const { id, ip, reset } = body ?? {};
                 if (!id && !ip) return;
-                const target = await commandIp(id ?? ip);
+                const targetId = id ?? ip;
+
+                // A manual request clears the "stuck" flag so the next check
+                // (automatic or not) retries a device the server gave up on.
+                if (reset) {
+                    const doc = await findEchoSettingsById(targetId);
+                    if (doc?.ota) {
+                        await saveEchoSettings(targetId, {
+                            ota: { ...doc.ota, attempts: 0, stuck: false },
+                        });
+                    }
+                }
+
+                const target = await commandIp(targetId);
                 if (!target) return;
                 await startOTA(target);
+            },
+        },
+    },
+    // Firmware status of a device, computed from the published manifest and
+    // the versions it reported.
+    'echo/:id/firmware': {
+        get: {
+            handler: async ({ params }) => {
+                const doc = await findEchoSettingsById(params.id);
+                if (!doc) return;
+                const deviceType = doc.deviceType ?? doc.versions?.type;
+                return {
+                    id: params.id,
+                    ip: doc.ip,
+                    mac: doc.mac,
+                    deviceType,
+                    versions: doc.versions,
+                    ota: doc.ota,
+                    firmware: checkFirmware(
+                        loadFirmwareManifest(),
+                        deviceType,
+                        doc.versions?.device
+                    ),
+                };
             },
         },
     },
