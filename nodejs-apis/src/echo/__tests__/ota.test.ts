@@ -315,26 +315,80 @@ describe('maybeStartOtaForSilentDevice', () => {
         );
     });
 
-    test('leaves a device without saved settings alone', async () => {
+    test('triggers an update even without saved settings', async () => {
         findMock.mockResolvedValue(null);
 
         const decision = await maybeStartOtaForSilentDevice(IP);
 
-        expect(decision).toBeNull();
-        expect(startMock).not.toHaveBeenCalled();
-        expect(saveMock).not.toHaveBeenCalled();
+        // The device picks the binary matching its own type, so the server
+        // does not need to know that type to ask it to update.
+        expect(decision?.outcome).toBe('triggered');
+        expect(decision?.status).toBe('unknown-type');
+        expect(startMock).toHaveBeenCalledWith(IP);
+        expect(saveMock).toHaveBeenCalledWith(
+            IP,
+            expect.objectContaining({
+                ota: expect.objectContaining({
+                    attempts: 1,
+                    reportedVersion: '',
+                }),
+            })
+        );
     });
 
-    test('skips a silent device whose type was never recorded', async () => {
+    test('triggers an update for a silent device whose type was never recorded', async () => {
         findMock.mockResolvedValue(
             settings({ deviceType: undefined, versions: {} })
         );
 
         const decision = await maybeStartOtaForSilentDevice(IP);
 
-        expect(decision).toBeNull();
+        expect(decision?.outcome).toBe('triggered');
+        expect(decision?.status).toBe('unknown-type');
+        expect(startMock).toHaveBeenCalledWith(IP);
+        expect(saveMock).toHaveBeenCalledWith(
+            ID,
+            expect.objectContaining({
+                ota: expect.objectContaining({
+                    attempts: 1,
+                    reportedVersion: '',
+                }),
+            })
+        );
+    });
+
+    test('leaves a silent device on the latest firmware alone', async () => {
+        findMock.mockResolvedValue(
+            settings({
+                deviceType: 'echo-zero',
+                versions: { type: 'echo-zero', device: '1.2.0' },
+            })
+        );
+
+        const decision = await maybeStartOtaForSilentDevice(IP);
+
+        expect(decision?.outcome).toBe('not-needed');
         expect(startMock).not.toHaveBeenCalled();
-        expect(saveMock).not.toHaveBeenCalled();
+    });
+
+    test('respects the cooldown for a silent device', async () => {
+        findMock.mockResolvedValue(
+            settings({
+                deviceType: undefined,
+                versions: {},
+                ota: {
+                    lastAttemptAt: new Date(NOW.getTime() - 60 * 1000),
+                    attempts: 1,
+                    reportedVersion: '',
+                    stuck: false,
+                },
+            })
+        );
+
+        const decision = await maybeStartOtaForSilentDevice(IP);
+
+        expect(decision?.outcome).toBe('skipped');
+        expect(startMock).not.toHaveBeenCalled();
     });
 
     test('does not act when the settings lookup fails', async () => {

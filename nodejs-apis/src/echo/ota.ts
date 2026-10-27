@@ -20,10 +20,15 @@ import { startOTA } from './service';
  * soon as its firmware is older than the published version — or unknown, which
  * is the case for firmware predating version reporting.
  *
- * The firmware downloads the binary and reboots without comparing versions
- * itself, so the server is the only guard against a reboot loop: attempts are
- * counted per reported version and stop once the device keeps coming back with
- * the same old version (the manifest then does not match the served binary).
+ * The server only sends the `OTA` command: the firmware then downloads the
+ * binary matching its *own* type. Knowing the type server-side is therefore a
+ * diagnostic used to compare versions, not a prerequisite for updating — a
+ * silent device whose type was never recorded can still be asked to update.
+ *
+ * The firmware reboots without comparing versions itself, so the server is the
+ * only guard against a reboot loop: attempts are counted per reported version
+ * and stop once the device keeps coming back with the same old version (the
+ * manifest then does not match the served binary).
  */
 
 /** Minimum delay between two automatic attempts for the same version. */
@@ -52,6 +57,14 @@ export interface OtaContext {
     previous?: EchoSettings | null;
     /** Injectable clock, for the tests. */
     now?: Date;
+    /**
+     * Silent-device fallback: the device connected without reporting a type,
+     * so its firmware cannot be compared with the manifest. It still downloads
+     * the binary matching its own type, so the server asks it to update
+     * anyway. Only the decision changes: cooldown and attempt limits below
+     * still apply and stop a device that keeps coming back silent.
+     */
+    assumeOutdated?: boolean;
 }
 
 /** Id of the document the OTA state is written to. */
@@ -87,9 +100,11 @@ async function clearOtaState(
  * Decide whether the device connected from `ctx.ip` must be updated and, when
  * it must, send it the `OTA` command.
  *
- * Safe by design: a device whose type is unknown is never flashed (the server
- * would not know which binary to serve), and repeated attempts for the same
- * reported version stop after `OTA_MAX_ATTEMPTS`.
+ * Repeated attempts for the same reported version stop after
+ * `OTA_MAX_ATTEMPTS`, so a device that never upgrades is not rebooted forever.
+ * The type is only used to *compare* versions: when it is unknown and
+ * `assumeOutdated` is set, the server asks the device to update without being
+ * able to check, because the firmware picks its own binary from its type.
  */
 export async function maybeStartOta(ctx: OtaContext): Promise<OtaDecision> {
     const now = ctx.now ?? new Date();
@@ -106,9 +121,23 @@ export async function maybeStartOta(ctx: OtaContext): Promise<OtaDecision> {
         reportedVersion
     );
 
-    if (!check.updateAvailable) {
-        await clearOtaState(ctx, check, reportedVersion);
-        return { ...check, outcome: 'not-needed' };
+    // A silent device that never reported its type cannot be compared with the
+    // manifest, but it still requests the binary matching its own type, so it
+    // can be asked to update without the server knowing that type. Only the
+    // "cannot verify" case is overridden: a known type whose saved version is
+    // current stays untouched.
+    const decision: FirmwareCheck =
+        ctx.assumeOutdated && !deviceType && !check.updateAvailable
+            ? {
+                  ...check,
+                  updateAvailable: true,
+                  reason: 'device type unknown; asking it to update since it selects its own binary',
+              }
+            : check;
+
+    if (!decision.updateAvailable) {
+        await clearOtaState(ctx, decision, reportedVersion);
+        return { ...decision, outcome: 'not-needed' };
     }
 
     const prior = previous?.ota;
@@ -121,7 +150,7 @@ export async function maybeStartOta(ctx: OtaContext): Promise<OtaDecision> {
     const attempts = sameVersion ? prior?.attempts ?? 0 : 0;
 
     if (sameVersion && prior?.stuck) {
-        return { ...check, outcome: 'skipped', attempts, stuck: true };
+        return { ...decision, outcome: 'skipped', attempts, stuck: true };
     }
 
     if (sameVersion && attempts >= OTA_MAX_ATTEMPTS) {
@@ -130,7 +159,7 @@ export async function maybeStartOta(ctx: OtaContext): Promise<OtaDecision> {
             attempts,
             reportedVersion: reportedKey,
             stuck: true,
-            lastStatus: check.status,
+            lastStatus: decision.status,
         };
         await saveEchoSettings(settingsId(ctx), { ota });
         await logEcho(
@@ -139,14 +168,14 @@ export async function maybeStartOta(ctx: OtaContext): Promise<OtaDecision> {
                 reportedVersion ?? '?'
             } after ${attempts} attempts, no more automatic retries`
         );
-        return { ...check, outcome: 'skipped', attempts, stuck: true };
+        return { ...decision, outcome: 'skipped', attempts, stuck: true };
     }
 
     const lastAttemptAt = prior?.lastAttemptAt
         ? new Date(prior.lastAttemptAt).getTime()
         : 0;
     if (sameVersion && now.getTime() - lastAttemptAt < OTA_COOLDOWN_MS) {
-        return { ...check, outcome: 'skipped', attempts, stuck: false };
+        return { ...decision, outcome: 'skipped', attempts, stuck: false };
     }
 
     await startOTA(ctx.ip);
@@ -156,16 +185,16 @@ export async function maybeStartOta(ctx: OtaContext): Promise<OtaDecision> {
         attempts: attempts + 1,
         reportedVersion: reportedKey,
         stuck: false,
-        lastStatus: check.status,
+        lastStatus: decision.status,
     };
     await saveEchoSettings(settingsId(ctx), { ota });
     await logEcho(
         ctx.ip,
-        `OTA triggered (${check.status}): ${check.reason}`
+        `OTA triggered (${decision.status}): ${decision.reason}`
     );
 
     return {
-        ...check,
+        ...decision,
         outcome: 'triggered',
         attempts: ota.attempts,
         stuck: false,
@@ -175,24 +204,28 @@ export async function maybeStartOta(ctx: OtaContext): Promise<OtaDecision> {
 /**
  * Check a device that connected but did not report its `versions` within the
  * fallback delay. Firmware predating version reporting sends nothing on
- * connect, so the server falls back to the settings saved for its address.
- * A device whose type is unknown is left alone: without it the server would
- * not know which binary to serve.
+ * connect, so the server uses the settings saved for its address when there
+ * are any, and still asks the device to update when there are none.
+ *
+ * The type is deliberately *not* a prerequisite: the server only sends the
+ * `OTA` command and the firmware downloads the binary matching its own type,
+ * so a device that never reported anything can still be updated. The attempt
+ * and cooldown guards in `maybeStartOta` keep a device that stays silent from
+ * being rebooted forever.
  */
 export async function maybeStartOtaForSilentDevice(
     ip: string
 ): Promise<OtaDecision | null> {
     try {
         const settings = await findEchoSettingsByIp(ip);
-        if (!settings) return null;
-        const deviceType = settings.deviceType ?? settings.versions?.type;
-        if (!deviceType) return null;
-
         return await maybeStartOta({
             ip,
-            id: echoSettingsId(settings),
-            reported: settings.versions,
+            // Without a document, the IP is the identity used for the upsert;
+            // a later `versions` message adopts that document by MAC.
+            id: settings ? echoSettingsId(settings) : undefined,
+            reported: settings?.versions,
             previous: settings,
+            assumeOutdated: true,
         });
     } catch (e) {
         console.log(`[ota] Silent device check failed for ${ip}:`, e);

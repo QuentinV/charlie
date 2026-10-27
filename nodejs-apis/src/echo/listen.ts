@@ -106,8 +106,10 @@ export function setupEchoListen() {
         let sessionAudio = Buffer.alloc(0);
 
         // Older firmware never sends a versions message: give the device a
-        // short window to report it, then fall back to the settings saved for
-        // its address so it is updated without waiting for a restart.
+        // short window to report it, then check it anyway. The saved settings
+        // (when there are any) supply the reported version, but the device
+        // selects the binary matching its own type, so even a device whose type
+        // was never recorded is asked to update without waiting for a restart.
         let versionsTimer: ReturnType<typeof setTimeout> | null = null;
         const cancelVersionsTimer = () => {
             if (!versionsTimer) return;
