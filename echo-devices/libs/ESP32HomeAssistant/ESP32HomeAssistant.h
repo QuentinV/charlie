@@ -17,6 +17,11 @@
 #include <Adafruit_SSD1306.h>
 #include <vector>
 #include <Adafruit_AHTX0.h>
+#include <Adafruit_ST7735.h>
+#include <SPI.h>
+
+// Library version (keep in sync with library.properties)
+#define ESP32HOMEASSISTANT_VERSION       "1.2.0"
 
 #define WS_PORT 9303
 
@@ -42,8 +47,17 @@
 struct I2CScreen {
     uint8_t w;
     uint8_t h;
-    uint8_t r;   
-    uint8_t channel; 
+    uint8_t r = 0;   
+
+    uint8_t channel = 0; 
+    
+    gpio_num_t sda = GPIO_NUM_NC;
+    gpio_num_t scl = GPIO_NUM_NC;
+    gpio_num_t cs = GPIO_NUM_NC;
+    gpio_num_t dc = GPIO_NUM_NC;
+    gpio_num_t rst = GPIO_NUM_NC;
+
+    bool tft = false;
 };
 
 struct HAConfig {
@@ -52,6 +66,7 @@ struct HAConfig {
     const char* apPassword = "HomeAssistantEcho123";
 
     const char* deviceType = "echo-zero";
+    const char* deviceVersion = "0.0.0";
     float WAKE_UP_WORD_ACCURACY = 0.8f;
     String overwriteServerip;
     
@@ -94,6 +109,11 @@ struct HAConfig {
     uint32_t ttsMuteTailMs = 300; // keep the mic cut after playback ends (DMA + room tail)
 };
 
+struct AnyScreen {
+    Adafruit_SSD1306* oled;
+    Adafruit_ST7735* tft;
+};
+
 typedef struct {
     int16_t *buffer;
     uint32_t buf_count;
@@ -112,6 +132,11 @@ public:
 
     void printMemoryUsage();
 
+    // Versions
+    String getLibraryVersion() const;
+    String getDeviceVersion() const;
+    String getDeviceMac() const;
+
     int _ei_get_sliding_window_data(size_t offset, size_t length, float *out_ptr);
     void _listenAndSendTask(void *arg);
     void _onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length);
@@ -121,6 +146,7 @@ public:
     static ESP32HomeAssistant* instance;
 private:
     void _runOTA();
+    void _sendVersions();
     void _setWakeUpWordAccuracy(float accuracy);
     void _setServerIp(String serverip);
     void _setupWiFi();
@@ -148,7 +174,7 @@ private:
     WiFiManager         _wm;
     Adafruit_NeoPixel*  _pixels = nullptr;    
 
-    std::vector<Adafruit_SSD1306*> _displays;
+    std::vector<AnyScreen> _displays;
 
     Adafruit_AHTX0 _tempSensor;
 

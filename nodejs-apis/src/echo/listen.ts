@@ -14,8 +14,35 @@ import {
     clearScreenUpdatesForIp,
     startScreenUpdatesForIp,
 } from './screensUpdates';
+import {
+    decodeEchoId,
+    normalizeIp,
+    registerVersions,
+} from './identity';
+import { EchoVersions } from '../types';
+import { maybeStartOta, maybeStartOtaForSilentDevice } from './ota';
 
 export const connectedEchos: { [key: string]: any } = {};
+
+/** ip -> MAC of the device connected from that address. */
+const macByIp: { [ip: string]: string } = {};
+/** MAC -> live ip, used to reach a device by its canonical id. */
+const ipByMac: { [mac: string]: string } = {};
+
+/**
+ * MAC reported by the device connected from `ip` (`undefined` for firmware
+ * that does not send a `versions` message).
+ */
+export const getEchoMacByIp = (ip: string): string | undefined => macByIp[ip];
+
+/**
+ * Live ip of a device from its canonical id (`aa-bb-cc-dd-ee-ff`) or a raw ip.
+ * Only a MAC needs the index: an ip id is already the address to reach.
+ */
+export function resolveConnectedIp(id?: string | null): string | undefined {
+    const { mac, ip } = decodeEchoId(id);
+    return mac ? ipByMac[mac] : normalizeIp(ip);
+}
 
 /**
  * How much of the current conversation is kept for speaker identification.
@@ -24,6 +51,13 @@ export const connectedEchos: { [key: string]: any } = {};
  * material for a stable score.
  */
 const IDENTIFY_MAX_BYTES = 16000 * 2 * 8;
+
+/**
+ * How long a connection waits for the versions message before the server
+ * checks the device from the settings saved for its address. Firmware that
+ * predates version reporting never sends that message on connect.
+ */
+const VERSIONS_FALLBACK_MS = 10 * 1000;
 
 function sendPCMInChunks(
     ws,
@@ -51,10 +85,11 @@ export function setupEchoListen() {
     const wss = new WebSocketServer({ port: 9303, path: '/ws/echo' });
 
     wss.on('connection', (ws, req) => {
-        const ip: string = req.socket.remoteAddress!;
+        const ip: string = normalizeIp(req.socket.remoteAddress);
         const log = (message: string) => logEcho(ip, message);
         connectedEchos[ip] = ws;
         log('Device connected');
+        
         startScreenUpdatesForIp(ip);
 
         //ws.on('ping', () => {
@@ -69,18 +104,48 @@ export function setupEchoListen() {
         // Last few seconds of the conversation, used to identify the speaker
         // on a longer, more stable window than a single short command.
         let sessionAudio = Buffer.alloc(0);
+
+        // Older firmware never sends a versions message: give the device a
+        // short window to report it, then check it anyway. The saved settings
+        // (when there are any) supply the reported version, but the device
+        // selects the binary matching its own type, so even a device whose type
+        // was never recorded is asked to update without waiting for a restart.
+        let versionsTimer: ReturnType<typeof setTimeout> | null = null;
+        const cancelVersionsTimer = () => {
+            if (!versionsTimer) return;
+            clearTimeout(versionsTimer);
+            versionsTimer = null;
+        };
+        versionsTimer = setTimeout(() => {
+            versionsTimer = null;
+            //maybeStartOtaForSilentDevice(ip).catch((e) =>
+            //    console.log('[ota] Silent device decision failed:', e)
+            //);
+        }, VERSIONS_FALLBACK_MS);
+
+        // The MAC index only describes live connections: drop the entry as
+        // soon as the device goes away.
+        const forgetConnection = () => {
+            cancelVersionsTimer();
+            const mac = macByIp[ip];
+            delete connectedEchos[ip];
+            delete macByIp[ip];
+            if (mac && ipByMac[mac] === ip) {
+                delete ipByMac[mac];
+            }
+            clearScreenUpdatesForIp(ip);
+        };
+
         ws.on('error', (err) => {
             log('WebSocket error:' + err.message);
             conversation.close();
-            delete connectedEchos[ip];
-            clearScreenUpdatesForIp(ip);
+            forgetConnection();
         });
 
         ws.on('close', () => {
             log('connection closed');
             conversation.close();
-            delete connectedEchos[ip];
-            clearScreenUpdatesForIp(ip);
+            forgetConnection();
         });
 
         ws.on('message', async (msg, isBinary) => {
@@ -90,6 +155,54 @@ export function setupEchoListen() {
             }
 
             const m = msg.toString();
+
+            // JSON commands sit next to the plain text markers ('start' /
+            // 'end') that frame an audio upload.
+            if (m.startsWith('{')) {
+                let data: any;
+                try {
+                    data = JSON.parse(m);
+                } catch {
+                    log(`unreadable json command = ${m}`);
+                    return;
+                }
+
+                if (data?.c === 'versions') {
+                    cancelVersionsTimer();
+                    const versions: EchoVersions = data.v ?? {};
+                    const { mac, id, previous } = await registerVersions(
+                        ip,
+                        versions
+                    );
+                    if (mac) {
+                        macByIp[ip] = mac;
+                        ipByMac[mac] = ip;
+                    }
+                    log(
+                        `versions lib=${versions.lib ?? '?'} device=${
+                            versions.device ?? '?'
+                        } type=${versions.type ?? '?'} mac=${
+                            mac ?? 'not reported'
+                        }`
+                    );
+                    
+                    startScreenUpdatesForIp(ip);
+
+                    // Automatic OTA: fire-and-forget so a slow settings write
+                    // never delays the socket handler. The previous document
+                    // snapshot avoids a second read in the decision.
+                    maybeStartOta({
+                        ip,
+                        id,
+                        reported: versions,
+                        previous,
+                    }).catch((e) => console.log('[ota] Decision failed:', e));
+                } else {
+                    log(`unknown command = ${m}`);
+                }
+                return;
+            }
+
             if (m === 'start') {
                 log('start rec');
                 audioBuffer = [];

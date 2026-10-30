@@ -1,0 +1,234 @@
+import { EchoOtaState, EchoSettings, EchoVersions } from '../types';
+import {
+    FirmwareCheck,
+    checkFirmware,
+    loadFirmwareManifest,
+} from './firmware';
+import {
+    echoSettingsId,
+    encodeEchoId,
+    findEchoSettingsByIp,
+    saveEchoSettings,
+} from './identity';
+import { logEcho } from './logs';
+import { startOTA } from './service';
+
+/**
+ * Automatic over-the-air updates.
+ *
+ * A device that reports a type known to the manifest is asked to update as
+ * soon as its firmware is older than the published version — or unknown, which
+ * is the case for firmware predating version reporting.
+ *
+ * The server only sends the `OTA` command: the firmware then downloads the
+ * binary matching its *own* type. Knowing the type server-side is therefore a
+ * diagnostic used to compare versions, not a prerequisite for updating — a
+ * silent device whose type was never recorded can still be asked to update.
+ *
+ * The firmware reboots without comparing versions itself, so the server is the
+ * only guard against a reboot loop: attempts are counted per reported version
+ * and stop once the device keeps coming back with the same old version (the
+ * manifest then does not match the served binary).
+ */
+
+/** Minimum delay between two automatic attempts for the same version. */
+export const OTA_COOLDOWN_MS = 30 * 60 * 1000;
+/** Attempts allowed for the same reported version before giving up. */
+export const OTA_MAX_ATTEMPTS = 3;
+
+export type OtaOutcome = 'triggered' | 'skipped' | 'not-needed';
+
+/** Result of a version check plus the action taken by the server. */
+export interface OtaDecision extends FirmwareCheck {
+    outcome: OtaOutcome;
+    /** Attempts made for the currently reported version. */
+    attempts?: number;
+    /** True when the automatic retries were given up. */
+    stuck?: boolean;
+}
+
+export interface OtaContext {
+    ip: string;
+    /** Canonical id of the settings document (MAC when known). */
+    id?: string;
+    /** Versions reported by the device. */
+    reported?: EchoVersions;
+    /** Settings document as it was *before* this connect's versions write. */
+    previous?: EchoSettings | null;
+    /** Injectable clock, for the tests. */
+    now?: Date;
+    /**
+     * Silent-device fallback: the device connected without reporting a type,
+     * so its firmware cannot be compared with the manifest. It still downloads
+     * the binary matching its own type, so the server asks it to update
+     * anyway. Only the decision changes: cooldown and attempt limits below
+     * still apply and stop a device that keeps coming back silent.
+     */
+    assumeOutdated?: boolean;
+}
+
+/** Id of the document the OTA state is written to. */
+function settingsId(ctx: OtaContext): string {
+    const { previous, reported } = ctx;
+    return (
+        ctx.id ??
+        encodeEchoId(
+            previous?.mac ?? reported?.mac ?? previous?.ip ?? ctx.ip
+        )
+    );
+}
+
+/** Persist the state of a device that needs no update (resets the counters). */
+async function clearOtaState(
+    ctx: OtaContext,
+    check: FirmwareCheck,
+    reportedVersion?: string
+): Promise<void> {
+    // Nothing was ever attempted: leave the document untouched.
+    if (!ctx.previous?.ota) return;
+    await saveEchoSettings(settingsId(ctx), {
+        ota: {
+            attempts: 0,
+            stuck: false,
+            reportedVersion: reportedVersion ?? '',
+            lastStatus: check.status,
+        },
+    });
+}
+
+/**
+ * Decide whether the device connected from `ctx.ip` must be updated and, when
+ * it must, send it the `OTA` command.
+ *
+ * Repeated attempts for the same reported version stop after
+ * `OTA_MAX_ATTEMPTS`, so a device that never upgrades is not rebooted forever.
+ * The type is only used to *compare* versions: when it is unknown and
+ * `assumeOutdated` is set, the server asks the device to update without being
+ * able to check, because the firmware picks its own binary from its type.
+ */
+export async function maybeStartOta(ctx: OtaContext): Promise<OtaDecision> {
+    const now = ctx.now ?? new Date();
+    const { reported, previous } = ctx;
+
+    const deviceType =
+        reported?.type ?? previous?.deviceType ?? previous?.versions?.type;
+    const reportedVersion =
+        reported?.device ?? previous?.versions?.device;
+
+    const check = checkFirmware(
+        loadFirmwareManifest(),
+        deviceType,
+        reportedVersion
+    );
+
+    // A silent device that never reported its type cannot be compared with the
+    // manifest, but it still requests the binary matching its own type, so it
+    // can be asked to update without the server knowing that type. Only the
+    // "cannot verify" case is overridden: a known type whose saved version is
+    // current stays untouched.
+    const decision: FirmwareCheck =
+        ctx.assumeOutdated && !deviceType && !check.updateAvailable
+            ? {
+                  ...check,
+                  updateAvailable: true,
+                  reason: 'device type unknown; asking it to update since it selects its own binary',
+              }
+            : check;
+
+    if (!decision.updateAvailable) {
+        await clearOtaState(ctx, decision, reportedVersion);
+        return { ...decision, outcome: 'not-needed' };
+    }
+
+    const prior = previous?.ota;
+    // An unknown reported version is stored as an empty string: Mongo drops
+    // `undefined` values on write, and a missing marker would reset the counter
+    // on every connect and make the device reboot forever.
+    const reportedKey = reportedVersion ?? '';
+    const sameVersion =
+        !!prior && (prior.reportedVersion ?? '') === reportedKey;
+    const attempts = sameVersion ? prior?.attempts ?? 0 : 0;
+
+    if (sameVersion && prior?.stuck) {
+        return { ...decision, outcome: 'skipped', attempts, stuck: true };
+    }
+
+    if (sameVersion && attempts >= OTA_MAX_ATTEMPTS) {
+        const ota: EchoOtaState = {
+            ...prior,
+            attempts,
+            reportedVersion: reportedKey,
+            stuck: true,
+            lastStatus: decision.status,
+        };
+        await saveEchoSettings(settingsId(ctx), { ota });
+        await logEcho(
+            ctx.ip,
+            `OTA stuck: still reporting ${
+                reportedVersion ?? '?'
+            } after ${attempts} attempts, no more automatic retries`
+        );
+        return { ...decision, outcome: 'skipped', attempts, stuck: true };
+    }
+
+    const lastAttemptAt = prior?.lastAttemptAt
+        ? new Date(prior.lastAttemptAt).getTime()
+        : 0;
+    if (sameVersion && now.getTime() - lastAttemptAt < OTA_COOLDOWN_MS) {
+        return { ...decision, outcome: 'skipped', attempts, stuck: false };
+    }
+
+    await startOTA(ctx.ip);
+
+    const ota: EchoOtaState = {
+        lastAttemptAt: now,
+        attempts: attempts + 1,
+        reportedVersion: reportedKey,
+        stuck: false,
+        lastStatus: decision.status,
+    };
+    await saveEchoSettings(settingsId(ctx), { ota });
+    await logEcho(
+        ctx.ip,
+        `OTA triggered (${decision.status}): ${decision.reason}`
+    );
+
+    return {
+        ...decision,
+        outcome: 'triggered',
+        attempts: ota.attempts,
+        stuck: false,
+    };
+}
+
+/**
+ * Check a device that connected but did not report its `versions` within the
+ * fallback delay. Firmware predating version reporting sends nothing on
+ * connect, so the server uses the settings saved for its address when there
+ * are any, and still asks the device to update when there are none.
+ *
+ * The type is deliberately *not* a prerequisite: the server only sends the
+ * `OTA` command and the firmware downloads the binary matching its own type,
+ * so a device that never reported anything can still be updated. The attempt
+ * and cooldown guards in `maybeStartOta` keep a device that stays silent from
+ * being rebooted forever.
+ */
+export async function maybeStartOtaForSilentDevice(
+    ip: string
+): Promise<OtaDecision | null> {
+    try {
+        const settings = await findEchoSettingsByIp(ip);
+        return await maybeStartOta({
+            ip,
+            // Without a document, the IP is the identity used for the upsert;
+            // a later `versions` message adopts that document by MAC.
+            id: settings ? echoSettingsId(settings) : undefined,
+            reported: settings?.versions,
+            previous: settings,
+            assumeOutdated: true,
+        });
+    } catch (e) {
+        console.log(`[ota] Silent device check failed for ${ip}:`, e);
+        return null;
+    }
+}

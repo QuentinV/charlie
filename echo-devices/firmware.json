@@ -1,0 +1,21 @@
+{
+    "generatedAt": "2026-10-27T00:00:00.000Z",
+    "devices": {
+        "echo-zero": {
+            "version": "1.0.0",
+            "lib": "1.2.0"
+        },
+        "echo-zero-screen": {
+            "version": "1.0.0",
+            "lib": "1.2.0"
+        },
+        "echo-dashboard": {
+            "version": "1.0.0",
+            "lib": "1.2.0"
+        },
+        "echo-dashboard-weather": {
+            "version": "1.0.0",
+            "lib": "1.2.0"
+        }
+    }
+}

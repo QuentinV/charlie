@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Box } from '@mui/material';
 import TauVisualizer from '../components/AIAvatar/TauVisualizer';
-import { api } from '../api/charlie';
+import { api, getToken } from '../api/charlie';
 import { MicCapture } from '../audio/micCapture';
 
 const FALLBACK_REPLY = "Je n'ai pas trouvé de réponse à ça.";
@@ -250,7 +250,12 @@ export const AiPage = () => {
         }
         closedByUsRef.current = false;
         try {
-            const ws = new WebSocket('/ws/chat');
+            // Browser sockets cannot set an Authorization header: the token
+            // travels as a query parameter (validated by chat-server.ts).
+            const token = getToken();
+            const ws = new WebSocket(
+                `/ws/chat${token ? `?token=${encodeURIComponent(token)}` : ''}`
+            );
             chatWsRef.current = ws;
 
             ws.onopen = () => {
@@ -301,12 +306,14 @@ export const AiPage = () => {
                 wavChunksRef.current.push(event.data);
             };
 
-            ws.onclose = () => {
+            ws.onclose = (event) => {
                 chatWsRef.current = null;
                 setBusy(false);
                 // No server → nothing to wait for.
                 followUpRef.current = false;
                 setAwaitingReply(false);
+                // 4401 = the server rejected the token: retrying would loop.
+                if (event?.code === 4401) return;
                 // Reconnect with backoff unless we closed it on purpose.
                 if (!closedByUsRef.current) {
                     const attempt = (reconnectAttemptRef.current += 1);

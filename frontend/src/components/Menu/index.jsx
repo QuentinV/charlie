@@ -24,11 +24,13 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import SpeakerIcon from '@mui/icons-material/Speaker';
 import SettingsIcon from '@mui/icons-material/Settings';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUnit } from 'effector-react';
 import { NfcJsonReader } from '../NfcJsonReader';
 import { $pwaPrompt, setPwaPrompt } from '../../state/standalone';
 import { useSetting } from '../../state/settingsHooks';
+import { auth } from '../../state/auth';
 
 export const Menu = () => {
     const theme = useTheme();
@@ -39,6 +41,9 @@ export const Menu = () => {
     const enableAddRoutine = useSetting('routines.enabled');
     const showAiAsk = useSetting('experimental.ai.ask.show');
     const pwaPrompt = useUnit($pwaPrompt);
+    const authState = useUnit(auth.$auth);
+    const logout = useUnit(auth.logoutFx);
+    const signedIn = authState.enabled && authState.authenticated;
     const devicesDiscovery = useSetting(
         'experimental.devices.discovery.enabled'
     );
@@ -238,6 +243,18 @@ export const Menu = () => {
                                 </Button>
                             );
                         })}
+                    {signedIn && (
+                        <IconButton
+                            color="inherit"
+                            size="small"
+                            aria-label="Sign out"
+                            title={`Sign out (${authState.user})`}
+                            onClick={() => logout()}
+                            sx={{ ml: 1 }}
+                        >
+                            <LogoutIcon fontSize="small" />
+                        </IconButton>
+                    )}
                 </Toolbar>
             </AppBar>
             <Drawer
@@ -253,7 +270,15 @@ export const Menu = () => {
                     },
                 }}
             >
-                <Box sx={{ width: 280 }} role="presentation">
+                <Box
+                    sx={{
+                        width: 280,
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}
+                    role="presentation"
+                >
                     <Box
                         sx={{
                             px: 3,
@@ -324,6 +349,40 @@ export const Menu = () => {
                             );
                         })}
                     </Box>
+                    {signedIn && (
+                        <Box
+                            sx={{
+                                mt: 'auto',
+                                px: 2,
+                                pt: 1.5,
+                                pb: 2,
+                                borderTop: '1px solid',
+                                borderColor: 'divider',
+                            }}
+                        >
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    color: 'text.secondary',
+                                    display: 'block',
+                                    mb: 1,
+                                }}
+                            >
+                                Signed in as {authState.user}
+                            </Typography>
+                            <Button
+                                fullWidth
+                                startIcon={<LogoutIcon fontSize="small" />}
+                                onClick={async () => {
+                                    setDrawerOpen(false);
+                                    await logout();
+                                }}
+                                sx={{ justifyContent: 'flex-start' }}
+                            >
+                                Sign out
+                            </Button>
+                        </Box>
+                    )}
                 </Box>
             </Drawer>
         </>

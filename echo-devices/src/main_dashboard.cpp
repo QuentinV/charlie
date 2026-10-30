@@ -1,5 +1,7 @@
 #include <ESP32HomeAssistant.h>
 
+#define DEVICE_VERSION "1.0.0"
+
 ESP32HomeAssistant* assistant = nullptr;
 
 void setup() {
@@ -13,6 +15,7 @@ void setup() {
     cfg.apName = "CharlieEcho";    
     cfg.apPassword = "CharlieEcho123";
     cfg.deviceType = "echo-dashboard";
+    cfg.deviceVersion = DEVICE_VERSION;
     cfg.I2S_MIC_WS = GPIO_NUM_11;
     cfg.I2S_MIC_SD = GPIO_NUM_12;
     cfg.I2S_MIC_SCK = GPIO_NUM_13;
@@ -23,13 +26,17 @@ void setup() {
     cfg.displayScreenTime = true;
     cfg.WAKE_UP_WORD_ACCURACY = 0.65f;
 
-    cfg.displays = { 
-        { 128, 32, 90, 0 },
-        { 128, 64, 0, 1 },
-        { 128, 64, 0, 2 },
-        { 128, 64, 0, 3 },
-        { 128, 64, 0, 4 }
-    };
+    I2CScreen o1;
+    o1.w = 128; o1.h = 32; o1.r = 90; o1.channel = 0;
+    I2CScreen o2;
+    o2.w = 128; o2.h = 64; o2.channel = 1;
+    I2CScreen o3;
+    o3.w = 128; o3.h = 64; o3.channel = 2;
+    I2CScreen o4;
+    o4.w = 128; o4.h = 64; o4.channel = 3;
+    I2CScreen o5;
+    o5.w = 128; o5.h = 64; o5.channel = 4;
+    cfg.displays = { o1, o2, o3, o4, o5 };
 
     delay(2000);
     assistant = new ESP32HomeAssistant(cfg);

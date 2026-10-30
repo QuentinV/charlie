@@ -9,6 +9,12 @@ const schema: JSONSchema7 = {
             title: 'Enable agentic fallback flow',
             tags: ['Flow', 'AI'],
         },
+        'auth.enabled': {
+            type: 'boolean',
+            title: 'Login and API token protection (managed in Security below)',
+            readOnly: true,
+            tags: ['Security'],
+        },
         'routines.enabled': {
             type: 'boolean',
             title: 'Enable Routines',

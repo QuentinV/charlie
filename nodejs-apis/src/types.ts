@@ -13,11 +13,28 @@ export interface RestEndpointDescriptor {
     querySchema?: object;
 }
 
+/** Authenticated caller attached to a request by the auth gate. */
+export interface AuthPrincipal {
+    /** Account name owning the token. */
+    user: string;
+    /** Id of the token record (so a request can revoke itself). */
+    tokenId: string;
+    /** App registration name (`Web UI`, `Node-RED`…). */
+    name: string;
+    kind: 'session' | 'api';
+}
+
 export interface RestApiHandlerParams {
     query: any;
     body: any;
     params: any;
     headers: { [key: string]: string };
+    /** Express request extras used by the auth endpoints. */
+    ip?: string;
+    socket?: any;
+    method?: string;
+    /** Set by `authGate` when the request carries a valid token. */
+    user?: AuthPrincipal;
 }
 
 export type RestApiHandler = (
@@ -30,6 +47,68 @@ export type RestApiFullHandler = (
 ) => Promise<void>;
 
 export type RestApis = { [route: string]: RestApi };
+
+// --- Echo
+
+/** Payload of the `versions` message sent by an echo on every connect. */
+export interface EchoVersions {
+    /** ESP32HomeAssistant library version. */
+    lib?: string;
+    /** Device firmware version (`HAConfig::deviceVersion`). */
+    device?: string;
+    /** Device type (`echo-zero`, `echo-dashboard`…). */
+    type?: string;
+    /** MAC address: canonical identity of the device. */
+    mac?: string;
+}
+
+/**
+ * OTA bookkeeping stored in the settings document of a device.
+ * It keeps the automatic update from turning into a reboot loop when the
+ * firmware that gets flashed keeps reporting the same old version.
+ */
+export interface EchoOtaState {
+    /** Last time the server asked the device to update. */
+    lastAttemptAt?: Date;
+    /** Attempts made while the device reported the same version. */
+    attempts?: number;
+    /** Version the device reported when the attempts were counted. */
+    reportedVersion?: string;
+    /** True when the max attempts were reached: no more automatic retries. */
+    stuck?: boolean;
+    /** Result of the last version check (`up-to-date`, `update-available`…). */
+    lastStatus?: string;
+}
+
+/** Document of the `echo_settings` collection. */
+export interface EchoSettings {
+    _id?: unknown;
+    /** IP of the last connection (the live one while the device is connected). */
+    ip?: string;
+    /** Canonical identity, set as soon as a device reports it. */
+    mac?: string;
+    deviceType?: string;
+    versions?: EchoVersions;
+    serverIp?: string;
+    wakeWordAccuracy?: number;
+    screens?: {
+        refreshTime?: number;
+        screens?: {
+            k: number;
+            texts?: {
+                ts?: number;
+                v: string;
+                cx?: number;
+                cy?: number;
+                r?: number;
+            }[];
+        }[];
+    };
+    /** Last time the device reported its versions. */
+    lastSeen?: Date;
+    /** Automatic OTA bookkeeping (cooldown, attempts, stuck flag). */
+    ota?: EchoOtaState;
+}
 
 // --- Tools
 
