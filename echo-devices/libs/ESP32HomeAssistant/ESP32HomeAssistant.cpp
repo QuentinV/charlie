@@ -1,6 +1,7 @@
 #include "ESP32HomeAssistant.h"
 #include <charlie-2_inferencing.h>
 #include <esp_wifi.h>
+#include <esp_mac.h>
 
 ESP32HomeAssistant* ESP32HomeAssistant::instance = nullptr;
 
@@ -67,13 +68,18 @@ String ESP32HomeAssistant::getDeviceVersion() const {
 }
 
 String ESP32HomeAssistant::getDeviceMac() const {
-    if (WiFi.status() != WL_CONNECTED) {
+    // The MAC is a hardware value burned in eFuse: read it directly so the
+    // device identity is always available, even before/without a WiFi
+    // connection (and independent of the STA netif being created).
+    uint8_t mac[6] = {0};
+    if (esp_read_mac(mac, ESP_MAC_WIFI_STA) != ESP_OK) {
         return String("");
     }
 
-    String mac = WiFi.macAddress();
-    mac.toLowerCase();
-    return mac;
+    char buf[18];
+    snprintf(buf, sizeof(buf), "%02x:%02x:%02x:%02x:%02x:%02x",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    return String(buf);
 }
 
 void ESP32HomeAssistant::_sendVersions() {

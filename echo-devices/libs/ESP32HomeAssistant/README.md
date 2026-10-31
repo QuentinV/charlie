@@ -179,7 +179,7 @@ Returns the device firmware version configured through `HAConfig::deviceVersion`
 
 ### `String getDeviceMac() const`
 
-Returns the MAC address of the WiFi station interface as a lowercase `aa:bb:cc:dd:ee:ff` string (from `WiFi.macAddress()`), or an empty string when the station is not connected. The server uses it as the **stable identity** of the device: the echo settings are keyed by MAC, so they follow the physical device when DHCP hands it another IP.
+Returns the WiFi station MAC address as a lowercase `aa:bb:cc:dd:ee:ff` string. It is read directly from the eFuse (`esp_read_mac(mac, ESP_MAC_WIFI_STA)`), so it is available at any time, even before or without a WiFi connection; only an eFuse read failure yields an empty string. The value is the same station MAC the server already knows. The server uses it as the **stable identity** of the device: the echo settings are keyed by MAC, so they follow the physical device when DHCP hands it another IP.
 
 ## WebSocket protocol
 
@@ -212,7 +212,7 @@ Two independent versions are reported to the server:
 Both follow semantic versioning (`MAJOR.MINOR.PATCH`). The device sends its `versions` message automatically on every WebSocket connect, so the server can detect which firmware a device runs and push the matching OTA update; sending `{ "c": "getVersions" }` asks for the same payload on demand. The message also carries the MAC address (`mac`) reported by `getDeviceMac()`, which the server stores as the identity of the device: settings keyed by MAC survive an IP change, while the IP stays the transport address of the WebSocket connection.
 
 ```json
-{ "c": "versions", "v": { "lib": "1.2.0", "device": "1.0.0", "type": "echo-zero", "mac": "aa:bb:cc:dd:ee:ff" } }
+{ "c": "versions", "v": { "lib": "1.3.0", "device": "1.0.0", "type": "echo-zero", "mac": "aa:bb:cc:dd:ee:ff" } }
 ```
 
 ## Conversation mode

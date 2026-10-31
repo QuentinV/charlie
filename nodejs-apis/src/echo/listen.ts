@@ -57,7 +57,7 @@ const IDENTIFY_MAX_BYTES = 16000 * 2 * 8;
  * checks the device from the settings saved for its address. Firmware that
  * predates version reporting never sends that message on connect.
  */
-const VERSIONS_FALLBACK_MS = 10 * 1000;
+const VERSIONS_FALLBACK_MS = 30 * 1000;
 
 function sendPCMInChunks(
     ws,
@@ -89,8 +89,6 @@ export function setupEchoListen() {
         const log = (message: string) => logEcho(ip, message);
         connectedEchos[ip] = ws;
         log('Device connected');
-        
-        startScreenUpdatesForIp(ip);
 
         //ws.on('ping', () => {
         //    log('ping');
@@ -118,9 +116,9 @@ export function setupEchoListen() {
         };
         versionsTimer = setTimeout(() => {
             versionsTimer = null;
-            //maybeStartOtaForSilentDevice(ip).catch((e) =>
-            //    console.log('[ota] Silent device decision failed:', e)
-            //);
+            maybeStartOtaForSilentDevice(ip).catch((e) =>
+                console.log('[ota] Silent device decision failed:', e)
+            );
         }, VERSIONS_FALLBACK_MS);
 
         // The MAC index only describes live connections: drop the entry as
@@ -170,6 +168,7 @@ export function setupEchoListen() {
                 if (data?.c === 'versions') {
                     cancelVersionsTimer();
                     const versions: EchoVersions = data.v ?? {};
+                    console.log(versions);
                     const { mac, id, previous } = await registerVersions(
                         ip,
                         versions
