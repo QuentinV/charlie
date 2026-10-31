@@ -59,13 +59,31 @@ const formatValue = (value) => {
     return value;
 };
 
-export const SensorControls = ({ device }) => {
+export const SensorControls = ({ device, capabilities }) => {
     const state = device?.state ?? {};
     const props = state?.properties ?? {};
 
+    // `capabilities.state` is the provider's canonical vocabulary. A device
+    // that measures SEVERAL things (the Météo sensor) publishes one unit per
+    // metric there, which the single `properties.unit_of_measurement` bag
+    // cannot express — it only describes `level`. Devices whose capabilities
+    // carry no schema (plain HA sensors) keep the payload-only behaviour.
+    const schemaByKey = new Map(
+        (capabilities?.state ?? []).map((field) => [field.key, field])
+    );
+
+    const describe = (row) => {
+        const meta = schemaByKey.get(row.key);
+        return {
+            ...row,
+            label: meta?.label ?? row.label,
+            unit: meta?.unit ?? row.unit,
+        };
+    };
+
     // The reading's unit comes from the payload when the gateway publishes one;
     // the hint above is only a fallback for classes that usually carry it.
-    const unit = props.unit_of_measurement;
+    const unit = props.unit_of_measurement ?? schemaByKey.get('level')?.unit;
 
     const rows = SENSOR_FIELDS.map((field) => ({
         ...field,
@@ -109,7 +127,7 @@ export const SensorControls = ({ device }) => {
                     color={TYPE_COLORS.sensor}
                 />
             )}
-            {rows.map((field) => (
+            {rows.map(describe).map((field) => (
                 <ReadoutRow
                     key={field.key}
                     label={field.label}

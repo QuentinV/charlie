@@ -6,6 +6,7 @@ import shelly from './shelly';
 import custom_gate from './custom_gate';
 import custom_relays from './custom_relays';
 import homeassistant from './homeassistant';
+import weather from './weather';
 
 export default {
     ikea,
@@ -16,4 +17,5 @@ export default {
     custom_gate,
     custom_relays,
     homeassistant,
+    weather,
 };

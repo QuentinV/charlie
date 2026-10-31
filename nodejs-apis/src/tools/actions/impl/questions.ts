@@ -1,5 +1,5 @@
 import { ToolExecutionContext, Tools } from '../../../types';
-import { settings } from '../../../manager/services/settings';
+import { getWeather } from '../../../weather/service';
 import { t } from '../langs';
 
 /**
@@ -28,30 +28,19 @@ export const tools: Tools = {
     },
     askWeather: {
         exec: async () => {
-            const latitude = Number(settings.weather?.latitude);
-            const longitude = Number(settings.weather?.longitude);
-            if (!latitude || !longitude) {
-                // Location not configured yet → let the caller know it is
-                // not possible rather than answering something wrong.
+            // The same reading the Météo device publishes and the echo screen
+            // prints: one service, one answer, no second weather source.
+            const reading = await getWeather();
+            if (!reading) {
+                // Location not configured or upstream unavailable → let the
+                // caller know it is not possible rather than answering wrong.
                 return false;
             }
-            try {
-                const response = await fetch(
-                    `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,rain,wind_speed_10m`
-                );
-                const data = await response.json();
-                const current = data?.current;
-                if (current?.temperature_2m === undefined) {
-                    return false;
-                }
-                return t('weather.answer', {
-                    temp: current.temperature_2m,
-                    rain: current.rain ?? 0,
-                    windspeed: current.wind_speed_10m ?? 0,
-                });
-            } catch (e) {
-                return false;
-            }
+            return t('weather.answer', {
+                temp: reading.temperature,
+                rain: reading.precipitation,
+                windspeed: reading.windSpeed,
+            });
         },
     },
     howAreYou: {

@@ -100,6 +100,11 @@ const schema: JSONSchema7 = {
             title: 'Enable AI chat',
             tags: ['AI', 'Experimental'],
         },
+        'devices.providers.weather.enabled': {
+            type: 'boolean',
+            title: 'Enable weather device (one Météo sensor, all metrics)',
+            tags: ['Weather', 'restart'],
+        },
         'weather.latitude': {
             type: 'number',
             title: 'Home latitude used for weather questions',
