@@ -911,11 +911,8 @@ void ESP32HomeAssistant::begin() {
     }
 
     Serial.println("Setup time");
-    setenv("TZ", "Europe/Paris", 1);
-    tzset();
-
-    configTime(7200, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
-
+    configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org", "time.nist.gov", "time.google.com");
+    
     this->setLed(0, 0, 255);
     
     xTaskCreatePinnedToCore( wsTask, "TaskWebSocket", 1024 * 8, NULL, 1, &this->taskWebSocketHandle, 0);

@@ -2,20 +2,20 @@
     "generatedAt": "2026-10-27T00:00:00.000Z",
     "devices": {
         "echo-zero": {
-            "version": "1.0.0",
-            "lib": "1.2.0"
+            "version": "1.0.1",
+            "lib": "1.2.1"
         },
         "echo-zero-screen": {
-            "version": "1.0.0",
-            "lib": "1.2.0"
+            "version": "1.0.1",
+            "lib": "1.2.1"
         },
         "echo-dashboard": {
-            "version": "1.0.0",
-            "lib": "1.2.0"
+            "version": "1.0.1",
+            "lib": "1.2.1"
         },
         "echo-dashboard-weather": {
-            "version": "1.0.0",
-            "lib": "1.2.0"
+            "version": "1.0.1",
+            "lib": "1.2.1"
         }
     }
 }

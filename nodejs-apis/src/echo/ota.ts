@@ -121,6 +121,8 @@ export async function maybeStartOta(ctx: OtaContext): Promise<OtaDecision> {
         reportedVersion
     );
 
+    await logEcho(ctx.ip, JSON.stringify(check));
+
     // A silent device that never reported its type cannot be compared with the
     // manifest, but it still requests the binary matching its own type, so it
     // can be asked to update without the server knowing that type. Only the

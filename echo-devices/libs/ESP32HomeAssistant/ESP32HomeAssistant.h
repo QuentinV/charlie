@@ -21,7 +21,7 @@
 #include <SPI.h>
 
 // Library version (keep in sync with library.properties)
-#define ESP32HOMEASSISTANT_VERSION       "1.3.0"
+#define ESP32HOMEASSISTANT_VERSION       "1.2.1"
 
 #define WS_PORT 9303
 

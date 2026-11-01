@@ -195,6 +195,8 @@ export function setupEchoListen() {
                         id,
                         reported: versions,
                         previous,
+                    }).then( d => {
+                        logEcho(ip, JSON.stringify(d));
                     }).catch((e) => console.log('[ota] Decision failed:', e));
                 } else {
                     log(`unknown command = ${m}`);

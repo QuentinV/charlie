@@ -1,6 +1,6 @@
 #include <ESP32HomeAssistant.h>
 
-#define DEVICE_VERSION "1.0.0"
+#define DEVICE_VERSION "1.0.1"
 
 ESP32HomeAssistant* assistant = nullptr;
 
