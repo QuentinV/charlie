@@ -59,7 +59,10 @@ export const EchoPage = () => {
                 <Paper elevation={3} sx={{ p: 3 }}>
                     <EchoDeviceInfo echo={selected} onReload={loadEchos} />
                     <EchoSettings echo={selected} />
-                    <EchoScreenSetting id={selected.id} />
+                    <EchoScreenSetting
+                        id={selected.id}
+                        deviceType={selected.deviceType}
+                    />
                 </Paper>
             )}
             {!!changelogs?.length && (
