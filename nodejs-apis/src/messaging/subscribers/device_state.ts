@@ -5,12 +5,12 @@ import { log } from '../../manager/services/activities';
 export default {
     'device/state': async (data: string) => {
         log('MQTT', `Received on device/state: ${data}`);
-        const { externalId, power, level } = JSON.parse(data);
+        const { externalId, power, level, properties } = JSON.parse(data);
         if (!externalId) return;
 
         await cs.devices.updateOne(
             { externalId },
-            { $set: { state: { power, level } } }
+            { $set: { state: { power, level, properties } } }
         );
 
         await logDeviceState({ externalId });

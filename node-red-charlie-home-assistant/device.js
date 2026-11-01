@@ -86,7 +86,7 @@ module.exports = function (RED) {
                 const outputs = [null, null, null];
                 outputs[oi] = {
                     topic: config.externalId,
-                    payload: { state: res.power, level: res.level },
+                    payload: { state: res.power, level: res.level, properties: res.properties },
                 };
 
                 node.send(outputs);
