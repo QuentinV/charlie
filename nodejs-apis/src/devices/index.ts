@@ -15,6 +15,10 @@ import {
 import { log } from '../manager/services/activities';
 import { createPlugin } from './providers/plugin';
 import defaultProviders from './providers';
+import {
+    getCachedCapabilities,
+    setCachedCapabilities,
+} from './capabilities-cache';
 
 type ProvidersApisByName = { [name: string]: ProvidersApis };
 
@@ -132,13 +136,10 @@ async function call(
     }
 }
 
-// In-memory capabilities cache, kept until server restart
-const capabilitiesCache = new Map<string, DeviceCapabilities>();
-
 export async function getDeviceCapabilities(
     deviceId: string
 ): Promise<DeviceCapabilities | undefined> {
-    const cached = capabilitiesCache.get(deviceId);
+    const cached = getCachedCapabilities(deviceId);
     if (cached) return cached;
 
     log('devices', 'getDeviceCapabilities', { context: { deviceId } });
@@ -161,7 +162,7 @@ export async function getDeviceCapabilities(
             ...capabilities,
             state: capabilities.state ?? capabilities.stateSchema,
         };
-        capabilitiesCache.set(deviceId, normalized);
+        setCachedCapabilities(deviceId, normalized);
         return normalized;
     }
     return capabilities;

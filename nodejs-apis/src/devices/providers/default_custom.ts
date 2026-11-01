@@ -1,5 +1,12 @@
 import { mqttClient } from '../../messaging/receive';
-import { ProvidersApis } from '../../types';
+import {
+    DeviceCapabilities,
+    ProviderApiMetaInfo,
+    ProvidersApis,
+} from '../../types';
+import { deriveStateSchema } from '../custom-schema';
+
+export { deriveStateSchema };
 
 /**
  * Default provider for `node-red-charlie-home-assistant` supporting state change through mqtt, receiving state update through mqtt
@@ -17,6 +24,15 @@ const apis: ProvidersApis = {
 
             return state.power === 'pause' ? 'off' : state;
         },
+
+        // A custom device declares no schema: advertise the numeric metrics its
+        // last MQTT state actually carries.
+        getCapabilities: async ({
+            device,
+        }: ProviderApiMetaInfo): Promise<DeviceCapabilities> => ({
+            state: deriveStateSchema(device.state),
+            functions: [],
+        }),
     },
 };
 
