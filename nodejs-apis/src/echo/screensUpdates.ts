@@ -5,6 +5,7 @@ import { log } from '../manager/services/activities';
 import { connectedEchos, getEchoMacByIp } from './listen';
 import { findEchoSettingsByIp } from './identity';
 import { updateDisplays } from './service';
+import { logEcho } from './logs';
 
 const intervalHandles: { [ip: string]: ReturnType<typeof setInterval> } = {};
 
@@ -143,6 +144,7 @@ async function resolveScripting(v: string): Promise<string> {
                 );
             }
         } catch (e) {
+            logEcho('', `[screensUpdates] Error resolving script for "${fullMatch}"`);
             console.log(
                 `[screensUpdates] Error resolving script for "${fullMatch}":`,
                 e
@@ -206,8 +208,10 @@ async function refreshScreensForIp(ip: string): Promise<void> {
         );
 
         await updateDisplays(ip, requests);
+        logEcho(ip, `[screensUpdates] screns updated`);
     } catch (e) {
         console.log(`[screensUpdates] Error refreshing screens for ${ip}:`, e);
+        logEcho(ip, `[screensUpdates] Error refreshing screens`);
     }
 }
 
@@ -220,17 +224,17 @@ export async function startScreenUpdatesForIp(ip: string): Promise<void> {
     // Load settings to get refreshTime (MAC keyed, ip as fallback).
     const settings = await findEchoSettingsByIp(ip, getEchoMacByIp(ip));
     if (!settings?.screens?.refreshTime) {
-        log(
-            `echoScreensUpdates`,
-            `No screen refreshTime configured for ${ip}, skipping`
+        logEcho(
+            ip,
+            `[screensUpdates] No screen refreshTime configured, skipping`
         );
         return;
     }
 
     const refreshTimeMs = settings.screens.refreshTime * 1000;
-    log(
-        `echoScreensUpdates`,
-        `Starting screen updates for ${ip} every ${settings.screens.refreshTime}s`
+    logEcho(
+        ip,
+        `[screensUpdates] Starting screen updates every ${settings.screens.refreshTime}s`
     );
 
     refreshScreensForIp(ip);
@@ -246,5 +250,5 @@ export function clearScreenUpdatesForIp(ip: string): void {
     if (!intervalHandles[ip]) return;
     clearInterval(intervalHandles[ip]);
     delete intervalHandles[ip];
-    console.log(`[screensUpdates] Stopped screen updates for ${ip}`);
+    logEcho(ip, `[screensUpdates] Stopped screen updates`);
 }

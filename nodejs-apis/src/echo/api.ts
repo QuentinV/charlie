@@ -6,7 +6,6 @@ import {
     setServerIp,
     setWakeUpWordAccuracy,
     startOTA,
-    updateDisplays,
 } from './service';
 import {
     encodeEchoId,
