@@ -112,6 +112,7 @@ module.exports = function (RED) {
                             externalId: config.externalId,
                             power: payload.state,
                             level: payload.level ?? 100,
+                            properties: payload.properties
                         }),
                         {
                             qos: 0,
