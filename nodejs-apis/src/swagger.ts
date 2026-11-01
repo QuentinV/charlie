@@ -22,8 +22,27 @@ export async function getSwaggerDoc() {
                 url: `http://${process.env.DEFAULT_HOST}:9300`,
             },
         ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    description:
+                        'API token created in Settings → Security, or the session token returned by POST /api/auth/login.',
+                },
+            },
+        },
         paths: {},
     };
+
+    // Routes reachable without a token when protection is enabled (kept in
+    // sync with auth/middleware.ts).
+    const publicPaths = new Set([
+        '/api/auth/status',
+        '/api/auth/login',
+        '/api/auth/setup',
+        '/api/echo/{echoType}/latest/firmware.bin',
+    ]);
 
     const extractParams = (route) => {
         const regex = /:([a-zA-Z0-9_]+)/g;
@@ -69,6 +88,9 @@ export async function getSwaggerDoc() {
                           }
                         : undefined,
                 tags: [tag],
+                security: publicPaths.has(builtPath)
+                    ? undefined
+                    : [{ bearerAuth: [] }],
                 parameters: [
                     ...pathParams.map((name) => ({
                         name,

@@ -37,8 +37,13 @@ import { settings } from './state/settings';
 import { useSetting } from './state/settingsHooks';
 import SettingsPage from './pages/Settings';
 import { MusicsPage } from './pages/Musics';
+import { auth } from './state/auth';
+import { AuthGate } from './components/AuthGate';
+import { subscribePush } from './api/push';
 
-settings.loadFx();
+// Probe protection status before anything else: when auth is enabled every
+// other endpoint (settings included) requires a token.
+auth.checkFx();
 
 // Without a boundary, any uncaught error in a route (render or effect) makes
 // React unmount the whole tree — i.e. a blank page. This keeps the shell and
@@ -97,31 +102,66 @@ class ErrorBoundary extends React.Component {
     }
 }
 
+function LoadingScreen() {
+    return (
+        <Box
+            sx={{
+                height: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}
+        >
+            <CircularProgress
+                aria-label="Loading..."
+                size={48}
+                thickness={4}
+            />
+        </Box>
+    );
+}
+
 export default function App() {
+    const authState = useUnit(auth.$auth);
     const loadingSettings = useUnit(settings.loadFx.pending);
+    const settingsLoaded = useUnit(settings.$loaded);
     const showAiAsk = useSetting('experimental.ai.ask.show');
+
+    // Settings are themselves protected: only fetch them once the app is
+    // usable (protection off, or a valid token is stored).
+    const canLoadSettings =
+        !authState.loading && (!authState.enabled || authState.authenticated);
+
+    React.useEffect(() => {
+        if (canLoadSettings && !settingsLoaded && !loadingSettings) {
+            settings.loadFx();
+        }
+    }, [canLoadSettings, settingsLoaded, loadingSettings]);
+
+    React.useEffect(() => {
+        if (canLoadSettings) subscribePush();
+    }, [canLoadSettings]);
+
+    if (authState.loading) {
+        return (
+            <ThemeProvider theme={theme}>
+                <CssBaseline />
+                <LoadingScreen />
+            </ThemeProvider>
+        );
+    }
 
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
             <Router>
-                {loadingSettings && (
-                    <Box
-                        sx={{
-                            height: '100vh',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <CircularProgress
-                            aria-label="Loading..."
-                            size={48}
-                            thickness={4}
-                        />
-                    </Box>
-                )}
-                {!loadingSettings && <AppLayout showAiAsk={showAiAsk} />}
+                <AuthGate>
+                    {settingsLoaded ? (
+                        <AppLayout showAiAsk={showAiAsk} />
+                    ) : (
+                        <LoadingScreen />
+                    )}
+                </AuthGate>
             </Router>
         </ThemeProvider>
     );

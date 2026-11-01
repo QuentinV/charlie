@@ -11,6 +11,18 @@ import { discoverDevices } from '../devices/discover';
 import { Device, RestApis } from '../types';
 import { v4 as uuidV4 } from 'uuid';
 
+/**
+ * A property key requested by the history chart.
+ *
+ * The key is interpolated into a Mongo field path (`$state.properties.<key>`),
+ * so it is validated as a plain identifier: no `$`, no dots, no operator
+ * injection from the query string.
+ */
+const propertyKey = (value?: string): string | null => {
+    const key = String(value ?? '').trim();
+    return /^[A-Za-z0-9_]+$/.test(key) ? key : null;
+};
+
 const routes: RestApis = {
     'devices/discover': {
         get: async () => discoverDevices(),
@@ -69,6 +81,8 @@ const routes: RestApis = {
             handler: async ({ params, query }) => {
                 const start = Number(query.start);
                 const end = Number(query.end);
+                // Multi-metric devices are charted one property at a time, exactly like `level` for the others.
+                const property = propertyKey(query.properties);
                 try {
                     return {
                         data: await cs.states
@@ -120,6 +134,13 @@ const routes: RestApis = {
                                         _id: '$minute',
                                         bestPower: { $max: '$powerPriority' },
                                         avgLevel: { $avg: '$state.level' },
+                                        ...(property
+                                            ? {
+                                                  avgProperty: {
+                                                      $avg: `$state.properties.${property}`,
+                                                  },
+                                              }
+                                            : {}),
                                     },
                                 },
                                 {
@@ -157,6 +178,14 @@ const routes: RestApis = {
                                         timestamp: '$_id',
                                         power: '$power',
                                         level: '$avgLevel',
+                                        ...(property
+                                            ? {
+                                                  properties: {
+                                                      [property]:
+                                                          '$avgProperty',
+                                                  },
+                                              }
+                                            : {}),
                                     },
                                 },
                                 { $sort: { timestamp: 1 } },

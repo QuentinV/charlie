@@ -1,22 +1,30 @@
 import { Box, Link, MenuItem, Paper, Select, Typography } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { EchoSettings } from '../components/EchoSettings';
 import { api } from '../api/charlie';
 import { EchoChangelogs } from '../components/EchoChangelogs';
 import { EchoScreenSetting } from '../components/EchoScreenSetting';
+import { EchoDeviceInfo } from '../components/EchoDeviceInfo';
 
 export const EchoPage = () => {
     const [selectedEcho, setSelectedEcho] = useState('');
     const [echos, setEchos] = useState([]);
     const [changelogs, setChangelogs] = useState([]);
 
+    const loadEchos = useCallback(
+        () => api(`echo?${Date.now()}`).then((res) => setEchos(res ?? [])),
+        [setEchos]
+    );
+
     useEffect(() => {
-        api(`echo?${Date.now()}`).then((res) => setEchos(res));
-    }, [setEchos]);
+        loadEchos();
+    }, [loadEchos]);
 
     useEffect(() => {
         api(`echo/changelogs`).then((res) => setChangelogs(res));
     }, []);
+
+    const selected = echos.find((echo) => echo.id === selectedEcho);
 
     return (
         <Box>
@@ -37,18 +45,21 @@ export const EchoPage = () => {
                         label="Select Echo Device"
                         onChange={(e) => setSelectedEcho(e.target.value)}
                     >
-                        {echos.map((ip) => (
-                            <MenuItem key={ip} value={ip}>
-                                {ip}
+                        {echos.map((echo) => (
+                            <MenuItem key={echo.id} value={echo.id}>
+                                {echo.deviceType ? `${echo.deviceType} — ` : ''}
+                                {echo.ip}
+                                {echo.mac ? ` (${echo.mac})` : ''}
                             </MenuItem>
                         ))}
                     </Select>
                 </Box>
             )}
-            {!!selectedEcho && (
+            {!!selected && (
                 <Paper elevation={3} sx={{ p: 3 }}>
-                    <EchoSettings ip={selectedEcho} />
-                    <EchoScreenSetting ip={selectedEcho} />
+                    <EchoDeviceInfo echo={selected} onReload={loadEchos} />
+                    <EchoSettings echo={selected} />
+                    <EchoScreenSetting id={selected.id} />
                 </Paper>
             )}
             {!!changelogs?.length && (

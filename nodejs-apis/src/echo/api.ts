@@ -1,15 +1,33 @@
 import { RestApis } from '../types';
 import fs from 'fs';
-import { connectedEchos } from './listen';
-import { cs } from '../core/db';
+import { connectedEchos, getEchoMacByIp, resolveConnectedIp } from './listen';
 import {
+    askVersions,
     setServerIp,
     setWakeUpWordAccuracy,
     startOTA,
     updateDisplays,
 } from './service';
+import {
+    encodeEchoId,
+    findEchoSettingsById,
+    findEchoSettingsByIp,
+    saveEchoSettings,
+} from './identity';
+import { checkFirmware, loadFirmwareManifest } from './firmware';
 
 const DIR = '../echo-devices';
+
+/**
+ * Address to send a live command to, from a settings id: the ip of the
+ * connected socket when the device is online, the ip stored in its settings
+ * otherwise (sending to a disconnected device is a no-op either way).
+ */
+async function commandIp(id: string): Promise<string | undefined> {
+    const live = resolveConnectedIp(id);
+    if (live) return live;
+    return (await findEchoSettingsById(id))?.ip;
+}
 
 const routes: RestApis = {
     'echo/:echoType/latest/firmware.bin': {
@@ -39,14 +57,90 @@ const routes: RestApis = {
     },
     echo: {
         get: {
-            handler: async () => [...Object.keys(connectedEchos)],
+            handler: async () => {
+                // One entry per connected device, addressed by its canonical id
+                // (the MAC it reports, the ip only for firmware without one).
+                const manifest = loadFirmwareManifest();
+                const ips = Object.keys(connectedEchos);
+                const settings = await Promise.all(
+                    ips.map((ip) => findEchoSettingsByIp(ip, getEchoMacByIp(ip)))
+                );
+                return ips.map((ip, index) => {
+                    const doc = settings[index];
+                    const mac = doc?.mac ?? getEchoMacByIp(ip);
+                    const deviceType = doc?.deviceType ?? doc?.versions?.type;
+                    return {
+                        id: encodeEchoId(mac ?? ip),
+                        ip,
+                        mac,
+                        deviceType,
+                        versions: doc?.versions,
+                        lastSeen: doc?.lastSeen,
+                        ota: doc?.ota,
+                        firmware: checkFirmware(
+                            manifest,
+                            deviceType,
+                            doc?.versions?.device
+                        ),
+                    };
+                });
+            },
         },
     },
     'echo/ota': {
         post: {
             handler: async ({ body }) => {
-                const { ip } = body;
-                await startOTA(ip);
+                const { id, ip, reset } = body ?? {};
+                if (!id && !ip) return;
+                const targetId = id ?? ip;
+
+                // A manual request clears the "stuck" flag so the next check
+                // (automatic or not) retries a device the server gave up on.
+                if (reset) {
+                    const doc = await findEchoSettingsById(targetId);
+                    if (doc?.ota) {
+                        await saveEchoSettings(targetId, {
+                            ota: { ...doc.ota, attempts: 0, stuck: false },
+                        });
+                    }
+                }
+
+                const target = await commandIp(targetId);
+                if (!target) return;
+                await startOTA(target);
+            },
+        },
+    },
+    // Firmware status of a device, computed from the published manifest and
+    // the versions it reported.
+    'echo/:id/firmware': {
+        get: {
+            handler: async ({ params }) => {
+                const doc = await findEchoSettingsById(params.id);
+                if (!doc) return;
+                const deviceType = doc.deviceType ?? doc.versions?.type;
+                return {
+                    id: params.id,
+                    ip: doc.ip,
+                    mac: doc.mac,
+                    deviceType,
+                    versions: doc.versions,
+                    ota: doc.ota,
+                    firmware: checkFirmware(
+                        loadFirmwareManifest(),
+                        deviceType,
+                        doc.versions?.device
+                    ),
+                };
+            },
+        },
+    },
+    // Ask the device to report its versions (and its MAC) on demand.
+    'echo/:id/versions': {
+        post: {
+            handler: async ({ params }) => {
+                const target = await commandIp(params.id);
+                if (target) await askVersions(target);
             },
         },
     },
@@ -73,46 +167,43 @@ const routes: RestApis = {
             },
         },
     },
-    'echo/:ip/params': {
+    // The settings live under the id of the device: its MAC once it has
+    // reported one, so they follow it when DHCP changes its address.
+    'echo/:id/params': {
         get: {
-            handler: async ({ params }) =>
-                cs.echoSettings.findOne({ ip: params.ip.replaceAll('-', '.') }),
+            handler: async ({ params }) => findEchoSettingsById(params.id),
         },
         post: {
             handler: async ({ params, body }) => {
-                const ip = params.ip.replaceAll('-', '.');
                 const { serverIp, wakeWordAccuracy } = body;
-                if (wakeWordAccuracy) {
-                    await setWakeUpWordAccuracy(ip, wakeWordAccuracy);
+                const target = await commandIp(params.id);
+                if (target) {
+                    if (wakeWordAccuracy) {
+                        await setWakeUpWordAccuracy(target, wakeWordAccuracy);
+                    }
+                    if (serverIp) {
+                        await setServerIp(target, serverIp);
+                    }
                 }
-                if (serverIp) {
-                    await setServerIp(ip, serverIp);
-                }
-                await cs.echoSettings.updateOne(
-                    { ip },
-                    { $set: { serverIp, wakeWordAccuracy } },
-                    { upsert: true }
-                );
+                await saveEchoSettings(params.id, {
+                    serverIp,
+                    wakeWordAccuracy,
+                });
             },
         },
     },
-    'echo/:ip/screens': {
+    'echo/:id/screens': {
         post: {
             handler: async ({ params, body }) => {
-                const ip = params.ip.replaceAll('-', '.');
                 const { refreshTime, screens } = body;
-                await cs.echoSettings.updateOne(
-                    { ip },
-                    { $set: { screens: { refreshTime, screens } } },
-                    { upsert: true }
-                );
+                await saveEchoSettings(params.id, {
+                    screens: { refreshTime, screens },
+                });
             },
         },
         get: {
-            handler: async ({ params, body }) => {
-                const ip = params.ip.replaceAll('-', '.');
-                return (await cs.echoSettings.findOne({ ip }))?.screens ?? {};
-            },
+            handler: async ({ params }) =>
+                (await findEchoSettingsById(params.id))?.screens ?? {},
         },
     },
 };

@@ -8,21 +8,28 @@ import { HttpError } from './errors';
 import swaggerUi from 'swagger-ui-express';
 import { defaultApiPath, getSwaggerDoc } from './swagger';
 import { registerNotificationApi } from './core/notifications';
+import { authGate } from './auth/middleware';
 
 export async function setupRestApi() {
     const app = express();
 
-    const swaggerDoc = await getSwaggerDoc();
-    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
-
-    app.use(express.json());
     app.use(
         cors({
             origin: '*',
             exposedHeaders: ['Mcp-Session-Id'],
-            allowedHeaders: ['Content-Type', 'mcp-session-id'],
+            allowedHeaders: ['Content-Type', 'Authorization', 'mcp-session-id'],
         })
     );
+
+    // Login / API-token gate for the whole HTTP surface. It is a no-op while
+    // `auth.enabled` is off; the public allowlist (login, status, setup, OTA
+    // firmware, Swagger) lives in auth/middleware.ts.
+    app.use(authGate);
+
+    app.use(express.json());
+
+    const swaggerDoc = await getSwaggerDoc();
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
     // init endpoints
     const apis = { ...managerApis, ...(await getProvidersRestApis()) };

@@ -11,3 +11,5 @@
 !.pio/build/echo-zero-screen/firmware.bin
 !.pio/build/echo-dashboard
 !.pio/build/echo-dashboard/firmware.bin
+!.pio/build/echo-dashboard-weather
+!.pio/build/echo-dashboard-weather/firmware.bin

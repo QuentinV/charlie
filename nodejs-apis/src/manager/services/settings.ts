@@ -38,4 +38,7 @@ export async function updateSettings(settings: Settings) {
         { $set: s },
         { upsert: true }
     );
+    // Feature flags such as `auth.enabled` are read from the cache on every
+    // request: refresh it so a change applies without a restart.
+    await loadSettingsCache();
 }

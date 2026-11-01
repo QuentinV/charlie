@@ -9,6 +9,12 @@ const schema: JSONSchema7 = {
             title: 'Enable agentic fallback flow',
             tags: ['Flow', 'AI'],
         },
+        'auth.enabled': {
+            type: 'boolean',
+            title: 'Login and API token protection (managed in Security below)',
+            readOnly: true,
+            tags: ['Security'],
+        },
         'routines.enabled': {
             type: 'boolean',
             title: 'Enable Routines',
@@ -93,6 +99,11 @@ const schema: JSONSchema7 = {
             type: 'boolean',
             title: 'Enable AI chat',
             tags: ['AI', 'Experimental'],
+        },
+        'devices.providers.weather.enabled': {
+            type: 'boolean',
+            title: 'Enable weather device (one Météo sensor, all metrics)',
+            tags: ['Weather', 'restart'],
         },
         'weather.latitude': {
             type: 'number',

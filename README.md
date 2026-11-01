@@ -165,6 +165,47 @@ HA_PORT=8123
 # HA_TIME_ZONE=Europe/Paris
 ```
 
+### 🔐 Security (login + API tokens)
+
+The brain can require a login and API tokens. It is **off by default**; enable it
+from **Settings → Security**:
+
+1. create the administrator account (username + password, at least 8 characters);
+2. the same action enables `auth.enabled` and keeps this browser signed in;
+3. register named API tokens (Node-RED, a script, …) in the same panel. A token
+   is displayed **once** — only its SHA-256 hash is stored.
+
+How it works:
+
+- `POST /api/auth/login` returns a long-lived opaque token (`chk_…`) that the web
+  UI stores in `localStorage` (`charlie.auth.token`). Tokens do not expire by
+  default, survive restarts/redeploys, and can be revoked at any time from
+  Settings → Security.
+- every `/api/*` request requires `Authorization: Bearer chk_…`, except:
+  `auth/status`, `auth/login`, `auth/setup`, the Swagger page (`/api-docs`) and
+  the echo firmware download.
+- the browser chat socket `/ws/chat` authenticates with `?token=chk_…`
+  (browsers cannot set headers on a WebSocket).
+- `POST /api/auth/password` changes the password and signs out every other
+  browser session; named API tokens are kept.
+
+Deliberately **not** protected: the ESP32 echo WebSocket (`:9303`), MQTT
+(`:9304`) and the firmware download — echo devices have no token support and
+must always be able to reach Charlie. Do not expose those ports outside your LAN.
+
+Lockout recovery — add to `nodejs-apis/.env` and restart:
+
+```env
+AUTH_BOOTSTRAP_USER=admin
+AUTH_BOOTSTRAP_PASSWORD=change-me
+# AUTH_BOOTSTRAP_FORCE=true   # also reset the password on every start
+```
+
+There is **no TLS** in the default compose stack: passwords and tokens travel in
+clear text on the LAN. Put the stack behind an HTTPS reverse proxy before
+exposing it outside your network.
+
+
 ### 🎤 ASR
 
 ASR is powered by a separate service: [`qwen-asr`](https://github.com/QuentinV/qwen-asr)

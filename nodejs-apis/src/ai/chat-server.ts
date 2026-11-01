@@ -3,6 +3,8 @@ import { answer } from './flow';
 import { endSession } from './llm';
 import { stt } from '../echo/stt';
 import { getPending, identify } from './voiceProfile';
+import { settings } from '../manager/services/settings';
+import { findTokenByRaw } from '../auth/store';
 import {
     Conversation,
     REGISTRATION_TIMEOUT_MS,
@@ -51,7 +53,20 @@ function followUpTimeout(registering: boolean): number | undefined {
 export function setupChatServer(server: any) {
     const wss = new WebSocketServer({ server, path: '/ws/chat' });
 
-    wss.on('connection', (ws) => {
+    wss.on('connection', async (ws, req: any) => {
+        // Browser WebSockets cannot send an Authorization header: the token
+        // travels as `?token=` (set by the AI page from localStorage). When
+        // protection is off the socket behaves exactly as before.
+        if (settings.auth?.enabled) {
+            const url = new URL(req?.url ?? '', 'http://localhost');
+            const raw = url.searchParams.get('token');
+            const record = raw ? await findTokenByRaw(raw) : null;
+            if (!record) {
+                ws.close(4401, 'unauthorized');
+                return;
+            }
+        }
+
         const conversation = new Conversation({
             strip: wordWakeWords(WEB_WAKE_WORDS),
             bareWake: 'wake',

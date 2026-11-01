@@ -10,19 +10,23 @@ import {
 } from '@mui/material';
 import { api } from '../../api/charlie';
 
-export const EchoSettings = ({ ip }) => {
+export const EchoSettings = ({ echo }) => {
     const [settings, setSettings] = useState(null);
+    // The device is addressed by its canonical id, the MAC it reports: the
+    // settings follow the device when DHCP hands it another address.
+    const id = echo?.id;
 
     useEffect(() => {
-        api(`echo/${ip.replaceAll('.', '-')}/params`).then((res) =>
-            setSettings(
-                res ?? {
-                    serverIp: '192.168.1.1',
-                    wakeWordAccuracy: 0.85,
-                }
-            )
+        if (!id) return;
+        api(`echo/${id}/params`).then((res) =>
+            setSettings({
+                ...(res ?? {}),
+                // A device that was never configured has no saved values yet.
+                serverIp: res?.serverIp ?? '192.168.1.1',
+                wakeWordAccuracy: res?.wakeWordAccuracy ?? 0.85,
+            })
         );
-    }, [setSettings, ip]);
+    }, [setSettings, id]);
 
     const handleInputChange = (e) => {
         setSettings({
@@ -39,14 +43,14 @@ export const EchoSettings = ({ ip }) => {
     };
 
     const handleSave = () => {
-        api(`echo/${ip.replaceAll('.', '-')}/params`, {
+        api(`echo/${id}/params`, {
             method: 'POST',
             body: JSON.stringify(settings),
         });
     };
 
     const runOta = () => {
-        api(`echo/ota`, { method: 'POST', body: JSON.stringify({ ip }) });
+        api(`echo/ota`, { method: 'POST', body: JSON.stringify({ id }) });
     };
 
     if (!settings) return null;

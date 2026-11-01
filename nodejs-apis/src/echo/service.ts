@@ -25,6 +25,11 @@ export async function startOTA(ip: string) {
     await sendToConnectedEchos(ip, { c: 'OTA' });
 }
 
+/** Ask the device to report its versions (and its MAC) right now. */
+export async function askVersions(ip: string) {
+    await sendToConnectedEchos(ip, { c: 'getVersions' });
+}
+
 interface UpdateDisplayRequest {
     k: number; // screen key
     texts: {

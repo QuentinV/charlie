@@ -1,5 +1,6 @@
 {
     "users": "users",
+    "apiTokens": "api_tokens",
     "devices": "devices",
     "rooms": "rooms",
     "providers": "providers",

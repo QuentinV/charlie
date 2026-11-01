@@ -30,21 +30,22 @@ const defaultScreen = {
     texts: [],
 };
 
-export const EchoScreenSetting = ({ ip }) => {
+export const EchoScreenSetting = ({ id }) => {
     const [screens, setScreens] = useState(null);
     const [refreshTime, setRefreshTime] = useState(30);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (!ip) return;
+        if (!id) return;
         setLoading(true);
-        api(`echo/${ip.replaceAll('.', '-')}/screens`)
+        
+        api(`echo/${id}/screens`)
             .then((res) => {
                 setRefreshTime(res.refreshTime ?? 30);
                 setScreens(res.screens ?? []);
             })
             .finally(() => setLoading(false));
-    }, [ip]);
+    }, [id]);
 
     const handleScreenChange = (screenIndex, field, value) => {
         setScreens((prev) => {
@@ -117,7 +118,7 @@ export const EchoScreenSetting = ({ ip }) => {
 
     const handleSave = () => {
         setLoading(true);
-        api(`echo/${ip.replaceAll('.', '-')}/screens`, {
+        api(`echo/${id}/screens`, {
             method: 'POST',
             body: JSON.stringify({ screens, refreshTime }),
         }).finally(() => setLoading(false));
