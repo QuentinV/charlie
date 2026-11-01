@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import './index.css';
 import { api } from '../../api/charlie';
 
@@ -14,6 +15,7 @@ async function fetchActivities({ type, from, limit = 20, first = 0 }) {
 }
 
 export default function LogViewer() {
+    const { t } = useTranslation();
     const [logs, setLogs] = useState([]);
     const [total, setTotal] = useState(0);
     const [filters, setFilters] = useState({
@@ -69,7 +71,7 @@ export default function LogViewer() {
                         }))
                     }
                 >
-                    <option value="">Type: All</option>
+                    <option value="">{t('log.typeAll')}</option>
                     <option value="log">log</option>
                     <option value="echo">echo</option>
                 </select>
@@ -82,7 +84,7 @@ export default function LogViewer() {
                         }))
                     }
                 >
-                    <option value="">From: All</option>
+                    <option value="">{t('log.fromAll')}</option>
                     <option value="ECHO">echo</option>
                     <option value="devices">devices</option>
                     <option value="devices-actions">devices-actions</option>
@@ -127,7 +129,7 @@ export default function LogViewer() {
             {/* Load More */}
             {logs.length < total && (
                 <button className="load-more" onClick={handleLoadMore}>
-                    Load More
+                    {t('log.loadMore')}
                 </button>
             )}
         </div>

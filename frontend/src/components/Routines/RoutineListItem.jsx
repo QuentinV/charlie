@@ -9,8 +9,10 @@ import {
     Chip,
 } from '@mui/material';
 import { PlayArrow } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 export const RoutineListItem = ({ routine, onToggle, onEdit, onRunNow }) => {
+    const { t } = useTranslation();
     return (
         <Box width="100%">
             <Paper
@@ -73,7 +75,7 @@ export const RoutineListItem = ({ routine, onToggle, onEdit, onRunNow }) => {
                                 variant="caption"
                                 sx={{ color: 'text.disabled' }}
                             >
-                                Last run:{' '}
+                                {t('routines.lastRun')}{' '}
                                 {new Date(routine.lastRun).toLocaleTimeString(
                                     [],
                                     {
@@ -87,7 +89,7 @@ export const RoutineListItem = ({ routine, onToggle, onEdit, onRunNow }) => {
                             </Typography>
                         ) : (
                             <Chip
-                                label="Never run"
+                                label={t('routines.neverRun')}
                                 size="small"
                                 variant="outlined"
                                 sx={{ height: 20, fontSize: 10 }}

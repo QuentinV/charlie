@@ -1,5 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const NotFoundPage = () => {
-    return <>Oh no this page I can't find</>;
+    const { t } = useTranslation();
+    return <>{t('notFound.message')}</>;
 };

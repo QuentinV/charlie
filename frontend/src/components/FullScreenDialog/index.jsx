@@ -6,6 +6,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import Slide from '@mui/material/Slide';
+import { useTranslation } from 'react-i18next';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
@@ -18,6 +19,7 @@ export default function FullScreenDialog({
     buttons = undefined,
     children,
 }) {
+    const { t } = useTranslation();
     return (
         <Dialog
             fullScreen
@@ -33,7 +35,7 @@ export default function FullScreenDialog({
                         edge="start"
                         color="inherit"
                         onClick={handleClose}
-                        aria-label="close"
+                        aria-label={t('common.close')}
                     >
                         <CloseIcon />
                     </IconButton>

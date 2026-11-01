@@ -7,8 +7,10 @@ import {
     Button,
 } from '@mui/material';
 import { api } from '../../api/charlie';
+import { useTranslation } from 'react-i18next';
 
 export const NfcJsonReader = ({ children }) => {
+    const { t } = useTranslation();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [status, setStatus] = useState('');
 
@@ -17,23 +19,23 @@ export const NfcJsonReader = ({ children }) => {
     const startScan = async () => {
         try {
             if (!('NDEFReader' in window)) {
-                setStatus('Web NFC not supported on this device');
+                setStatus(t('nfc.unsupported'));
                 setDialogOpen(true);
                 return;
             }
 
             const ndef = new NDEFReader();
-            setStatus('Scanning for NFC tag…');
+            setStatus(t('nfc.scanning'));
             setDialogOpen(true);
 
             await ndef.scan();
 
             ndef.onreadingerror = () => {
-                setStatus('Error reading NFC tag');
+                setStatus(t('nfc.readError'));
             };
 
             ndef.onreading = async (event) => {
-                setStatus('NFC tag detected');
+                setStatus(t('nfc.detected'));
 
                 const decoder = new TextDecoder();
                 let jsonString = null;
@@ -48,7 +50,7 @@ export const NfcJsonReader = ({ children }) => {
                 }
 
                 if (!jsonString) {
-                    setStatus('Tag does not contain JSON');
+                    setStatus(t('nfc.noJson'));
                     return;
                 }
 
@@ -56,21 +58,25 @@ export const NfcJsonReader = ({ children }) => {
                 try {
                     parsed = JSON.parse(jsonString);
                 } catch {
-                    setStatus('Invalid JSON in NFC tag');
+                    setStatus(t('nfc.invalidJson'));
                     return;
                 }
 
                 const { m, u, d } = parsed;
 
                 if (!u) {
-                    setStatus('JSON missing required fields: u for url');
+                    setStatus(t('nfc.missingField'));
                     return;
                 }
 
                 const method = m ?? 'GET';
 
                 setStatus(
-                    `Calling ${method} /api/${u} ${JSON.stringify(d ?? '')}`
+                    t('nfc.calling', {
+                        method,
+                        url: u,
+                        body: JSON.stringify(d ?? ''),
+                    })
                 );
 
                 try {
@@ -83,15 +89,15 @@ export const NfcJsonReader = ({ children }) => {
                                 : undefined,
                     });
 
-                    setStatus('Request completed');
+                    setStatus(t('nfc.completed'));
 
                     setTimeout(() => setDialogOpen(false), 2000);
                 } catch (err) {
-                    setStatus('Request failed: ' + err.message);
+                    setStatus(t('nfc.failed', { message: err.message }));
                 }
             };
         } catch (err) {
-            setStatus('NFC scan failed: ' + err.message);
+            setStatus(t('nfc.scanFailed', { message: err.message }));
             setDialogOpen(true);
         }
     };

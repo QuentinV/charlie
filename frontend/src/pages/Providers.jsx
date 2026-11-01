@@ -28,18 +28,20 @@ import {
 } from '@mui/material';
 import { api } from '../api/charlie';
 import { IntegrationManager } from '../components/IntegrationManager';
+import { useTranslation } from 'react-i18next';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SettingsIcon from '@mui/icons-material/Settings';
 
 const PROVIDER_TYPES = [
-    { value: 'gateway', label: 'Gateway' },
-    { value: 'direct', label: 'Direct' },
-    { value: 'cloud', label: 'Cloud API' },
+    { value: 'gateway', labelKey: 'providers.type.gateway' },
+    { value: 'direct', labelKey: 'providers.type.direct' },
+    { value: 'cloud', labelKey: 'providers.type.cloud' },
 ];
 
 export const ProvidersPage = () => {
+    const { t } = useTranslation();
     const [providers, setProviders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -67,7 +69,7 @@ export const ProvidersPage = () => {
             setProviders(data || []);
         } catch (e) {
             console.error(e);
-            showSnackbar('Failed to load providers', 'error');
+            showSnackbar(t('providers.loadFailed'), 'error');
         } finally {
             setLoading(false);
         }
@@ -138,27 +140,29 @@ export const ProvidersPage = () => {
                 }),
             });
             showSnackbar(
-                editingProvider ? 'Provider updated' : 'Provider created',
+                editingProvider
+                    ? t('providers.updated')
+                    : t('providers.created'),
                 'success'
             );
             fetchProviders();
             handleCloseDialog();
         } catch (e) {
             console.error(e);
-            showSnackbar('Failed to save provider', 'error');
+            showSnackbar(t('providers.saveFailed'), 'error');
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this provider?'))
+        if (!window.confirm(t('providers.confirmDelete')))
             return;
         try {
             await api(`providers/${id}`, { method: 'DELETE' });
-            showSnackbar('Provider deleted', 'success');
+            showSnackbar(t('providers.deleted'), 'success');
             fetchProviders();
         } catch (e) {
             console.error(e);
-            showSnackbar('Failed to delete provider', 'error');
+            showSnackbar(t('providers.deleteFailed'), 'error');
         }
     };
 
@@ -176,26 +180,26 @@ export const ProvidersPage = () => {
     };
 
     const fields = [
-        { name: 'name', label: 'Name', required: true },
-        { name: 'host', label: 'Host/IP', required: true },
+        { name: 'name', label: t('common.name'), required: true },
+        { name: 'host', label: t('providers.host'), required: true },
         {
             name: 'type',
-            label: 'Type',
+            label: t('common.type'),
             type: 'select',
             options: PROVIDER_TYPES,
             required: true,
         },
         {
             name: 'codesource',
-            label: 'Code Source',
+            label: t('providers.codeSource'),
             type: 'select',
             options: codesources.map((c) => ({ value: c, label: c })),
             required: true,
         },
-        { name: 'user', label: 'Username', required: false },
+        { name: 'user', label: t('auth.username'), required: false },
         {
             name: 'password',
-            label: 'Password',
+            label: t('auth.password'),
             type: 'password',
             required: false,
         },
@@ -211,32 +215,38 @@ export const ProvidersPage = () => {
                     mb: 2,
                 }}
             >
-                <Typography variant="h4">Providers</Typography>
+                <Typography variant="h4">{t('nav.providers')}</Typography>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpenDialog()}
                 >
-                    Add Provider
+                    {t('providers.add')}
                 </Button>
             </Box>
 
             <Card>
                 <CardContent>
                     {loading ? (
-                        <Typography>Loading...</Typography>
+                        <Typography>{t('common.loading')}</Typography>
                     ) : (
                         <TableContainer>
                             <Table>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Name</TableCell>
-                                        <TableCell>Type</TableCell>
-                                        <TableCell>Code Source</TableCell>
-                                        <TableCell>Host</TableCell>
-                                        <TableCell>Multidevices</TableCell>
+                                        <TableCell>{t('common.name')}</TableCell>
+                                        <TableCell>{t('common.type')}</TableCell>
+                                        <TableCell>
+                                            {t('providers.codeSource')}
+                                        </TableCell>
+                                        <TableCell>
+                                            {t('providers.host')}
+                                        </TableCell>
+                                        <TableCell>
+                                            {t('providers.multidevices')}
+                                        </TableCell>
                                         <TableCell align="right">
-                                            Actions
+                                            {t('common.actions')}
                                         </TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -266,8 +276,8 @@ export const ProvidersPage = () => {
                                             </TableCell>
                                             <TableCell>
                                                 {provider.multidevices
-                                                    ? 'Yes'
-                                                    : 'No'}
+                                                    ? t('common.yes')
+                                                    : t('common.no')}
                                             </TableCell>
                                             <TableCell align="right">
                                                 {provider.codesource ===
@@ -275,7 +285,9 @@ export const ProvidersPage = () => {
                                                     <IconButton
                                                         size="small"
                                                         color="primary"
-                                                        title="Configure Home Assistant integrations"
+                                                        title={t(
+                                                            'providers.configureIntegrations'
+                                                        )}
                                                         onClick={() =>
                                                             setHaOpen(true)
                                                         }
@@ -321,7 +333,9 @@ export const ProvidersPage = () => {
                 fullWidth
             >
                 <DialogTitle>
-                    {editingProvider ? 'Edit Provider' : 'Add Provider'}
+                    {editingProvider
+                        ? t('providers.edit')
+                        : t('providers.add')}
                 </DialogTitle>
                 <DialogContent>
                     <Box
@@ -354,7 +368,10 @@ export const ProvidersPage = () => {
                                                 value={opt.value}
                                                 key={opt.value}
                                             >
-                                                {opt.label}
+                                                {t(opt.labelKey, {
+                                                    defaultValue:
+                                                        opt.label ?? opt.value,
+                                                })}
                                             </MenuItem>
                                         ))}
                                     </Select>
@@ -379,10 +396,10 @@ export const ProvidersPage = () => {
                         )}
                         <FormControl fullWidth>
                             <InputLabel id="multidevices-label">
-                                Multiple Devices
+                                {t('providers.multiDevices')}
                             </InputLabel>
                             <Select
-                                label="Multiple Devices"
+                                label={t('providers.multiDevices')}
                                 value={formData.multidevices.toString()}
                                 labelId="multidevices-label"
                                 onChange={(e) =>
@@ -392,16 +409,18 @@ export const ProvidersPage = () => {
                                     })
                                 }
                             >
-                                <MenuItem value="true">Yes</MenuItem>
-                                <MenuItem value="false">No</MenuItem>
+                                <MenuItem value="true">{t('common.yes')}</MenuItem>
+                                <MenuItem value="false">{t('common.no')}</MenuItem>
                             </Select>
                         </FormControl>
                     </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog}>Cancel</Button>
+                    <Button onClick={handleCloseDialog}>
+                        {t('common.cancel')}
+                    </Button>
                     <Button variant="contained" onClick={handleSubmit}>
-                        {editingProvider ? 'Update' : 'Create'}
+                        {editingProvider ? t('common.update') : t('common.create')}
                     </Button>
                 </DialogActions>
             </Dialog>

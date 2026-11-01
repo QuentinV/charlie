@@ -13,18 +13,20 @@ import AddIcon from '@mui/icons-material/Add';
 import ExploreIcon from '@mui/icons-material/Explore';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUnit } from 'effector-react';
+import { useTranslation } from 'react-i18next';
 import { $addActions } from '../../state/addActions';
 
 const CORE_ITEMS = [
-    { label: 'Home', icon: <HomeIcon />, route: '/' },
-    { label: 'Dashboard', icon: <DashboardIcon />, route: '/dashboard' },
+    { labelKey: 'nav.home', icon: <HomeIcon />, route: '/' },
+    { labelKey: 'nav.dashboard', icon: <DashboardIcon />, route: '/dashboard' },
 ];
 
 const TAIL_ITEMS = [
-    { label: 'Settings', icon: <SettingsIcon />, route: '/settings' },
+    { labelKey: 'nav.settings', icon: <SettingsIcon />, route: '/settings' },
 ];
 
 export const BottomNav = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const addActions = useUnit($addActions);
@@ -40,7 +42,7 @@ export const BottomNav = () => {
     const fallbackActions = [
         {
             icon: <ExploreIcon />,
-            name: 'Discover',
+            name: t('nav.discover'),
             click: () => navigate('/discovery'),
         },
     ];
@@ -70,7 +72,7 @@ export const BottomNav = () => {
                 {CORE_ITEMS.map((item) => (
                     <BottomNavigationAction
                         key={item.route}
-                        label={item.label}
+                        label={t(item.labelKey)}
                         icon={item.icon}
                         showLabel
                         onClick={() => navigate(item.route)}
@@ -99,7 +101,7 @@ export const BottomNav = () => {
                     }}
                 >
                     <SpeedDial
-                        ariaLabel="Quick add"
+                        ariaLabel={t('nav.quickAdd')}
                         open={fabOpen}
                         onOpen={() => setFabOpen(true)}
                         onClose={() => setFabOpen(false)}
@@ -141,7 +143,7 @@ export const BottomNav = () => {
                 {TAIL_ITEMS.map((item) => (
                     <BottomNavigationAction
                         key={item.route}
-                        label={item.label}
+                        label={t(item.labelKey)}
                         icon={item.icon}
                         showLabel
                         onClick={() => navigate(item.route)}

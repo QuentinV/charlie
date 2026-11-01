@@ -8,6 +8,7 @@ import {
     Typography,
 } from '@mui/material';
 import { useUnit } from 'effector-react';
+import { useTranslation } from 'react-i18next';
 import { auth } from '../state/auth';
 
 /**
@@ -15,6 +16,7 @@ import { auth } from '../state/auth';
  * protection was enabled without an account).
  */
 export function LoginPage({ setupRequired }) {
+    const { t } = useTranslation();
     const login = useUnit(auth.loginFx);
     const setup = useUnit(auth.setupFx);
 
@@ -29,7 +31,7 @@ export function LoginPage({ setupRequired }) {
         setError(null);
 
         if (setupRequired && password !== confirm) {
-            setError('Passwords do not match.');
+            setError(t('auth.passwordMismatch'));
             return;
         }
 
@@ -38,7 +40,7 @@ export function LoginPage({ setupRequired }) {
             if (setupRequired) await setup({ username, password });
             else await login({ username, password });
         } catch (e) {
-            setError(e?.message ?? 'Unable to sign in.');
+            setError(e?.message ?? t('auth.unableToSignIn'));
         } finally {
             setBusy(false);
         }
@@ -76,14 +78,14 @@ export function LoginPage({ setupRequired }) {
                                 sx={{ color: 'text.secondary' }}
                             >
                                 {setupRequired
-                                    ? 'Create the administrator account'
-                                    : 'Sign in to continue'}
+                                    ? t('auth.createAdmin')
+                                    : t('auth.signInContinue')}
                             </Typography>
                         </Box>
                     </Box>
 
                     <TextField
-                        label="Username"
+                        label={t('auth.username')}
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         autoComplete="username"
@@ -91,7 +93,7 @@ export function LoginPage({ setupRequired }) {
                         fullWidth
                     />
                     <TextField
-                        label="Password"
+                        label={t('auth.password')}
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -102,12 +104,12 @@ export function LoginPage({ setupRequired }) {
                     />
                     {setupRequired && (
                         <TextField
-                            label="Confirm password"
+                            label={t('auth.confirmPassword')}
                             type="password"
                             value={confirm}
                             onChange={(e) => setConfirm(e.target.value)}
                             autoComplete="new-password"
-                            helperText="At least 8 characters."
+                            helperText={t('auth.atLeast8')}
                             fullWidth
                         />
                     )}
@@ -119,7 +121,7 @@ export function LoginPage({ setupRequired }) {
                         variant="contained"
                         disabled={busy || !username || !password}
                     >
-                        {setupRequired ? 'Create account' : 'Sign in'}
+                        {setupRequired ? t('auth.createAccount') : t('auth.signIn')}
                     </Button>
                 </Box>
             </Paper>

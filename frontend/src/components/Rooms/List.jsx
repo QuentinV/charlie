@@ -21,6 +21,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/charlie';
 import { useLongPress } from '../../hooks/useLongPress';
+import { useTranslation } from 'react-i18next';
 
 /**
  * @param {{
@@ -44,6 +45,7 @@ function RoomCard({
     onEditRoom,
     onEnterRoom,
 }) {
+    const { t } = useTranslation();
     const theme = useTheme();
     const onCount = room.devices?.filter(
         (/** @type {any} */ d) => d?.state?.power === 'on'
@@ -155,8 +157,12 @@ function RoomCard({
                                 fontSize: isMobile ? '0.75rem' : '0.875rem',
                             }}
                         >
-                            {room.devices?.length ?? 0} devices
-                            {onCount > 0 ? ` · ${onCount} on` : ''}
+                            {t('rooms.devicesCount', {
+                                count: room.devices?.length ?? 0,
+                            })}
+                            {onCount > 0
+                                ? ` · ${t('rooms.onCount', { count: onCount })}`
+                                : ''}
                         </Typography>
                     </Box>
                 </Box>
@@ -165,8 +171,10 @@ function RoomCard({
                 {isRealRoom && (
                     <IconButton
                         size="small"
-                        aria-label={`Open ${room.name} room`}
-                        title="Open room"
+                        aria-label={t('rooms.openRoomName', {
+                            name: room.name,
+                        })}
+                        title={t('rooms.openRoom')}
                         onClick={(event) => {
                             event.stopPropagation();
                             onEnterRoom(room);
@@ -216,6 +224,7 @@ function RoomCard({
 }
 
 export const RoomsList = ({ favoriteDeviceIds = [], onToggleFavorite }) => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -248,7 +257,7 @@ export const RoomsList = ({ favoriteDeviceIds = [], onToggleFavorite }) => {
             });
 
         fetchedRooms.push({
-            name: 'Maison',
+            name: t('rooms.house'),
             devices: Object.entries(devices ?? {})
                 .filter(
                     ([d]) =>
@@ -264,7 +273,7 @@ export const RoomsList = ({ favoriteDeviceIds = [], onToggleFavorite }) => {
         setExpanded(
             Object.fromEntries(fetchedRooms.map((r) => [r._id ?? r.name, true]))
         );
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         loadRooms();
@@ -294,7 +303,7 @@ export const RoomsList = ({ favoriteDeviceIds = [], onToggleFavorite }) => {
 
     const handleDelete = async () => {
         if (!editRoom?._id) return;
-        if (window.confirm(`Delete room "${editRoom.name}"?`)) {
+        if (window.confirm(t('rooms.deleteConfirm', { name: editRoom.name }))) {
             await api(`rooms/${editRoom._id}`, { method: 'DELETE' });
             setEditRoom(null);
             await loadRooms();
@@ -335,12 +344,12 @@ export const RoomsList = ({ favoriteDeviceIds = [], onToggleFavorite }) => {
                 maxWidth="xs"
                 fullWidth
             >
-                <DialogTitle>Edit room</DialogTitle>
+                <DialogTitle>{t('rooms.editRoom')}</DialogTitle>
                 <DialogContent>
                     <TextField
                         autoFocus
                         fullWidth
-                        label="Room name"
+                        label={t('rooms.name')}
                         value={editRoomName}
                         onChange={(event) =>
                             setEditRoomName(event.target.value)
@@ -357,17 +366,19 @@ export const RoomsList = ({ favoriteDeviceIds = [], onToggleFavorite }) => {
                         color="error"
                         disabled={!editRoom?._id}
                     >
-                        Delete
+                        {t('common.delete')}
                     </Button>
                     <Box sx={{ flex: 1 }} />
-                    <Button onClick={() => setEditRoom(null)}>Cancel</Button>
+                    <Button onClick={() => setEditRoom(null)}>
+                        {t('common.cancel')}
+                    </Button>
                     <Button
                         onClick={handleSave}
                         color="primary"
                         variant="contained"
                         disabled={!editRoomName?.trim()}
                     >
-                        Save
+                        {t('common.save')}
                     </Button>
                 </DialogActions>
             </Dialog>

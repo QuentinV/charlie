@@ -9,6 +9,7 @@ import {
     Fade,
 } from '@mui/material';
 import { Repeat } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 const parse = (value) => {
     const parts = (value ?? '00 09 * * *').split(' ');
@@ -38,6 +39,7 @@ const parse = (value) => {
 };
 
 export const CronEditor = ({ onChange, value }) => {
+    const { t } = useTranslation();
     const { frequency, days, interval, time } = parse(value);
 
     const change = useCallback(
@@ -74,11 +76,11 @@ export const CronEditor = ({ onChange, value }) => {
                 sx={{ mb: 1, borderRadius: 2 }}
             >
                 <ToggleButton value="interval" sx={{ borderRadius: 2 }}>
-                    Repeat
+                    {t('routines.repeat')}
                 </ToggleButton>
-                <ToggleButton value="daily">Daily</ToggleButton>
+                <ToggleButton value="daily">{t('routines.daily')}</ToggleButton>
                 <ToggleButton value="weekly" sx={{ borderRadius: 2 }}>
-                    Weekly
+                    {t('routines.weekly')}
                 </ToggleButton>
             </ToggleButtonGroup>
 
@@ -107,7 +109,7 @@ export const CronEditor = ({ onChange, value }) => {
                             >
                                 {['5', '10', '15', '30', '60'].map((m) => (
                                     <MenuItem key={m} value={m}>
-                                        {m}m
+                                        {t('routines.minutesShort', { n: m })}
                                     </MenuItem>
                                 ))}
                             </TextField>
@@ -145,7 +147,9 @@ export const CronEditor = ({ onChange, value }) => {
                                     spacing={0.5}
                                     justifyContent="space-between"
                                 >
-                                    {['D', 'L', 'M', 'Me', 'J', 'V', 'S'].map(
+                                    {(t('routines.weekdays', {
+                                        returnObjects: true,
+                                    }) ?? ['S', 'M', 'T', 'W', 'T', 'F', 'S']).map(
                                         (day, i) => {
                                             const isSelected = days.includes(
                                                 i.toString()

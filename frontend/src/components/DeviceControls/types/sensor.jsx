@@ -10,6 +10,7 @@ import FlashOnIcon from '@mui/icons-material/FlashOn';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import { TypePanel, ReadoutRow } from './typeShell';
 import { TYPE_COLORS } from './typeStyles';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Sensor telemetry — icon/label hints for the common measurement classes.
@@ -22,15 +23,46 @@ import { TYPE_COLORS } from './typeStyles';
 const SENSOR_FIELDS = [
     {
         key: 'temperature',
+        labelKey: 'deviceControls.sensor.temperature',
         label: 'Température',
         icon: DeviceThermostatIcon,
     },
-    { key: 'humidity', label: 'Humidité', icon: WaterDropIcon },
-    { key: 'battery', label: 'Batterie', icon: BatteryFullIcon },
-    { key: 'motion', label: 'Mouvement', icon: DirectionsRunIcon },
-    { key: 'door', label: 'Porte', icon: DoorSlidingIcon },
-    { key: 'energy', label: 'Énergie', icon: FlashOnIcon },
-    { key: 'power', label: 'Alimentation', icon: PowerSettingsNewIcon },
+    {
+        key: 'humidity',
+        labelKey: 'deviceControls.sensor.humidity',
+        label: 'Humidité',
+        icon: WaterDropIcon,
+    },
+    {
+        key: 'battery',
+        labelKey: 'deviceControls.sensor.battery',
+        label: 'Batterie',
+        icon: BatteryFullIcon,
+    },
+    {
+        key: 'motion',
+        labelKey: 'deviceControls.sensor.motion',
+        label: 'Mouvement',
+        icon: DirectionsRunIcon,
+    },
+    {
+        key: 'door',
+        labelKey: 'deviceControls.sensor.door',
+        label: 'Porte',
+        icon: DoorSlidingIcon,
+    },
+    {
+        key: 'energy',
+        labelKey: 'deviceControls.sensor.energy',
+        label: 'Énergie',
+        icon: FlashOnIcon,
+    },
+    {
+        key: 'power',
+        labelKey: 'deviceControls.sensor.power',
+        label: 'Alimentation',
+        icon: PowerSettingsNewIcon,
+    },
 ];
 
 /** Bookkeeping keys of the properties bag — not measurements. */
@@ -54,12 +86,14 @@ const humanise = (key) =>
         .replace(/_/g, ' ')
         .replace(/^./, (character) => character.toUpperCase());
 
-const formatValue = (value) => {
-    if (typeof value === 'boolean') return value ? 'Oui' : 'Non';
+const formatValue = (value, t) => {
+    if (typeof value === 'boolean')
+        return value ? t('common.yes') : t('common.no');
     return value;
 };
 
 export const SensorControls = ({ device, capabilities }) => {
+    const { t } = useTranslation();
     const state = device?.state ?? {};
     const props = state?.properties ?? {};
 
@@ -76,7 +110,11 @@ export const SensorControls = ({ device, capabilities }) => {
         const meta = schemaByKey.get(row.key);
         return {
             ...row,
-            label: meta?.label ?? row.label,
+            label: meta?.label
+                ? meta.label
+                : row.labelKey
+                  ? t(row.labelKey, { defaultValue: row.label })
+                  : row.label,
             unit: meta?.unit ?? row.unit,
         };
     };
@@ -112,7 +150,7 @@ export const SensorControls = ({ device, capabilities }) => {
                     color="text.secondary"
                     sx={{ py: 1 }}
                 >
-                    Aucune mesure disponible.
+                    {t('deviceControls.noMeasurement')}
                 </Typography>
             )}
             {/* `level` is the canonical numeric value, i.e. the reading itself:
@@ -120,8 +158,8 @@ export const SensorControls = ({ device, capabilities }) => {
                 measurement (the unit is the gateway's, never a percentage). */}
             {hasLevel && !rows.length && (
                 <ReadoutRow
-                    label="Niveau"
-                    value={formatValue(state.level)}
+                    label={t('deviceControls.level')}
+                    value={formatValue(state.level, t)}
                     unit={unit}
                     icon={SensorsIcon}
                     color={TYPE_COLORS.sensor}
@@ -131,7 +169,7 @@ export const SensorControls = ({ device, capabilities }) => {
                 <ReadoutRow
                     key={field.key}
                     label={field.label}
-                    value={formatValue(field.value)}
+                    value={formatValue(field.value, t)}
                     unit={field.unit ?? unit}
                     icon={field.icon}
                     color={TYPE_COLORS.sensor}

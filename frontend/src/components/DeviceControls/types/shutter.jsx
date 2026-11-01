@@ -4,6 +4,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import StopIcon from '@mui/icons-material/Stop';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { alpha } from '@mui/material/styles';
+import { useTranslation } from 'react-i18next';
 import { TypePanel } from './typeShell';
 import { updateState } from '../utils';
 import { SECTION_LABEL, TYPE_COLORS } from './typeStyles';
@@ -22,6 +23,7 @@ import { SECTION_LABEL, TYPE_COLORS } from './typeStyles';
  * reported position).
  */
 export const ShutterControls = ({ device, onStateChange, capabilities }) => {
+    const { t } = useTranslation();
     const state = device?.state ?? {};
     const power = state?.power === 'on';
     const position = state?.level ?? (power ? 100 : 0);
@@ -49,13 +51,15 @@ export const ShutterControls = ({ device, onStateChange, capabilities }) => {
     return (
         <TypePanel
             type="shutter"
-            title="Volet roulant"
+            title={t('deviceControls.type.shutter')}
             power={power}
             onTogglePower={(on) => (on ? open() : close())}
         >
             {hasLevel && (
                 <>
-                    <Typography sx={SECTION_LABEL}>Position</Typography>
+                    <Typography sx={SECTION_LABEL}>
+                        {t('deviceControls.position')}
+                    </Typography>
 
                     <Box
                         sx={{
@@ -70,10 +74,10 @@ export const ShutterControls = ({ device, onStateChange, capabilities }) => {
                     >
                         <Typography variant="body2" color="text.secondary">
                             {position <= 5
-                                ? 'Fermé'
+                                ? t('values.closed')
                                 : position >= 95
-                                  ? 'Ouvert'
-                                  : 'Partiellement ouvert'}
+                                  ? t('values.open')
+                                  : t('deviceControls.partiallyOpen')}
                         </Typography>
                         <Typography
                             variant="subtitle1"
@@ -104,7 +108,7 @@ export const ShutterControls = ({ device, onStateChange, capabilities }) => {
             >
                 <ButtonBase
                     onClick={open}
-                    aria-label="Ouvrir"
+                    aria-label={t('deviceControls.action.open')}
                     sx={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -121,11 +125,13 @@ export const ShutterControls = ({ device, onStateChange, capabilities }) => {
                     }}
                 >
                     <ArrowUpwardIcon fontSize="small" />
-                    <Typography sx={{ fontSize: 10 }}>Ouvrir</Typography>
+                    <Typography sx={{ fontSize: 10 }}>
+                        {t('deviceControls.action.open')}
+                    </Typography>
                 </ButtonBase>
                 <ButtonBase
                     onClick={stop}
-                    aria-label="Arrêter"
+                    aria-label={t('deviceControls.action.stop')}
                     sx={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -142,11 +148,13 @@ export const ShutterControls = ({ device, onStateChange, capabilities }) => {
                     }}
                 >
                     <StopIcon fontSize="small" />
-                    <Typography sx={{ fontSize: 10 }}>Arrêter</Typography>
+                    <Typography sx={{ fontSize: 10 }}>
+                        {t('deviceControls.action.stop')}
+                    </Typography>
                 </ButtonBase>
                 <ButtonBase
                     onClick={close}
-                    aria-label="Fermer"
+                    aria-label={t('deviceControls.action.close')}
                     sx={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -163,7 +171,9 @@ export const ShutterControls = ({ device, onStateChange, capabilities }) => {
                     }}
                 >
                     <ArrowDownwardIcon fontSize="small" />
-                    <Typography sx={{ fontSize: 10 }}>Fermer</Typography>
+                    <Typography sx={{ fontSize: 10 }}>
+                        {t('deviceControls.action.close')}
+                    </Typography>
                 </ButtonBase>
             </Box>
         </TypePanel>

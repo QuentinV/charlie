@@ -7,6 +7,7 @@ import {
     Typography,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import { useTranslation } from 'react-i18next';
 import { SchemaField } from '../GenericControls';
 import { SECTION_LABEL } from '../types/typeStyles';
 import { callDeviceFunction } from '../utils';
@@ -32,6 +33,7 @@ const asControl = (field) =>
     field.options?.length ? { ...field, type: 'enum' } : field;
 
 const FunctionRow = ({ device, fn }) => {
+    const { t } = useTranslation();
     const fields = (fn.inputSchema ?? []).filter((field) => !field.readonly);
     // Booleans start as `false` (a switch is always in a known state), every
     // other field waits for a value: a command with no field is one click.
@@ -69,7 +71,7 @@ const FunctionRow = ({ device, fn }) => {
                 Object.keys(params).length ? params : undefined
             );
         } catch (e) {
-            setError(e?.message ?? 'Commande impossible');
+            setError(e?.message ?? t('deviceControls.commandFailed'));
         } finally {
             setBusy(false);
         }
@@ -137,12 +139,15 @@ const FunctionRow = ({ device, fn }) => {
 };
 
 export const FunctionList = ({ device, functions = [] }) => {
+    const { t } = useTranslation();
     const visible = functions.filter((fn) => !fn.hidden);
     if (!visible.length) return null;
 
     return (
         <Box sx={{ p: 1 }}>
-            <Typography sx={SECTION_LABEL}>Commandes</Typography>
+            <Typography sx={SECTION_LABEL}>
+                {t('deviceControls.commands')}
+            </Typography>
             {visible.map((fn) => (
                 <FunctionRow key={fn.name} device={device} fn={fn} />
             ))}

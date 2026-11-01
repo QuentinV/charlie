@@ -1,5 +1,6 @@
 import React from 'react';
 import { Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { TypePanel } from './typeShell';
 import { updateState } from '../utils';
 import { DebouncedSlider } from '../DebouncedSlider';
@@ -13,6 +14,7 @@ import { SECTION_LABEL, TYPE_COLORS } from './typeStyles';
  * `onoff`): an on/off bulb keeps the power button only.
  */
 export const LightControls = ({ device, onStateChange, capabilities }) => {
+    const { t } = useTranslation();
     const state = device?.state ?? {};
     const power = state?.power === 'on';
     const level = state?.level ?? 0;
@@ -28,13 +30,15 @@ export const LightControls = ({ device, onStateChange, capabilities }) => {
     return (
         <TypePanel
             type="light"
-            title="Lampe"
+            title={t('deviceControls.type.light')}
             power={power}
             onTogglePower={setPower}
         >
             {hasLevel && (
                 <>
-                    <Typography sx={SECTION_LABEL}>Luminosité</Typography>
+                    <Typography sx={SECTION_LABEL}>
+                        {t('deviceControls.brightness')}
+                    </Typography>
                     <DebouncedSlider
                         value={power ? level : 0}
                         min={0}
@@ -51,8 +55,8 @@ export const LightControls = ({ device, onStateChange, capabilities }) => {
                         sx={{ color: 'text.secondary', mt: 0.5 }}
                     >
                         {power
-                            ? `Niveau réglé à ${level}%`
-                            : 'Allumez la lampe pour régler la luminosité.'}
+                            ? t('deviceControls.levelSetTo', { level })
+                            : t('deviceControls.turnOnToAdjust')}
                     </Typography>
                 </>
             )}

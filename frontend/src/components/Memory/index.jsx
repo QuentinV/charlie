@@ -20,6 +20,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import MemoryBrain from './MemoryBrain';
 import { api } from '../../api/charlie';
+import { useTranslation } from 'react-i18next';
 
 const LAST_KEY = 'charlie.memory.user';
 
@@ -54,6 +55,7 @@ function Empty({ text }) {
 }
 
 export default function Memory() {
+    const { t } = useTranslation();
     const [users, setUsers] = React.useState([]);
     const [selected, setSelected] = React.useState(
         () => localStorage.getItem(LAST_KEY) ?? ''
@@ -133,12 +135,12 @@ export default function Memory() {
         >
             <Stack direction="row" alignItems="center" spacing={1}>
                 <Typography variant="h5" sx={{ fontWeight: 700, flexGrow: 1 }}>
-                    Mémoire
+                    {t('nav.memory')}
                 </Typography>
                 <IconButton
                     onClick={loadUsers}
                     disabled={loadingUsers}
-                    title="Rafraîchir"
+                    title={t('common.refresh')}
                 >
                     <RefreshIcon />
                 </IconButton>
@@ -146,17 +148,19 @@ export default function Memory() {
                     onClick={() => setConfirmOpen(true)}
                     disabled={!hasData}
                     color="error"
-                    title="Oublier ce profil"
+                    title={t('memory.forgetProfile')}
                 >
                     <DeleteOutlineIcon />
                 </IconButton>
             </Stack>
 
             <FormControl size="small" sx={{ minWidth: 240, maxWidth: 360 }}>
-                <InputLabel id="memory-user-label">Profil</InputLabel>
+                <InputLabel id="memory-user-label">
+                    {t('memory.profile')}
+                </InputLabel>
                 <Select
                     labelId="memory-user-label"
-                    label="Profil"
+                    label={t('memory.profile')}
                     value={selected}
                     onChange={(e) => setSelected(e.target.value)}
                     disabled={loadingUsers || !users.length}
@@ -165,7 +169,7 @@ export default function Memory() {
                         <MenuItem key={u.user} value={u.user}>
                             {u.user}
                             {itemCount(u) ? ` · ${itemCount(u)}` : ''}
-                            {u.hasMemory ? '' : ' (vide)'}
+                            {u.hasMemory ? '' : t('memory.emptySuffix')}
                         </MenuItem>
                     ))}
                 </Select>
@@ -194,28 +198,29 @@ export default function Memory() {
                         <CircularProgress />
                     </Box>
                 ) : !selected ? (
-                    <Empty text="Aucun profil pour le moment. La mémoire se remplit au fil des conversations." />
+                    <Empty text={t('memory.noProfiles')} />
                 ) : !hasData ? (
-                    <Empty text="Aucune mémoire enregistrée pour ce profil." />
+                    <Empty text={t('memory.noMemory')} />
                 ) : (
                     <MemoryBrain profile={profile} />
                 )}
             </Box>
 
             <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-                <DialogTitle>Oublier {selected} ?</DialogTitle>
+                <DialogTitle>
+                    {t('memory.forgetTitle', { user: selected })}
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Toute la mémoire de ce profil sera définitivement
-                        supprimée.
+                        {t('memory.forgetWarning')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setConfirmOpen(false)}>
-                        Annuler
+                        {t('common.cancel')}
                     </Button>
                     <Button color="error" onClick={forget}>
-                        Oublier
+                        {t('memory.forget')}
                     </Button>
                 </DialogActions>
             </Dialog>

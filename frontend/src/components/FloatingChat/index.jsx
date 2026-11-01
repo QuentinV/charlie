@@ -13,8 +13,10 @@ import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import MicIcon from '@mui/icons-material/Mic';
+import { useTranslation } from 'react-i18next';
 
 export const FloatingChat = () => {
+    const { t } = useTranslation();
     const [isVisible, setIsVisible] = useState(false);
     const [messages, setMessages] = useState(
         /** @type {Array<{sender: string; text: string}>} */ ([])
@@ -29,7 +31,7 @@ export const FloatingChat = () => {
         setTimeout(() => {
             setMessages((prev) => [
                 ...prev,
-                { sender: 'Charlie', text: 'Let me check that for you.' },
+                { sender: 'Charlie', text: t('chat.placeholderReply') },
             ]);
         }, 600);
     };
@@ -82,7 +84,7 @@ export const FloatingChat = () => {
                             variant="subtitle1"
                             sx={{ fontWeight: 700 }}
                         >
-                            Assistant
+                            {t('chat.assistant')}
                         </Typography>
                         <Box
                             sx={{
@@ -95,7 +97,7 @@ export const FloatingChat = () => {
                             }}
                         />
                         <IconButton
-                            aria-label="close"
+                            aria-label={t('common.close')}
                             onClick={() => setIsVisible(false)}
                             sx={{ marginLeft: 'auto' }}
                             size="small"
@@ -189,11 +191,11 @@ export const FloatingChat = () => {
                             bgcolor: 'rgba(255,255,255,0.02)',
                         }}
                     >
-                        <IconButton aria-label="mic" size="small">
+                        <IconButton aria-label={t('chat.mic')} size="small">
                             <MicIcon fontSize="small" />
                         </IconButton>
                         <TextField
-                            placeholder="Ask me anything"
+                            placeholder={t('chat.ask')}
                             variant="outlined"
                             size="small"
                             fullWidth
@@ -210,7 +212,7 @@ export const FloatingChat = () => {
                             }}
                         />
                         <IconButton
-                            aria-label="send"
+                            aria-label={t('chat.send')}
                             onClick={handleSend}
                             sx={{
                                 color: 'primary.main',
@@ -228,7 +230,7 @@ export const FloatingChat = () => {
             <Box sx={{ flex: 1, display: 'flex', position: 'relative' }}>
                 {!isVisible && (
                     <IconButton
-                        aria-label="open chat"
+                        aria-label={t('chat.open')}
                         onClick={() => setIsVisible(true)}
                         sx={{
                             position: 'absolute',

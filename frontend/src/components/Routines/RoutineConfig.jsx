@@ -25,6 +25,7 @@ import { api } from '../../api/charlie';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const DEFAULT = {
     name: '',
@@ -39,6 +40,7 @@ const DEFAULT = {
 };
 
 export const RoutineConfig = ({ id }) => {
+    const { t } = useTranslation();
     const [currentAction, setCurrentAction] = useState('');
     const [state, setState] = useState(DEFAULT);
     const [dialogDeleteVisible, setDialogDeleteVisible] = useState(false);
@@ -107,7 +109,7 @@ export const RoutineConfig = ({ id }) => {
                     <Box mb={1}>
                         <TextField
                             variant="standard"
-                            placeholder="Routine Name (e.g. Morning Sync)"
+                            placeholder={t('routines.namePlaceholder')}
                             value={state.name}
                             onChange={(e) =>
                                 setState({ ...state, name: e.target.value })
@@ -159,7 +161,7 @@ export const RoutineConfig = ({ id }) => {
                     )}
 
                     <Typography variant="h6" mt={3} gutterBottom>
-                        Actions
+                        {t('routines.actions')}
                     </Typography>
 
                     <Box sx={{ borderRadius: 1 }}>
@@ -189,7 +191,7 @@ export const RoutineConfig = ({ id }) => {
                         <TextField
                             fullWidth
                             size="small"
-                            placeholder="Action (e.g. 'Allume la lumiere du salon...')"
+                            placeholder={t('routines.actionPlaceholder')}
                             value={currentAction}
                             onChange={(e) => setCurrentAction(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && addAction()}
@@ -216,11 +218,10 @@ export const RoutineConfig = ({ id }) => {
                 open={dialogDeleteVisible}
                 onClose={() => setDialogDeleteVisible(false)}
             >
-                <DialogTitle>Confirm</DialogTitle>
+                <DialogTitle>{t('common.confirm')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Are you sure you want to delete this item? This action
-                        cannot be undone.
+                        {t('routines.confirmDelete')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
@@ -228,10 +229,10 @@ export const RoutineConfig = ({ id }) => {
                         onClick={() => setDialogDeleteVisible(false)}
                         color="primary"
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                     <Button onClick={() => remove()} color="error" autoFocus>
-                        Delete
+                        {t('common.delete')}
                     </Button>
                 </DialogActions>
             </Dialog>

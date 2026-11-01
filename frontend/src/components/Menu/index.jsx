@@ -27,12 +27,15 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUnit } from 'effector-react';
+import { useTranslation } from 'react-i18next';
 import { NfcJsonReader } from '../NfcJsonReader';
+import { LanguageSwitcher } from '../../i18n/LanguageSwitcher';
 import { $pwaPrompt, setPwaPrompt } from '../../state/standalone';
 import { useSetting } from '../../state/settingsHooks';
 import { auth } from '../../state/auth';
 
 export const Menu = () => {
+    const { t } = useTranslation();
     const theme = useTheme();
     const [drawerOpen, setDrawerOpen] = React.useState(false);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -50,9 +53,13 @@ export const Menu = () => {
     const echosMenu = useSetting('echos.menu.enabled', true);
 
     const navItems = [
-        { label: 'Home', route: '/', icon: <HomeIcon fontSize="small" /> },
         {
-            label: 'Dashboard',
+            labelKey: 'nav.home',
+            route: '/',
+            icon: <HomeIcon fontSize="small" />,
+        },
+        {
+            labelKey: 'nav.dashboard',
             route: '/dashboard',
             icon: <DashboardIcon fontSize="small" />,
         },
@@ -60,59 +67,59 @@ export const Menu = () => {
 
     enableAddRoutine &&
         navItems.push({
-            label: 'Routines',
+            labelKey: 'nav.routines',
             route: '/routines',
             icon: <AutoModeIcon fontSize="small" />,
         });
 
     devicesDiscovery &&
         navItems.push({
-            label: 'Discover',
+            labelKey: 'nav.discover',
             route: '/discovery',
             icon: <ExploreIcon fontSize="small" />,
         });
 
     navItems.push({
-        label: 'Providers',
+        labelKey: 'nav.providers',
         route: '/providers',
         icon: <RouterIcon fontSize="small" />,
     });
 
     showAiAsk &&
         navItems.push({
-            label: 'AI',
+            labelKey: 'nav.ai',
             route: '/ai',
             icon: <ChatIcon fontSize="small" />,
         });
 
     useSetting('musics.show') &&
         navItems.push({
-            label: 'Musics',
+            labelKey: 'nav.musics',
             route: '/musics',
             icon: <MusicNoteIcon fontSize="small" />,
         });
 
     navItems.push({
-        label: 'Activities',
+        labelKey: 'nav.activities',
         route: '/activities',
         icon: <HistoryIcon fontSize="small" />,
     });
 
     navItems.push({
-        label: 'Memory',
+        labelKey: 'nav.memory',
         route: '/memory',
         icon: <AccountTreeIcon fontSize="small" />,
     });
 
     echosMenu &&
         navItems.push({
-            label: 'Echos',
+            labelKey: 'nav.echos',
             route: '/echos',
             icon: <SpeakerIcon fontSize="small" />,
         });
 
     navItems.push({
-        label: 'Settings',
+        labelKey: 'nav.settings',
         route: '/settings',
         icon: <SettingsIcon fontSize="small" />,
     });
@@ -125,7 +132,7 @@ export const Menu = () => {
                         <IconButton
                             edge="start"
                             color="inherit"
-                            aria-label="menu"
+                            aria-label={t('nav.menuAria')}
                             onClick={() => setDrawerOpen(true)}
                             sx={{
                                 borderRadius: 2,
@@ -195,7 +202,7 @@ export const Menu = () => {
                                         );
                                     }
                                 }}
-                                aria-label="Install app"
+                                aria-label={t('common.installApp')}
                             >
                                 <CloudDownloadIcon fontSize="small" />
                             </IconButton>
@@ -238,17 +245,18 @@ export const Menu = () => {
                                 >
                                     {item.icon}
                                     <Box component="span" sx={{ ml: 0.75 }}>
-                                        {item.label}
+                                        {t(item.labelKey)}
                                     </Box>
                                 </Button>
                             );
                         })}
+                    <LanguageSwitcher size="small" />
                     {signedIn && (
                         <IconButton
                             color="inherit"
                             size="small"
-                            aria-label="Sign out"
-                            title={`Sign out (${authState.user})`}
+                            aria-label={t('nav.signOut')}
+                            title={t('nav.signOutUser', { user: authState.user })}
                             onClick={() => logout()}
                             sx={{ ml: 1 }}
                         >
@@ -302,7 +310,7 @@ export const Menu = () => {
                                 variant="caption"
                                 sx={{ color: 'text.secondary' }}
                             >
-                                Home Assistant
+                                {t('nav.homeAssistant')}
                             </Typography>
                         </Box>
                     </Box>
@@ -344,7 +352,7 @@ export const Menu = () => {
                                         },
                                     }}
                                 >
-                                    {item.label}
+                                    {t(item.labelKey)}
                                 </Button>
                             );
                         })}
@@ -368,7 +376,7 @@ export const Menu = () => {
                                     mb: 1,
                                 }}
                             >
-                                Signed in as {authState.user}
+                                {t('nav.signedInAs', { user: authState.user })}
                             </Typography>
                             <Button
                                 fullWidth
@@ -379,7 +387,7 @@ export const Menu = () => {
                                 }}
                                 sx={{ justifyContent: 'flex-start' }}
                             >
-                                Sign out
+                                {t('nav.signOut')}
                             </Button>
                         </Box>
                     )}

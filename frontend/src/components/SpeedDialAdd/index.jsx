@@ -1,7 +1,9 @@
 import { Box, SpeedDial, SpeedDialAction, SpeedDialIcon } from '@mui/material';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const SpeedDialAdd = ({ actions = [] }) => {
+    const { t } = useTranslation();
     return (
         <Box
             sx={{
@@ -12,7 +14,7 @@ export const SpeedDialAdd = ({ actions = [] }) => {
             }}
         >
             <SpeedDial
-                ariaLabel="Quick actions"
+                ariaLabel={t('common.quickActions')}
                 sx={{
                     position: 'absolute',
                     top: 0,

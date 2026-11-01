@@ -16,10 +16,12 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useTranslation } from 'react-i18next';
 
 const ROOM_ICONS = ['🏠', '🛏️', '🍳', '🛁', '🪑', '🍽️', '📚', '📺', '🚪', '🌿', '🚗', '👶'];
 
 export const RoomPage = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const theme = useTheme();
@@ -74,7 +76,7 @@ export const RoomPage = () => {
                 }}
             >
                 <IconButton
-                    aria-label="back"
+                    aria-label={t('common.back')}
                     onClick={() => navigate('/')}
                     sx={{
                         borderRadius: 2,
@@ -171,19 +173,19 @@ export const RoomPage = () => {
                 </Box>
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                     {isEdit ? (
-                        <Tooltip title="Save">
+                        <Tooltip title={t('common.save')}>
                             <IconButton onClick={save} color="primary">
                                 <SaveIcon />
                             </IconButton>
                         </Tooltip>
                     ) : (
                         <>
-                            <Tooltip title="Edit">
+                            <Tooltip title={t('common.edit')}>
                                 <IconButton onClick={() => setIsEdit(true)}>
                                     <EditIcon />
                                 </IconButton>
                             </Tooltip>
-                            <Tooltip title="Delete">
+                            <Tooltip title={t('common.delete')}>
                                 <IconButton
                                     onClick={onDelete}
                                     sx={{

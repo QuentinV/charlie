@@ -15,6 +15,7 @@ import {
     Typography,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api/charlie';
 import { DeviceType } from './constants';
 import HistoricalDeviceChart from '../DeviceStateChart';
@@ -23,6 +24,7 @@ import { DeviceDetailControls } from '../DeviceControls';
 let timeout = null;
 
 export const ViewDevice = ({ device }) => {
+    const { t } = useTranslation();
     const [data, setData] = useState(device);
     const [state, setState] = useState(null);
     const [stateLoading, setStateLoading] = useState(true);
@@ -106,13 +108,13 @@ export const ViewDevice = ({ device }) => {
                 }}
             >
                 <AccordionSummary>
-                    <Typography variant="h6">Propriétés</Typography>
+                    <Typography variant="h6">{t('device.properties')}</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                     <Grid container direction="column" spacing={1}>
                         <Grid>
                             <TextField
-                                label="ID"
+                                label={t('device.id')}
                                 value={_id}
                                 fullWidth
                                 InputProps={{ readOnly: true }}
@@ -121,7 +123,7 @@ export const ViewDevice = ({ device }) => {
 
                         <Grid>
                             <TextField
-                                label="External ID"
+                                label={t('device.externalId')}
                                 value={externalId}
                                 fullWidth
                                 onChange={(event) => {
@@ -139,7 +141,7 @@ export const ViewDevice = ({ device }) => {
 
                         <Grid>
                             <TextField
-                                label="Name"
+                                label={t('common.name')}
                                 value={name}
                                 onChange={(event) => {
                                     const d = {
@@ -155,10 +157,12 @@ export const ViewDevice = ({ device }) => {
 
                         <Grid>
                             <FormControl fullWidth>
-                                <InputLabel id="device=type">Type</InputLabel>
+                                <InputLabel id="device=type">
+                                    {t('common.type')}
+                                </InputLabel>
                                 <Select
                                     value={type}
-                                    label="Type"
+                                    label={t('common.type')}
                                     onChange={(event) => {
                                         const d = {
                                             ...data,
@@ -168,8 +172,12 @@ export const ViewDevice = ({ device }) => {
                                         debouncedUpdate(d);
                                     }}
                                 >
-                                    {Object.keys(DeviceType).map((t) => (
-                                        <MenuItem value={`${t}`}>{t}</MenuItem>
+                                    {Object.keys(DeviceType).map((typeKey) => (
+                                        <MenuItem value={`${typeKey}`}>
+                                            {t(`device.types.${typeKey}`, {
+                                                defaultValue: typeKey,
+                                            })}
+                                        </MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
@@ -180,11 +188,11 @@ export const ViewDevice = ({ device }) => {
                         <Grid>
                             <FormControl fullWidth>
                                 <InputLabel id="device-provider">
-                                    Provider
+                                    {t('device.provider')}
                                 </InputLabel>
                                 <Select
                                     value={provider}
-                                    label="Provider"
+                                    label={t('device.provider')}
                                     onChange={(event) => {
                                         const d = {
                                             ...data,
@@ -207,16 +215,18 @@ export const ViewDevice = ({ device }) => {
 
                         <Grid>
                             <FormControl fullWidth>
-                                <InputLabel id="device-room">Room</InputLabel>
+                                <InputLabel id="device-room">
+                                    {t('common.room')}
+                                </InputLabel>
                                 <Select
                                     value={roomId}
-                                    label="Room"
+                                    label={t('common.room')}
                                     onChange={(event) => {
                                         setRoomId(event.target.value);
                                         changeRoom(event.target.value);
                                     }}
                                 >
-                                    <MenuItem value="">Aucun</MenuItem>
+                                    <MenuItem value="">{t('common.none')}</MenuItem>
                                     {rooms?.map((r) => (
                                         <MenuItem value={r._id}>
                                             {r.name}

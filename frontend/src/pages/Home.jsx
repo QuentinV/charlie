@@ -4,6 +4,7 @@ import DevicesIcon from '@mui/icons-material/Devices';
 import RoomPreferencesIcon from '@mui/icons-material/RoomPreferences';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { RoomsList } from '../components/Rooms';
 import { FavoritesSection } from '../components/Favorites';
 import { api } from '../api/charlie';
@@ -14,6 +15,7 @@ import { $favoriteDeviceIds, toggleFavorite } from '../state/favorites';
 import { useUnit } from 'effector-react';
 
 export const HomePage = () => {
+    const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
@@ -43,18 +45,18 @@ export const HomePage = () => {
         if (enableAddDevice)
             a.push({
                 icon: <DevicesIcon />,
-                name: 'Devices',
+                name: t('home.devices'),
                 click: () => navigate('/discovery'),
             });
 
         a.push({
             icon: <RoomPreferencesIcon />,
-            name: 'Rooms',
+            name: t('home.rooms'),
             click: async () => {
                 const { uuid } = await api('rooms', {
                     method: 'POST',
                     body: JSON.stringify({
-                        name: 'Untitled room',
+                        name: t('rooms.untitled'),
                     }),
                 });
                 navigate(`/room/${uuid}`);
@@ -64,14 +66,14 @@ export const HomePage = () => {
         if (enableAddRoutine)
             a.push({
                 icon: <AutoModeIcon />,
-                name: 'Routines',
+                name: t('home.routines'),
                 click: () => {
                     navigate(`/routine/new`);
                 },
             });
 
         return a;
-    }, [navigate, enableAddDevice, enableAddRoutine]);
+    }, [navigate, enableAddDevice, enableAddRoutine, t]);
 
     // Register shared quick-add actions for the mobile bottom FAB
     React.useEffect(() => {

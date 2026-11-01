@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, CircularProgress } from '@mui/material';
 import { useUnit } from 'effector-react';
+import { useTranslation } from 'react-i18next';
 import { auth } from '../../state/auth';
 import { LoginPage } from '../../pages/Login';
 
@@ -9,6 +10,7 @@ import { LoginPage } from '../../pages/Login';
  * stored; otherwise renders the app shell.
  */
 export function AuthGate({ children }) {
+    const { t } = useTranslation();
     const state = useUnit(auth.$auth);
 
     if (state.loading) {
@@ -22,7 +24,7 @@ export function AuthGate({ children }) {
                 }}
             >
                 <CircularProgress
-                    aria-label="Loading..."
+                    aria-label={t('common.loading')}
                     size={48}
                     thickness={4}
                 />

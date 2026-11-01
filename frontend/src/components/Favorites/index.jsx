@@ -8,6 +8,7 @@ import {
     useMediaQuery,
 } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
+import { useTranslation } from 'react-i18next';
 import { DevicesList } from '../Devices';
 
 /**
@@ -22,6 +23,7 @@ export const FavoritesSection = ({
     favoriteDeviceIds,
     onToggleFavorite,
 }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -71,7 +73,7 @@ export const FavoritesSection = ({
                             fontSize: isMobile ? '0.875rem' : '1.5rem',
                         }}
                     >
-                        Favorites
+                        {t('favorites.title')}
                     </Typography>
                     <Typography
                         variant="caption"
@@ -80,9 +82,9 @@ export const FavoritesSection = ({
                             fontSize: isMobile ? '0.75rem' : '0.875rem',
                         }}
                     >
-                        {favoriteDevices.length} device
-                        {favoriteDevices.length > 1 ? 's' : ''} · long-press to
-                        unpin
+                        {t('favorites.summary', {
+                            count: favoriteDevices.length,
+                        })}
                     </Typography>
                 </Box>
             </Box>

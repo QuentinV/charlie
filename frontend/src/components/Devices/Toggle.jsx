@@ -1,5 +1,6 @@
 import { Box, Button, Switch, Typography } from '@mui/material';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api/charlie';
 import { DeviceType } from './constants';
 import ToggleOffIcon from '@mui/icons-material/ToggleOff';
@@ -14,6 +15,7 @@ export const DeviceToggle = ({
     compact = false,
     disabled = false,
 }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
 
     const toggleState = async () => {
@@ -77,7 +79,7 @@ export const DeviceToggle = ({
                         py: compact ? 0.5 : 1,
                     }}
                 >
-                    Toggle
+                    {t('device.toggle')}
                 </Button>
             );
         }

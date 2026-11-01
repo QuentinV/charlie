@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { updateState } from './utils';
 import { DebouncedSlider } from './DebouncedSlider';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Debounced text/number input that commits on blur or Enter.
@@ -140,12 +141,13 @@ export const SchemaField = ({ field, value, onChange, disabled = false }) => {
  * and builds the matching MUI control for each editable/readonly property.
  */
 export const PropertyControls = ({ device, schema = [], onStateChange }) => {
+    const { t } = useTranslation();
     const props = device?.state?.properties ?? {};
 
     if (!schema.length) {
         return (
             <Typography variant="body2" color="text.secondary">
-                Aucune commande avancée pour cet appareil.
+                {t('deviceControls.noAdvancedCommands')}
             </Typography>
         );
     }

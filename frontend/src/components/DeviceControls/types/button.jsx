@@ -4,12 +4,14 @@ import SmartButtonIcon from '@mui/icons-material/SmartButton';
 import { api } from '../../../api/charlie';
 import { TypePanel } from './typeShell';
 import { GOLD, glow } from './typeStyles';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Default `button` control panel: a single large trigger. Uses the same
  * `devices/:id/state/toggle` endpoint as the legacy DeviceToggle button.
  */
 export const ButtonControls = ({ device, onStateChange }) => {
+    const { t } = useTranslation();
     const [busy, setBusy] = useState(false);
 
     const press = async () => {
@@ -27,7 +29,7 @@ export const ButtonControls = ({ device, onStateChange }) => {
     return (
         <TypePanel type="button">
             <ButtonBase
-                aria-label="Déclencher"
+                aria-label={t('deviceControls.trigger')}
                 onClick={press}
                 disabled={busy}
                 sx={{
@@ -57,7 +59,7 @@ export const ButtonControls = ({ device, onStateChange }) => {
             >
                 <SmartButtonIcon fontSize="large" />
                 <Typography sx={{ fontWeight: 700 }}>
-                    {busy ? '…' : 'Déclencher'}
+                    {busy ? '…' : t('deviceControls.trigger')}
                 </Typography>
             </ButtonBase>
         </TypePanel>
