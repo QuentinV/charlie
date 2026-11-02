@@ -455,4 +455,48 @@ describe('findIntent', () => {
             name: 'whoAmI',
         });
     });
+
+    test('shopping list requests', async () => {
+        // "ajoute du lait à ma liste de courses": the trigger consumes the verb,
+        // the action strips the list mention from the slot text.
+        const add = await findIntent('ajoute du lait à ma liste de courses');
+        expect(add?.name).toBe('addShoppingItem');
+        expect(add?.slots?.text).toContain('lait');
+
+        expect((await findIntent('ajoute des pommes et du pain'))?.name).toBe(
+            'addShoppingItem'
+        );
+        expect((await findIntent('rajoute du beurre'))?.name).toBe(
+            'addShoppingItem'
+        );
+        expect((await findIntent('mets sur la liste du pain'))?.name).toBe(
+            'addShoppingItem'
+        );
+
+        expect(
+            (await findIntent('qu est ce qu il y a dans la liste de courses'))
+                ?.name
+        ).toBe('askShoppingList');
+        expect((await findIntent('lis moi la liste de courses'))?.name).toBe(
+            'askShoppingList'
+        );
+    });
+
+    test('shopping triggers do not steal the existing intents', async () => {
+        expect((await findIntent('ajoute mon profil'))?.name).toBe(
+            'configureProfile'
+        );
+        expect((await findIntent('mets en pause la télé'))?.name).toBe(
+            'pauseDevice'
+        );
+        expect((await findIntent('mets la clim à 22'))?.name).toBe(
+            'setTemperature'
+        );
+        expect((await findIntent('mets la lumière à 50'))?.name).toBe(
+            'setBrightness'
+        );
+        expect((await findIntent('allume la lumière du salon'))?.name).toBe(
+            'turnOnDevice'
+        );
+    });
 });

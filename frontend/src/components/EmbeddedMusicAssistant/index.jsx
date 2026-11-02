@@ -1,17 +1,14 @@
 import React from 'react';
 import { Box, Button, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { useSetting } from '../../state/settingsHooks';
 
 export default function EmbeddedMusicAssistant() {
+    const { t } = useTranslation();
     const url = useSetting('music.assistant.url');
     const sendspinUrl = useSetting('music.sendspin.url');
     if (!url) {
-        return (
-            <Typography>
-                Missing configuration for music assistant url, please go to
-                settings.
-            </Typography>
-        );
+        return <Typography>{t('music.missingUrl')}</Typography>;
     }
     return (
         <>
@@ -20,7 +17,7 @@ export default function EmbeddedMusicAssistant() {
                 href={sendspinUrl}
                 target="_blank"
             >
-                Reconnect speaker
+                {t('music.reconnect')}
             </Button>
             <Box sx={{ width: '100%', height: '100%' }}>
                 <iframe
@@ -30,7 +27,7 @@ export default function EmbeddedMusicAssistant() {
                         border: 0,
                     }}
                     src={`${url}/#/home`}
-                    title="Music Assistant Frontend"
+                    title={t('music.iframeTitle')}
                     sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts"
                     allow="autoplay; encrypted-media; clipboard-write"
                 />

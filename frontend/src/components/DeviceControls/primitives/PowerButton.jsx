@@ -2,6 +2,7 @@ import React from 'react';
 import { ButtonBase } from '@mui/material';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import { alpha } from '@mui/material/styles';
+import { useTranslation } from 'react-i18next';
 import { GOLD, GOLD_LIGHT, GOLD_DARK, glow } from './tokens';
 
 /**
@@ -41,25 +42,29 @@ export const PowerButton = ({
     size = 46,
     disabled = false,
     ariaLabel,
-}) => (
-    <ButtonBase
-        aria-label={
-            ariaLabel ?? (power ? 'Éteindre' : 'Allumer')
-        }
-        disabled={disabled}
-        onClick={() => onToggle?.(!power)}
-        sx={{
-            width: size,
-            height: size,
-            borderRadius: '50%',
-            minWidth: 0,
-            transition: 'all .25s ease',
-            '&.Mui-disabled': { opacity: 0.35, cursor: 'not-allowed' },
-            ...(VARIANTS[variant] ?? VARIANTS.outline)(power),
-        }}
-    >
-        <PowerSettingsNewIcon fontSize="small" />
-    </ButtonBase>
-);
+}) => {
+    const { t } = useTranslation();
+    return (
+        <ButtonBase
+            aria-label={
+                ariaLabel ??
+                (power ? t('deviceControls.turnOff') : t('deviceControls.turnOn'))
+            }
+            disabled={disabled}
+            onClick={() => onToggle?.(!power)}
+            sx={{
+                width: size,
+                height: size,
+                borderRadius: '50%',
+                minWidth: 0,
+                transition: 'all .25s ease',
+                '&.Mui-disabled': { opacity: 0.35, cursor: 'not-allowed' },
+                ...(VARIANTS[variant] ?? VARIANTS.outline)(power),
+            }}
+        >
+            <PowerSettingsNewIcon fontSize="small" />
+        </ButtonBase>
+    );
+};
 
 export default PowerButton;

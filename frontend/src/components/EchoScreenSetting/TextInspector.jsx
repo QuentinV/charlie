@@ -15,6 +15,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { MetricPicker } from './MetricPicker';
 import { substitutePlaceholders } from './screenUtils';
 import { normalizeRotation } from './screenTransforms';
+import { useTranslation } from 'react-i18next';
 
 const ROTATIONS = [
     { value: 0, label: '0°' },
@@ -49,6 +50,7 @@ export const TextInspector = ({
     preview = false,
     overrides = {},
 }) => {
+    const { t } = useTranslation();
     const rotation = normalizeRotation(text.r);
     // Odd quadrants swap the panel's axes: the cursor then lives in a
     // height × width space, exactly like Adafruit's `setRotation()`.
@@ -66,10 +68,10 @@ export const TextInspector = ({
                     }}
                 >
                     <Typography variant="subtitle2">
-                        {panel.label ?? `Panel ${panel.k}`} — {panel.w}×
-                        {panel.h}
+                        {panel.label ?? t('echoScreen.panel', { k: panel.k })} —{' '}
+                        {panel.w}×{panel.h}
                     </Typography>
-                    <Tooltip title="Delete this text">
+                    <Tooltip title={t('echoScreen.deleteText')}>
                         <IconButton size="small" color="error" onClick={onRemove}>
                             <DeleteIcon fontSize="small" />
                         </IconButton>
@@ -77,13 +79,15 @@ export const TextInspector = ({
                 </Box>
 
                 <TextField
-                    label="Text"
+                    label={t('echoScreen.text')}
                     value={text.v ?? ''}
                     onChange={(event) => onChange({ v: event.target.value })}
                     multiline
                     minRows={1}
                     fullWidth
-                    helperText="Plain text, or a {{device:Name:path}} placeholder resolved by the server"
+                    helperText={t('echoScreen.textHelper', {
+                        placeholder: '{{device:Name:path}}',
+                    })}
                 />
 
                 {preview && (
@@ -92,7 +96,8 @@ export const TextInspector = ({
                         color="text.secondary"
                         sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}
                     >
-                        → {substitutePlaceholders(text.v, overrides) || '(empty)'}
+                        → {substitutePlaceholders(text.v, overrides) ||
+                            t('echoScreen.empty')}
                     </Typography>
                 )}
 
@@ -110,21 +115,22 @@ export const TextInspector = ({
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <TextField
                         size="small"
-                        label="Text size (ts)"
+                        label={t('echoScreen.textSize')}
                         type="number"
                         value={text.ts ?? 1}
                         onChange={(event) =>
                             onChange({ ts: Number(event.target.value) })
                         }
                         inputProps={{ min: 1, max: 8 }}
-                        helperText={`${6 * (text.ts ?? 1)}×${
-                            8 * (text.ts ?? 1)
-                        } px cell`}
+                        helperText={t('echoScreen.pxCell', {
+                            w: 6 * (text.ts ?? 1),
+                            h: 8 * (text.ts ?? 1),
+                        })}
                         sx={{ flex: 1, minWidth: 110 }}
                     />
                     <TextField
                         size="small"
-                        label="Cursor X (cx)"
+                        label={t('echoScreen.cursorX')}
                         type="number"
                         value={text.cx ?? 0}
                         onChange={(event) =>
@@ -136,7 +142,7 @@ export const TextInspector = ({
                     />
                     <TextField
                         size="small"
-                        label="Cursor Y (cy)"
+                        label={t('echoScreen.cursorY')}
                         type="number"
                         value={text.cy ?? 0}
                         onChange={(event) =>
@@ -154,7 +160,7 @@ export const TextInspector = ({
                         color="text.secondary"
                         sx={{ display: 'block', mb: 0.5 }}
                     >
-                        Rotation (r) — quadrant applied to this text
+                        {t('echoScreen.rotation')}
                     </Typography>
                     <ToggleButtonGroup
                         exclusive

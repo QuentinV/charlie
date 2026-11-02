@@ -9,8 +9,10 @@ import {
     Slider,
 } from '@mui/material';
 import { api } from '../../api/charlie';
+import { useTranslation } from 'react-i18next';
 
 export const EchoSettings = ({ echo }) => {
+    const { t } = useTranslation();
     const [settings, setSettings] = useState(null);
     // The device is addressed by its canonical id, the MAC it reports: the
     // settings follow the device when DHCP hands it another address.
@@ -65,14 +67,14 @@ export const EchoSettings = ({ echo }) => {
             }}
         >
             <Button size="medium" onClick={runOta} sx={{ mt: 2 }}>
-                Run OTA - Auto update to latest version
+                {t('echo.runOta')}
                 <br />
-                Echo led should be Cyan{' '}
+                {t('echo.runOtaLed')}
             </Button>
             <Paper elevation={1} sx={{ p: 3, my: 2 }}>
                 <Stack spacing={4}>
                     <TextField
-                        label="Server ip"
+                        label={t('echo.serverIp')}
                         name="serverIp"
                         value={settings.serverIp}
                         onChange={handleInputChange}
@@ -86,7 +88,7 @@ export const EchoSettings = ({ echo }) => {
                             color="text.secondary"
                             sx={{ margin: 0 }}
                         >
-                            Wake word accuracy:{' '}
+                            {t('echo.wakeWordAccuracy')}{' '}
                             {settings.wakeWordAccuracy * 100}%
                         </Typography>
                         <Slider
@@ -109,7 +111,7 @@ export const EchoSettings = ({ echo }) => {
                         size="medium"
                         onClick={handleSave}
                     >
-                        Save
+                        {t('common.save')}
                     </Button>
                 </Stack>
             </Paper>

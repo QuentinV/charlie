@@ -3,11 +3,13 @@ import { Box, Switch, Typography } from '@mui/material';
 import { TypePanel } from './typeShell';
 import { updateState } from '../utils';
 import { SECTION_LABEL, TYPE_COLORS } from './typeStyles';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Default `switch` control panel: power button + large state switch.
  */
 export const SwitchControls = ({ device, onStateChange }) => {
+    const { t } = useTranslation();
     const state = device?.state ?? {};
     const power = state?.power === 'on';
 
@@ -17,11 +19,13 @@ export const SwitchControls = ({ device, onStateChange }) => {
     return (
         <TypePanel
             type="switch"
-            title="Interrupteur"
+            title={t('deviceControls.type.switch')}
             power={power}
             onTogglePower={setPower}
         >
-            <Typography sx={SECTION_LABEL}>État</Typography>
+            <Typography sx={SECTION_LABEL}>
+                {t('deviceControls.state')}
+            </Typography>
             <Box
                 sx={{
                     display: 'flex',
@@ -34,7 +38,7 @@ export const SwitchControls = ({ device, onStateChange }) => {
                 }}
             >
                 <Typography variant="body2" color="text.secondary">
-                    Alimentation
+                    {t('common.power')}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography
@@ -46,7 +50,7 @@ export const SwitchControls = ({ device, onStateChange }) => {
                                 : 'text.secondary',
                         }}
                     >
-                        {power ? 'ON' : 'OFF'}
+                        {power ? t('values.on') : t('values.off')}
                     </Typography>
                     <Switch
                         checked={power}

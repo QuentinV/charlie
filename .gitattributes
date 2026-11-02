@@ -1,2 +1,9 @@
 echo-devices/libs/charlie_inferencing/** linguist-vendored
 echo-devices/libs/charlie-2_inferencing/** linguist-vendored
+
+# Shell scripts must keep LF endings: a CRLF checkout (core.autocrlf=true on
+# Windows) makes `sh` abort with "Syntax error: word unexpected" and breaks the
+# container entrypoints.
+*.sh text eol=lf
+# INI presets are parsed by llama-server; keep them canonical as well.
+*.ini text eol=lf

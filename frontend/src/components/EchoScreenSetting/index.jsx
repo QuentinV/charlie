@@ -24,6 +24,7 @@ import {
     resolveLayout,
 } from './layouts';
 import { DEFAULT_TEXT, collectPlaceholders } from './screenUtils';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Visual configuration of the echo displays.
@@ -44,6 +45,7 @@ import { DEFAULT_TEXT, collectPlaceholders } from './screenUtils';
  * @param {string} [props.deviceType] Firmware type, selects the layout.
  */
 export const EchoScreenSetting = ({ id, deviceType }) => {
+    const { t } = useTranslation();
     const [refreshTime, setRefreshTime] = useState(30);
     /** `k -> { k, texts }`, the exact shape stored in `echo_settings`. */
     const [screensByK, setScreensByK] = useState({});
@@ -200,13 +202,15 @@ export const EchoScreenSetting = ({ id, deviceType }) => {
             .then(() =>
                 setToast({
                     severity: 'success',
-                    message: 'Screen configuration saved',
+                    message: t('echoScreen.saved'),
                 })
             )
             .catch((error) =>
                 setToast({
                     severity: 'error',
-                    message: `Save failed: ${error?.message ?? error}`,
+                    message: t('echoScreen.saveFailed', {
+                        message: error?.message ?? error,
+                    }),
                 })
             )
             .finally(() => setSaving(false));
@@ -223,10 +227,11 @@ export const EchoScreenSetting = ({ id, deviceType }) => {
 
     return (
         <Box component="section" sx={{ mt: 3 }}>
-            <Typography variant="h6">Screen display configuration</Typography>
+            <Typography variant="h6">
+                {t('echoScreen.title')}
+            </Typography>
             <Typography variant="body2" color="text.secondary">
-                {layout.description} Drag a text on a panel to move it, click one
-                to edit its size, position and rotation.
+                {layout.description} {t('echoScreen.dragHint')}
             </Typography>
 
             <Box
@@ -253,8 +258,10 @@ export const EchoScreenSetting = ({ id, deviceType }) => {
                             }}
                         >
                             <Typography variant="subtitle1">
-                                {layout.title} — {layout.panels.length} panel
-                                {layout.panels.length === 1 ? '' : 's'}
+                                {layout.title} —{' '}
+                                {t('echoScreen.panels', {
+                                    count: layout.panels.length,
+                                })}
                             </Typography>
                             <FormControlLabel
                                 control={
@@ -266,16 +273,13 @@ export const EchoScreenSetting = ({ id, deviceType }) => {
                                         }
                                     />
                                 }
-                                label="Preview"
+                                label={t('echoScreen.preview')}
                             />
                         </Box>
 
                         {!layout.known && (
                             <Alert severity="warning" sx={{ mt: 1 }}>
-                                This firmware type is not described in
-                                <code> layouts.js</code>, so panels are shown as
-                                generic 128×64 screens. Positions are still
-                                saved as-is.
+                                {t('echoScreen.unknownFirmware')}
                             </Alert>
                         )}
 
@@ -306,16 +310,14 @@ export const EchoScreenSetting = ({ id, deviceType }) => {
                                     variant="subtitle2"
                                     sx={{ mt: 2, mb: 1 }}
                                 >
-                                    Additional configured panels
+                                    {t('echoScreen.additionalPanels')}
                                 </Typography>
                                 <Typography
                                     variant="caption"
                                     color="text.secondary"
                                     sx={{ display: 'block', mb: 1 }}
                                 >
-                                    Indices this firmware does not declare: the
-                                    device ignores them until a build with more
-                                    panels is flashed.
+                                    {t('echoScreen.additionalPanelsHint')}
                                 </Typography>
                                 <ScreenLayoutGrid
                                     panels={extraPanels}
@@ -346,7 +348,7 @@ export const EchoScreenSetting = ({ id, deviceType }) => {
                         >
                             <RefreshIcon color="action" />
                             <TextField
-                                label="Refresh time (seconds)"
+                                label={t('echoScreen.refreshTime')}
                                 type="number"
                                 size="small"
                                 value={refreshTime}
@@ -354,7 +356,7 @@ export const EchoScreenSetting = ({ id, deviceType }) => {
                                     setRefreshTime(Number(event.target.value))
                                 }
                                 inputProps={{ min: 1, max: 3600 }}
-                                helperText="How often the server refreshes the screens"
+                                helperText={t('echoScreen.refreshHelper')}
                                 sx={{ minWidth: 220 }}
                             />
                             <Button
@@ -363,7 +365,9 @@ export const EchoScreenSetting = ({ id, deviceType }) => {
                                 onClick={handleSave}
                                 disabled={saving || loading}
                             >
-                                {saving ? 'Saving…' : 'Save screen configuration'}
+                                {saving
+                                    ? t('echoScreen.saving')
+                                    : t('echoScreen.save')}
                             </Button>
                         </Stack>
                     </Paper>
@@ -386,8 +390,7 @@ export const EchoScreenSetting = ({ id, deviceType }) => {
                         />
                     ) : (
                         <Alert severity="info">
-                            Select a text on a panel to edit it, or press the +
-                            button on a panel to add one.
+                            {t('echoScreen.selectText')}
                         </Alert>
                     )}
 
@@ -408,8 +411,7 @@ export const EchoScreenSetting = ({ id, deviceType }) => {
                     )}
 
                     <Alert severity="info">
-                        The clock strip (k=0) is painted by the firmware: it is
-                        read-only here and never sent in the saved configuration.
+                        {t('echoScreen.clockStrip')}
                     </Alert>
                 </Stack>
             </Box>

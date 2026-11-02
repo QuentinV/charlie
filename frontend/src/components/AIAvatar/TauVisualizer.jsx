@@ -14,6 +14,7 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import * as THREE from 'three';
+import { useTranslation } from 'react-i18next';
 import fragmentShader from './tauFragment.glsl?raw';
 import vertexShader from './tauVertex.glsl?raw';
 import './tauChat.css';
@@ -49,6 +50,7 @@ export default function TauVisualizer({
     busy = false,
     activity = 0,
 }) {
+    const { t } = useTranslation();
     const mountRef = useRef(null);
     const chatScrollRef = useRef(null);
 
@@ -371,15 +373,15 @@ export default function TauVisualizer({
                 <IconButton
                     aria-label={
                         hotwordEnabled
-                            ? 'désactiver le réveil vocal'
-                            : 'activer le réveil vocal'
+                            ? t('chat.disableHotword')
+                            : t('chat.enableHotword')
                     }
                     size="small"
                     onClick={onToggleHotword}
                     title={
                         hotwordEnabled
-                            ? 'Réveil vocal activé (charlie / hey / hi)'
-                            : 'Activer le réveil vocal (charlie / hey / hi)'
+                            ? t('chat.hotwordOn')
+                            : t('chat.hotwordOff')
                     }
                     sx={{
                         color: hotwordEnabled
@@ -568,7 +570,9 @@ export default function TauVisualizer({
                     }}
                 >
                     <IconButton
-                        aria-label={isListening ? 'stop listening' : 'mic'}
+                        aria-label={
+                            isListening ? t('chat.stopListening') : t('chat.mic')
+                        }
                         size="small"
                         onClick={onToggleMic}
                         sx={{
@@ -588,7 +592,7 @@ export default function TauVisualizer({
                         )}
                     </IconButton>
                     <TextField
-                        placeholder="Demande-moi n'importe quoi…"
+                        placeholder={t('chat.ask')}
                         variant="outlined"
                         size="small"
                         fullWidth
@@ -614,7 +618,7 @@ export default function TauVisualizer({
                         }}
                     />
                     <IconButton
-                        aria-label="send"
+                        aria-label={t('chat.send')}
                         onClick={onSend}
                         disabled={busy}
                         sx={{

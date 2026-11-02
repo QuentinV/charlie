@@ -380,3 +380,73 @@ export interface Routine {
     actions: string[];
     active: boolean;
 }
+
+// --- Shopping list
+
+/** Aisle of a grocery item: drives the grouping/order of the shopping tab. */
+export type GroceryCategory =
+    | 'fruits-legumes'
+    | 'boulangerie'
+    | 'boucherie'
+    | 'poissonnerie'
+    | 'cremerie'
+    | 'epicerie'
+    | 'surgeles'
+    | 'boissons'
+    | 'hygiene'
+    | 'entretien'
+    | 'autre';
+
+/** `todo` = still to buy, `taken` = in the basket (the tab's "bucket"). */
+export type ShoppingItemStatus = 'todo' | 'taken';
+
+export interface ShoppingItem {
+    id: string;
+    name: string;
+    quantity?: number;
+    unit?: string;
+    category?: GroceryCategory;
+    note?: string;
+    status: ShoppingItemStatus;
+    /** Epoch ms: kept JSON-friendly so the UI can sort without parsing dates. */
+    addedAt: number;
+    takenAt?: number;
+    /** Recognized speaker who asked for the item, if any. */
+    user?: string;
+}
+
+/**
+ * One raw request as spoken/typed by the user, kept verbatim until the
+ * background restructurer turns it into items (or the fallback parser does).
+ */
+export interface ShoppingRawRequest {
+    id: string;
+    text: string;
+    at: number;
+    /** `voice` = echo device or browser voice chat (both go through `ask`). */
+    source: 'voice' | 'ui' | 'api' | 'llm';
+    user?: string;
+    processed: boolean;
+}
+
+export interface ShoppingProcessing {
+    state: 'idle' | 'running' | 'failed';
+    lastRunAt?: number;
+    error?: string;
+}
+
+export interface ShoppingList {
+    _id?: string;
+    /**
+     * Scope of the list. Always `household`: the whole home shares one list
+     * (see `shopping/list.ts`), individual requests still record their speaker.
+     */
+    scopeKey: string;
+    status: 'active' | 'archived';
+    createdAt: number;
+    updatedAt: number;
+    archivedAt?: number;
+    raw: ShoppingRawRequest[];
+    items: ShoppingItem[];
+    processing?: ShoppingProcessing;
+}

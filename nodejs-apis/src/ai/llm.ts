@@ -12,8 +12,58 @@ import {
 } from './llm.types';
 
 const host = process.env.LLM_HOST ?? 'llm:9308';
+/**
+ * Chat model id served by the LLM router (`LLM_MODEL`). The service runs both
+ * models behind llama-server's router mode and loads each one on demand, so the
+ * brain has to name the model it wants. Unset = single-model server.
+ */
+const CHAT_MODEL = process.env.LLM_MODEL ?? 'qwen3-4b';
+const SHOPPING_MODEL = process.env.LLM_SHOPPING_MODEL ?? 'qwen2.5-1.5b';
 const LIMIT_TURN = 10;
 const LLM_LANG_OUTPUT = process.env.LLM_LANGUAGE?.toUpperCase() ?? 'FRENCH';
+
+/** Model id the conversation and the summarizer use. */
+export function chatModel(): string | undefined {
+    return CHAT_MODEL;
+}
+
+/** Model id the shopping restructurer uses (small model). */
+export function shoppingModel(): string | undefined {
+    return SHOPPING_MODEL;
+}
+
+/** Host serving the small model (same container unless overridden). */
+export function shoppingHost(): string {
+    return process.env.LLM_SHOPPING_HOST ?? host;
+}
+
+/**
+ * Ask the router to load the models ahead of the first request: in router mode
+ * nothing is loaded at startup, and the load would otherwise delay the first
+ * voice command. Best-effort: a single-model server has no `/models` endpoint.
+ */
+export async function warmUp(): Promise<void> {
+    if (!CHAT_MODEL) return;
+    const models = [...new Set([CHAT_MODEL, SHOPPING_MODEL])].filter(
+        (m): m is string => !!m
+    );
+    for (const model of models) {
+        try {
+            const res = await fetch(`http://${host}/models/load`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model }),
+            });
+            log(
+                res.ok
+                    ? `warmup requested for ${model}`
+                    : `warmup of ${model} refused (${res.status})`
+            );
+        } catch (e) {
+            log('warmup failed', { data: { error: JSON.stringify(e) } });
+        }
+    }
+}
 
 function log(message: string, activity?: Activity) {
     return ogLog('LLM', message, activity);
@@ -37,6 +87,8 @@ async function getSession(
                 },
             ],
             tools: await toolsSchemas(),
+            // Router mode: name the model so the server loads/keeps it warm.
+            model: CHAT_MODEL,
         };
     return sessions[sessionId];
 }
@@ -89,6 +141,7 @@ async function summarize(
             { role: 'user', content: transcript },
         ],
         tools: [],
+        model: CHAT_MODEL,
         response_format: {
             type: 'json_schema',
             json_schema: {
@@ -163,16 +216,44 @@ async function execTool(
 }
 
 // ===== Request to LLM =====
+/**
+ * One chat-completions round trip. `hostOverride` targets another instance
+ * (the small model can live on its own host); when the server refuses the
+ * requested `model` (single-model deployment, unknown id) the request is
+ * retried once without it so a mixed setup keeps working.
+ */
 export async function req(
-    req: LlmChatCompletionsRequest
+    request: LlmChatCompletionsRequest,
+    hostOverride?: string
 ): Promise<LlmChatCompletionsResponse> {
-    const res = await fetch(`http://${host}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(req),
-    });
+    const target = hostOverride ?? host;
+
+    const post = (body: LlmChatCompletionsRequest) =>
+        fetch(`http://${target}/v1/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+    let res = await post(request);
+
+    // Router refused the model (single-model deployment or unknown id): retry
+    // once without it so a mixed setup keeps working.
+    if (
+        res.ok === false &&
+        request.model &&
+        (res.status === 400 || res.status === 404)
+    ) {
+        log(
+            `model ${request.model} refused (${res.status}), retrying without it`
+        );
+        const { model, ...withoutModel } = request;
+        void model;
+        res = await post(withoutModel);
+    }
+
     return res.json();
 }
 

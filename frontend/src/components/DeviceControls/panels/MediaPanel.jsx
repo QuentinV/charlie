@@ -18,6 +18,7 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import { alpha } from '@mui/material/styles';
 import { updateState, callDeviceFunction } from '../utils';
+import { useTranslation } from 'react-i18next';
 import {
     GOLD,
     GOLD_LIGHT,
@@ -144,8 +145,10 @@ export const MediaPanel = ({
     device,
     capabilities,
     onStateChange,
-    title = 'Téléviseur',
+    title,
 }) => {
+    const { t } = useTranslation();
+    const panelTitle = title ?? t('deviceControls.type.tv');
     const state = device?.state ?? {};
     const props = state?.properties ?? {};
     const power = state?.power === 'on';
@@ -319,7 +322,7 @@ export const MediaPanel = ({
                             fontWeight: 700,
                         }}
                     >
-                        {title}
+                        {panelTitle}
                     </Typography>
                     <Box
                         sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
@@ -412,7 +415,9 @@ export const MediaPanel = ({
 
             {/* ── Volume + mute ───────────────────────────── */}
             <Box sx={{ mt: 2 }}>
-                <Typography sx={SECTION_LABEL}>Volume</Typography>
+                <Typography sx={SECTION_LABEL}>
+                    {t('deviceControls.volume')}
+                </Typography>
                 <Stack
                     direction="row"
                     alignItems="center"
@@ -420,7 +425,7 @@ export const MediaPanel = ({
                     spacing={3}
                 >
                     <ButtonBase
-                        aria-label="Baisser le volume"
+                        aria-label={t('deviceControls.volumeDown')}
                         disabled={!power || (!stepOnly && volume <= 0)}
                         onClick={() =>
                             stepOnly ? stepVolume(-1) : setVolume(volume - 1)
@@ -451,7 +456,7 @@ export const MediaPanel = ({
                     </Box>
 
                     <ButtonBase
-                        aria-label="Augmenter le volume"
+                        aria-label={t('deviceControls.volumeUp')}
                         disabled={!power || (!stepOnly && volume >= 100)}
                         onClick={() =>
                             stepOnly ? stepVolume(1) : setVolume(volume + 1)
@@ -503,7 +508,9 @@ export const MediaPanel = ({
             {/* ── Sources ─────────────────────────────────── */}
             {sources.length > 0 ? (
                 <Box sx={{ mt: 2 }}>
-                    <Typography sx={SECTION_LABEL}>Entrées</Typography>
+                    <Typography sx={SECTION_LABEL}>
+                        {t('deviceControls.inputs')}
+                    </Typography>
                     <Box
                         sx={{
                             display: 'grid',
@@ -552,7 +559,9 @@ export const MediaPanel = ({
             {/* ── Transport ───────────────────────────────── */}
             {transport.length > 0 ? (
                 <Box sx={{ mt: 2 }}>
-                    <Typography sx={SECTION_LABEL}>Lecture</Typography>
+                    <Typography sx={SECTION_LABEL}>
+                        {t('deviceControls.playback')}
+                    </Typography>
                     <Stack direction="row" justifyContent="center" spacing={1}>
                         {transport.map((service) => {
                             const TransportIcon = service.icon;
@@ -581,7 +590,9 @@ export const MediaPanel = ({
 
             {commandField ? (
                 <Box sx={{ mt: 2 }}>
-                    <Typography sx={SECTION_LABEL}>Commande</Typography>
+                    <Typography sx={SECTION_LABEL}>
+                        {t('deviceControls.command')}
+                    </Typography>
                     <Stack direction="row" spacing={1} alignItems="center">
                         <TextField
                             size="small"
@@ -596,7 +607,7 @@ export const MediaPanel = ({
                             sx={{ '& .MuiInputBase-root': { fontSize: 14 } }}
                         />
                         <ButtonBase
-                            aria-label="Envoyer la commande"
+                            aria-label={t('deviceControls.sendCommand')}
                             disabled={!power || !!busy || !command.trim()}
                             onClick={sendCommand}
                             sx={{ ...keyBase, width: 56, height: 40 }}

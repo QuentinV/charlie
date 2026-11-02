@@ -11,6 +11,7 @@ import {
     Typography,
 } from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Local-only replacement values for the placeholders used by the configuration.
@@ -25,7 +26,9 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
  * @param {(raw: string, value: string) => void} props.onChange
  * @param {() => void} props.onReset
  */
-export const PreviewPanel = ({ placeholders, overrides, onChange, onReset }) => (
+export const PreviewPanel = ({ placeholders, overrides, onChange, onReset }) => {
+    const { t } = useTranslation();
+    return (
     <Stack spacing={1}>
         <Box
             sx={{
@@ -35,9 +38,9 @@ export const PreviewPanel = ({ placeholders, overrides, onChange, onReset }) => 
             }}
         >
             <Typography variant="subtitle2">
-                Preview values (local only)
+                {t('echoScreen.previewValues')}
             </Typography>
-            <Tooltip title="Clear every override">
+            <Tooltip title={t('echoScreen.clearOverrides')}>
                 <span>
                     <IconButton
                         size="small"
@@ -52,9 +55,9 @@ export const PreviewPanel = ({ placeholders, overrides, onChange, onReset }) => 
 
         {!placeholders.length ? (
             <Alert severity="info">
-                No <code>{'{{device:Name:path}}'}</code> placeholder in the
-                screens yet — add a reading from the text inspector to preview
-                one.
+                {t('echoScreen.noPlaceholder', {
+                    placeholder: '{{device:Name:path}}',
+                })}
             </Alert>
         ) : (
             <Stack spacing={1.5}>
@@ -69,7 +72,9 @@ export const PreviewPanel = ({ placeholders, overrides, onChange, onReset }) => 
                         <TextField
                             size="small"
                             fullWidth
-                            label={`Preview value for ${placeholder.path}`}
+                            label={t('echoScreen.previewValueFor', {
+                                path: placeholder.path,
+                            })}
                             value={overrides[placeholder.raw] ?? ''}
                             onChange={(event) =>
                                 onChange(placeholder.raw, event.target.value)
@@ -78,11 +83,12 @@ export const PreviewPanel = ({ placeholders, overrides, onChange, onReset }) => 
                     </Box>
                 ))}
                 <Button size="small" onClick={onReset} sx={{ alignSelf: 'flex-start' }}>
-                    Clear all
+                    {t('echoScreen.clearAll')}
                 </Button>
             </Stack>
         )}
     </Stack>
-);
+    );
+};
 
 export default PreviewPanel;

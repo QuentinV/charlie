@@ -14,6 +14,7 @@ import {
 import { ArrowBackIosNew, ArrowForwardIos } from '@mui/icons-material';
 import { api } from '../../api/charlie';
 import { useDeviceCapabilities } from '../../hooks/useDeviceCapabilities';
+import { useTranslation } from 'react-i18next';
 
 const startOfDay = (date = new Date()) => {
     const d = new Date(date);
@@ -77,20 +78,21 @@ const getViewRange = (period, offset) => {
 };
 
 const PERIOD_OPTIONS = [
-    { value: 'day', label: 'Day' },
-    { value: 'week', label: 'Week' },
-    { value: 'month', label: 'Month' },
+    { value: 'day', labelKey: 'chart.period.day' },
+    { value: 'week', labelKey: 'chart.period.week' },
+    { value: 'month', labelKey: 'chart.period.month' },
 ];
 
 export default function HistoricalDeviceChart({
     deviceId,
-    title = 'Data',
+    title,
     showLevel = true,
     showPower = true,
     rangeDays = 0,
     hideToolbar = false,
     height = 400,
 }) {
+    const { t } = useTranslation();
     const [period, setPeriod] = useState('day');
     const [periodOffset, setPeriodOffset] = useState(rangeDays);
     const [loading, setLoading] = useState(false);
@@ -255,17 +257,19 @@ export default function HistoricalDeviceChart({
                     mb={2}
                     px={3}
                 >
-                    <Typography variant="h6">{title}</Typography>
+                    <Typography variant="h6">
+                        {title ?? t('chart.data')}
+                    </Typography>
 
                     <Stack direction="row" spacing={1} alignItems="center">
                         <FormControl size="small" sx={{ minWidth: 120 }}>
                             <InputLabel id="device-state-period-label">
-                                Period
+                                {t('chart.period')}
                             </InputLabel>
                             <Select
                                 labelId="device-state-period-label"
                                 value={period}
-                                label="Period"
+                                label={t('chart.period')}
                                 onChange={(event) =>
                                     setPeriod(event.target.value)
                                 }
@@ -275,7 +279,7 @@ export default function HistoricalDeviceChart({
                                         key={option.value}
                                         value={option.value}
                                     >
-                                        {option.label}
+                                        {t(option.labelKey)}
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -284,18 +288,18 @@ export default function HistoricalDeviceChart({
                         {numericProps.length > 0 && (
                             <FormControl size="small" sx={{ minWidth: 140 }}>
                                 <InputLabel id="device-state-prop-label">
-                                    Métrique
+                                    {t('chart.metric')}
                                 </InputLabel>
                                 <Select
                                     labelId="device-state-prop-label"
                                     value={activeProperty}
-                                    label="Métrique"
+                                    label={t('chart.metric')}
                                     onChange={(event) =>
                                         setActiveProperty(event.target.value)
                                     }
                                 >
                                     <MenuItem value="">
-                                        Niveau / Puissance
+                                        {t('chart.levelOrPower')}
                                     </MenuItem>
                                     {numericProps.map((field) => (
                                         <MenuItem
@@ -365,7 +369,7 @@ export default function HistoricalDeviceChart({
                         }}
                     >
                         <Typography color="text.secondary" align="center">
-                            Select a device to show the chart.
+                            {t('chart.selectDevice')}
                         </Typography>
                     </Box>
                 ) : series.length === 0 ? (
@@ -379,7 +383,7 @@ export default function HistoricalDeviceChart({
                         }}
                     >
                         <Typography color="text.secondary" align="center">
-                            Toggle at least one metric to display the chart.
+                            {t('chart.toggleMetric')}
                         </Typography>
                     </Box>
                 ) : (

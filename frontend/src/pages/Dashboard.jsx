@@ -24,6 +24,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { api } from '../api/charlie';
 import HistoricalDeviceChart from '../components/DeviceStateChart';
+import { useTranslation } from 'react-i18next';
 
 const STORAGE_KEY = 'charlie.dashboard.histories';
 
@@ -79,6 +80,7 @@ const saveWidgets = (widgets) => {
  * @param {{ widget: DashboardWidget; devices: Array<{ _id: string; name: string }>; onUpdate: (widgetId: string, changes: any) => void; onRemove: (widgetId: string) => void; }} props
  */
 function DeviceHistoryCard({ widget, devices, onUpdate, onRemove }) {
+    const { t } = useTranslation();
     const device = devices.find((item) => item._id === widget.deviceId);
     const [editing, setEditing] = useState(!widget.deviceId);
 
@@ -91,13 +93,21 @@ function DeviceHistoryCard({ widget, devices, onUpdate, onRemove }) {
             }}
         >
             <CardHeader
-                title={widget.title || device?.name || 'Untitled chart'}
+                title={widget.title || device?.name || t('dashboard.untitledChart')}
                 subheader={
-                    device ? `Device: ${device.name}` : 'Pick a device to start'
+                    device
+                        ? t('dashboard.deviceWithName', { name: device.name })
+                        : t('dashboard.pickDevice')
                 }
                 action={
                     <Stack direction="row" spacing={1}>
-                        <Tooltip title={editing ? 'Save chart' : 'Edit chart'}>
+                        <Tooltip
+                            title={
+                                editing
+                                    ? t('dashboard.saveChart')
+                                    : t('dashboard.editChart')
+                            }
+                        >
                             <IconButton
                                 onClick={() => setEditing((prev) => !prev)}
                                 size="small"
@@ -105,7 +115,7 @@ function DeviceHistoryCard({ widget, devices, onUpdate, onRemove }) {
                                 {editing ? <CheckIcon /> : <EditIcon />}
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="Remove chart">
+                        <Tooltip title={t('dashboard.removeChart')}>
                             <IconButton onClick={() => onRemove(widget.id)}>
                                 <DeleteIcon />
                             </IconButton>
@@ -130,7 +140,7 @@ function DeviceHistoryCard({ widget, devices, onUpdate, onRemove }) {
                     >
                         <Box>
                             <TextField
-                                label="Chart title"
+                                label={t('dashboard.chartTitle')}
                                 value={widget.title}
                                 onChange={(event) =>
                                     onUpdate(widget.id, {
@@ -145,19 +155,21 @@ function DeviceHistoryCard({ widget, devices, onUpdate, onRemove }) {
                                 <InputLabel
                                     id={`dashboard-device-label-${widget.id}`}
                                 >
-                                    Device
+                                    {t('dashboard.device')}
                                 </InputLabel>
                                 <Select
                                     labelId={`dashboard-device-label-${widget.id}`}
                                     value={widget.deviceId}
-                                    label="Device"
+                                    label={t('dashboard.device')}
                                     onChange={(event) =>
                                         onUpdate(widget.id, {
                                             deviceId: event.target.value,
                                         })
                                     }
                                 >
-                                    <MenuItem value="">None</MenuItem>
+                                    <MenuItem value="">
+                                        {t('common.none')}
+                                    </MenuItem>
                                     {devices.map((item) => (
                                         <MenuItem
                                             key={item._id}
@@ -175,7 +187,7 @@ function DeviceHistoryCard({ widget, devices, onUpdate, onRemove }) {
                                 alignItems="center"
                                 spacing={1}
                             >
-                                <Typography>Level</Typography>
+                                <Typography>{t('dashboard.level')}</Typography>
                                 <Switch
                                     checked={widget.showLevel}
                                     onChange={(event) =>
@@ -184,7 +196,7 @@ function DeviceHistoryCard({ widget, devices, onUpdate, onRemove }) {
                                         })
                                     }
                                 />
-                                <Typography>Power</Typography>
+                                <Typography>{t('common.power')}</Typography>
                                 <Switch
                                     checked={widget.showPower}
                                     onChange={(event) =>
@@ -210,7 +222,7 @@ function DeviceHistoryCard({ widget, devices, onUpdate, onRemove }) {
                 >
                     <HistoricalDeviceChart
                         deviceId={widget.deviceId}
-                        title={widget.title || device?.name || 'Device history'}
+                        title={widget.title || device?.name || t('dashboard.deviceHistory')}
                         showLevel={widget.showLevel}
                         showPower={widget.showPower}
                         hideToolbar={!editing}
@@ -223,6 +235,7 @@ function DeviceHistoryCard({ widget, devices, onUpdate, onRemove }) {
 }
 
 export const DashboardPage = () => {
+    const { t } = useTranslation();
     const [devices, setDevices] = useState(
         /** @type {Array<{ _id: string; name: string }>} */ ([])
     );
@@ -283,7 +296,7 @@ export const DashboardPage = () => {
                 mb={2}
             >
                 <Stack spacing={1}>
-                    <Typography variant="h4">Dashboard</Typography>
+                    <Typography variant="h4">{t('nav.dashboard')}</Typography>
                 </Stack>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                     <Button
@@ -291,14 +304,14 @@ export const DashboardPage = () => {
                         startIcon={<AddIcon />}
                         onClick={handleAddWidget}
                     >
-                        Add chart
+                        {t('dashboard.addChart')}
                     </Button>
                     <Button
                         variant="outlined"
                         startIcon={<RefreshIcon />}
                         onClick={handleReset}
                     >
-                        Reset
+                        {t('common.reset')}
                     </Button>
                 </Stack>
             </Stack>
@@ -310,11 +323,10 @@ export const DashboardPage = () => {
             ) : widgets.length === 0 ? (
                 <Box sx={{ p: 4, textAlign: 'center' }}>
                     <Typography variant="h6" gutterBottom>
-                        No charts yet
+                        {t('dashboard.noCharts')}
                     </Typography>
                     <Typography color="text.secondary">
-                        Click Add chart to create your first device history
-                        view.
+                        {t('dashboard.noChartsHint')}
                     </Typography>
                 </Box>
             ) : (

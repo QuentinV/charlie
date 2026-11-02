@@ -3,6 +3,7 @@ import { Box, ButtonBase, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { alpha } from '@mui/material/styles';
+import { useTranslation } from 'react-i18next';
 import { GOLD, GOLD_DARK, glow } from './tokens';
 
 /**
@@ -75,8 +76,13 @@ export const Stepper = ({
     captionSx,
     slotSx,
     spacing = variant === 'gradient' ? 3 : 2,
-    ariaLabels = { decrease: 'Diminuer', increase: 'Augmenter' },
+    ariaLabels,
 }) => {
+    const { t } = useTranslation();
+    const labels = ariaLabels ?? {
+        decrease: t('deviceControls.decrease'),
+        increase: t('deviceControls.increase'),
+    };
     const numeric = Number(value);
     const apply = (direction) => {
         const next = Math.min(
@@ -99,7 +105,7 @@ export const Stepper = ({
             sx={{ py: 1 }}
         >
             <ButtonBase
-                aria-label={ariaLabels.decrease}
+                aria-label={labels.decrease}
                 disabled={disabled || atMin}
                 onClick={() => apply(-1)}
                 sx={variantSx}
@@ -126,7 +132,7 @@ export const Stepper = ({
             </Box>
 
             <ButtonBase
-                aria-label={ariaLabels.increase}
+                aria-label={labels.increase}
                 disabled={disabled || atMax}
                 onClick={() => apply(1)}
                 sx={variantSx}

@@ -18,6 +18,8 @@ import {
     Snackbar,
     Stack,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { api } from '../../api/charlie';
 
 // =====================================================================
@@ -187,8 +189,8 @@ function renderField(field, value, onChange) {
                         onChange(field.name, e.target.value === 'true')
                     }
                 >
-                    <MenuItem value="true">Yes</MenuItem>
-                    <MenuItem value="false">No</MenuItem>
+                    <MenuItem value="true">{i18n.t('common.yes')}</MenuItem>
+                    <MenuItem value="false">{i18n.t('common.no')}</MenuItem>
                 </Select>
             </FormControl>
         );
@@ -240,6 +242,7 @@ function renderField(field, value, onChange) {
 }
 
 export const IntegrationManager = ({ open, onClose }) => {
+    const { t } = useTranslation();
     const [installed, setInstalled] = useState([]);
     const [handlers, setHandlers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -258,7 +261,9 @@ export const IntegrationManager = ({ open, onClose }) => {
     const [communityBusy, setCommunityBusy] = useState(false);
 
     const stripApiError = (e) =>
-        typeof e === 'string' ? e : e?.message || 'Unknown error';
+        typeof e === 'string'
+            ? e
+            : e?.message || t('integration.unknownError');
 
     const refreshCommunity = async () => {
         let list = [];
@@ -323,7 +328,7 @@ export const IntegrationManager = ({ open, onClose }) => {
         setCommunityBusy(true);
         setSnackbar({
             severity: 'info',
-            message: `Installing ${repo} and restarting Home Assistant…`,
+            message: t('integration.installing', { repo }),
         });
         try {
             const data = await api('ha/community/install', {
@@ -337,7 +342,7 @@ export const IntegrationManager = ({ open, onClose }) => {
                     severity: data?.warning ? 'error' : 'success',
                     message:
                         data?.warning ??
-                        `${repo} installed — configure it below.`,
+                        t('integration.installedMsg', { repo }),
                 });
                 setCommunityResults((prev) =>
                     prev.map((r) =>
@@ -355,11 +360,7 @@ export const IntegrationManager = ({ open, onClose }) => {
     };
 
     const removeCommunity = async (domain) => {
-        if (
-            !window.confirm(
-                `Remove community integration '${domain}'? Home Assistant will need a restart.`
-            )
-        ) {
+        if (!window.confirm(t('integration.removeCommunityConfirm', { domain }))) {
             return;
         }
         setCommunityBusy(true);
@@ -367,7 +368,7 @@ export const IntegrationManager = ({ open, onClose }) => {
             await api(`ha/community/${domain}`, { method: 'DELETE' });
             setSnackbar({
                 severity: 'success',
-                message: `${domain} removed — restart Home Assistant to unload it.`,
+                message: t('integration.removedMsg', { domain }),
             });
             await refreshCommunity();
         } catch (e) {
@@ -391,7 +392,7 @@ export const IntegrationManager = ({ open, onClose }) => {
             if (!silent) {
                 setSnackbar({
                     severity: 'error',
-                    message: 'Failed to reach Home Assistant (is it running?)',
+                    message: t('integration.reachFailed'),
                 });
             }
         } finally {
@@ -426,14 +427,13 @@ export const IntegrationManager = ({ open, onClose }) => {
     // create_entry/abort (terminal), progress/external (waiting), menu + form.
     const applyStep = async (step, handler) => {
         if (!step || !step.type) {
-            setFlowError('No response from Home Assistant');
+            setFlowError(t('integration.noResponse'));
             return;
         }
         if (step.type === 'create_entry') {
             setSnackbar({
                 severity: 'success',
-                message:
-                    'Integration added! Its entities now appear in the Discovery page.',
+                message: t('integration.addedMsg'),
             });
             setSelectedHandler(null);
             setFlow(null);
@@ -443,7 +443,7 @@ export const IntegrationManager = ({ open, onClose }) => {
             return;
         }
         if (step.type === 'abort') {
-            setFlowError(step.reason || 'The integration flow was aborted.');
+            setFlowError(step.reason || t('integration.flowAborted'));
             setSelectedHandler(null);
             setFlow(null);
             setFlowValues({});
@@ -473,7 +473,7 @@ export const IntegrationManager = ({ open, onClose }) => {
             await applyStep(step, handler);
         } catch (e) {
             setFlowError(
-                haErrorMessage(e) || 'Failed to start integration flow'
+                haErrorMessage(e) || t('integration.flowStartFailed')
             );
         } finally {
             setBusy(false);
@@ -493,7 +493,7 @@ export const IntegrationManager = ({ open, onClose }) => {
             });
             await applyStep(step, selectedHandler);
         } catch (e) {
-            setFlowError(haErrorMessage(e) || 'Failed to advance the flow');
+            setFlowError(haErrorMessage(e) || t('integration.flowAdvanceFailed'));
         } finally {
             setBusy(false);
         }
@@ -518,7 +518,7 @@ export const IntegrationManager = ({ open, onClose }) => {
             });
             await applyStep(step, selectedHandler);
         } catch (e) {
-            setFlowError(haErrorMessage(e) || 'Failed to advance the flow');
+            setFlowError(haErrorMessage(e) || t('integration.flowAdvanceFailed'));
         } finally {
             setBusy(false);
         }
@@ -563,7 +563,7 @@ export const IntegrationManager = ({ open, onClose }) => {
     };
 
     const removeEntry = async (entryId) => {
-        if (!window.confirm('Remove this integration from Home Assistant?'))
+        if (!window.confirm(t('integration.removeConfirm')))
             return;
         try {
             await api(`ha/integrations/entry/${entryId}`, {
@@ -571,13 +571,13 @@ export const IntegrationManager = ({ open, onClose }) => {
             });
             setSnackbar({
                 severity: 'success',
-                message: 'Integration removed',
+                message: t('integration.removed'),
             });
             refresh();
         } catch (e) {
             setSnackbar({
                 severity: 'error',
-                message: 'Failed to remove integration',
+                message: t('integration.removeFailed'),
             });
         }
     };
@@ -587,7 +587,7 @@ export const IntegrationManager = ({ open, onClose }) => {
     );
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogTitle>Home Assistant Integrations</DialogTitle>
+            <DialogTitle>{t('integration.title')}</DialogTitle>
             <DialogContent dividers>
                 {loading ? (
                     <Box
@@ -603,11 +603,11 @@ export const IntegrationManager = ({ open, onClose }) => {
                     <Stack spacing={3}>
                         <Box>
                             <Typography variant="subtitle1" gutterBottom>
-                                Installed
+                                {t('integration.installed')}
                             </Typography>
                             {installed.length === 0 ? (
                                 <Typography color="text.secondary">
-                                    No integrations configured yet.
+                                    {t('integration.none')}
                                 </Typography>
                             ) : (
                                 <Stack
@@ -634,22 +634,20 @@ export const IntegrationManager = ({ open, onClose }) => {
 
                         <Box>
                             <Typography variant="subtitle1" gutterBottom>
-                                Community integrations (HACS)
+                                {t('integration.community')}
                             </Typography>
                             <Typography
                                 variant="body2"
                                 color="text.secondary"
                                 sx={{ mb: 1 }}
                             >
-                                Install community integrations (for example
-                                Meross) straight from GitHub. Home Assistant
-                                restarts automatically to activate them.
+                                {t('integration.communityHint')}
                             </Typography>
                             <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                                 <TextField
                                     fullWidth
                                     size="small"
-                                    label="Search community integrations (e.g. meross)"
+                                    label={t('integration.searchCommunity')}
                                     value={communityQuery}
                                     onChange={(e) =>
                                         setCommunityQuery(e.target.value)
@@ -664,7 +662,9 @@ export const IntegrationManager = ({ open, onClose }) => {
                                     onClick={searchCommunity}
                                     disabled={communityBusy}
                                 >
-                                    {communityBusy ? 'Working…' : 'Search'}
+                                    {communityBusy
+                                        ? t('common.working')
+                                        : t('common.search')}
                                 </Button>
                             </Stack>
                             <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
@@ -704,7 +704,7 @@ export const IntegrationManager = ({ open, onClose }) => {
                                         sx={{ mt: 2 }}
                                         gutterBottom
                                     >
-                                        Installed community integrations
+                                        {t('integration.installedCommunity')}
                                     </Typography>
                                     <Stack
                                         direction="row"
@@ -726,7 +726,9 @@ export const IntegrationManager = ({ open, onClose }) => {
                                                     : ''
                                             }`;
                                             const label = !handlerReady
-                                                ? `${base} (not loaded)`
+                                                ? `${base}${t(
+                                                      'integration.notLoaded'
+                                                  )}`
                                                 : configured
                                                   ? `${base} ✓`
                                                   : base;
@@ -777,12 +779,7 @@ export const IntegrationManager = ({ open, onClose }) => {
                                             display="block"
                                             sx={{ mt: 1 }}
                                         >
-                                            Some integrations are not loaded by
-                                            Home Assistant yet — they may still
-                                            be starting, failed to import, or
-                                            HA_CONFIG_DIR may be wrong. Check
-                                            the HA log at
-                                            /api/ha/error-log?grep=domain
+                                            {t('integration.notLoadedHint')}
                                         </Typography>
                                     )}
                                 </>
@@ -801,7 +798,9 @@ export const IntegrationManager = ({ open, onClose }) => {
                         {selectedHandler && flow ? (
                             <Box>
                                 <Typography variant="subtitle1" gutterBottom>
-                                    Configure {handlerLabel(selectedHandler)}
+                                    {t('integration.configure', {
+                                        name: handlerLabel(selectedHandler),
+                                    })}
                                 </Typography>
                                 {asText(flow.title) && (
                                     <Typography
@@ -824,17 +823,17 @@ export const IntegrationManager = ({ open, onClose }) => {
                                     >
                                         <CircularProgress size={22} />
                                         <Typography color="text.secondary">
-                                            Waiting
                                             {flow.progress_action
-                                                ? ` — ${flow.progress_action}`
-                                                : '…'}
+                                                ? t('integration.waitingWith', {
+                                                      action: flow.progress_action,
+                                                  })
+                                                : t('integration.waiting')}
                                         </Typography>
                                     </Box>
                                 ) : flow.type === 'external' ||
                                   flow.type === 'external_done' ? (
                                     <Alert severity="info" sx={{ my: 1 }}>
-                                        This integration needs an external step
-                                        (authorize it from Home Assistant).
+                                        {t('integration.externalStep')}
                                         {flow.url ? ` URL: ${flow.url}` : ''}
                                     </Alert>
                                 ) : flow.type === 'menu' ? (
@@ -874,11 +873,11 @@ export const IntegrationManager = ({ open, onClose }) => {
                         ) : (
                             <Box>
                                 <Typography variant="subtitle1" gutterBottom>
-                                    Add a device integration
+                                    {t('integration.addDevice')}
                                 </Typography>
                                 <TextField
                                     fullWidth
-                                    label="Search integrations"
+                                    label={t('integration.search')}
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     sx={{ mb: 2 }}
@@ -910,7 +909,7 @@ export const IntegrationManager = ({ open, onClose }) => {
                 {selectedHandler && flow ? (
                     <>
                         <Button onClick={cancelFlow} disabled={busy}>
-                            Cancel
+                            {t('common.cancel')}
                         </Button>
                         {flow.type === 'form' && (
                             <Button
@@ -918,7 +917,9 @@ export const IntegrationManager = ({ open, onClose }) => {
                                 onClick={submitStep}
                                 disabled={busy}
                             >
-                                {busy ? 'Working…' : 'Continue'}
+                                {busy
+                                    ? t('common.working')
+                                    : t('common.continue')}
                             </Button>
                         )}
                     </>
@@ -931,9 +932,9 @@ export const IntegrationManager = ({ open, onClose }) => {
                             }}
                             disabled={loading}
                         >
-                            Refresh
+                            {t('common.refresh')}
                         </Button>
-                        <Button onClick={onClose}>Close</Button>
+                        <Button onClick={onClose}>{t('common.close')}</Button>
                     </>
                 )}
             </DialogActions>

@@ -3,13 +3,13 @@ import { Box } from '@mui/material';
 import TauVisualizer from '../components/AIAvatar/TauVisualizer';
 import { api, getToken } from '../api/charlie';
 import { MicCapture } from '../audio/micCapture';
+import i18n from '../i18n';
 
-const FALLBACK_REPLY = "Je n'ai pas trouvé de réponse à ça.";
-const ERROR_REPLY = "Une erreur est survenue, réessaie s'il te plaît.";
-const MIC_ERROR_REPLY =
-    "Je n'ai pas pu accéder au micro. Autorise le microphone pour ce site puis réessaie.";
-const INSECURE_REPLY =
-    'Le micro nécessite une connexion sécurisée (HTTPS) ou localhost.';
+// Resolved at call time so the reply follows the active language.
+const FALLBACK_REPLY = () => i18n.t('ai.fallbackReply');
+const ERROR_REPLY = () => i18n.t('ai.errorReply');
+const MIC_ERROR_REPLY = () => i18n.t('ai.micErrorReply');
+const INSECURE_REPLY = () => i18n.t('ai.insecureReply');
 
 /**
  * AI chat page.
@@ -131,8 +131,8 @@ export const AiPage = () => {
                 console.error('[AiPage] microphone error:', error);
                 pushReply(
                     error?.message === 'insecure-context'
-                        ? INSECURE_REPLY
-                        : MIC_ERROR_REPLY
+                        ? INSECURE_REPLY()
+                        : MIC_ERROR_REPLY()
                 );
                 setIsListening(false);
                 hotwordRef.current = false;
@@ -281,7 +281,7 @@ export const AiPage = () => {
                         pushReply(
                             typeof payload.v === 'string'
                                 ? payload.v
-                                : FALLBACK_REPLY
+                                : FALLBACK_REPLY()
                         );
                         setBusy(false);
                     } else if (payload.c === 'playAudio') {
@@ -355,10 +355,10 @@ export const AiPage = () => {
                 body: JSON.stringify({ message: trimmed }),
             });
             const reply =
-                typeof res === 'string' && res.trim() ? res : FALLBACK_REPLY;
+                typeof res === 'string' && res.trim() ? res : FALLBACK_REPLY();
             pushReply(reply);
         } catch {
-            pushReply(ERROR_REPLY);
+            pushReply(ERROR_REPLY());
         } finally {
             setBusy(false);
         }

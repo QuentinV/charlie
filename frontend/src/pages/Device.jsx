@@ -10,8 +10,10 @@ import {
     alpha,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useTranslation } from 'react-i18next';
 
 export const DevicePage = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const [device, setDevice] = useState(/** @type {any} */ (null));
@@ -42,7 +44,7 @@ export const DevicePage = () => {
                 }}
             >
                 <IconButton
-                    aria-label="back"
+                    aria-label={t('common.back')}
                     onClick={() => navigate('/')}
                     sx={{
                         borderRadius: 2,

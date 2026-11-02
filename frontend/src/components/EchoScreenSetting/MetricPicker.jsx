@@ -3,6 +3,7 @@ import { Autocomplete, Box, Button, Stack, TextField, Typography } from '@mui/ma
 import AddLinkIcon from '@mui/icons-material/AddLink';
 import { fetchDeviceCapabilities } from '../../hooks/useDeviceCapabilities';
 import { buildPlaceholder } from './screenUtils';
+import { useTranslation } from 'react-i18next';
 
 /** Readings every device publishes or that users nearly always want. */
 const COMMON_PATHS = [
@@ -23,6 +24,7 @@ const COMMON_PATHS = [
  * @param {(placeholder: string) => void} props.onInsert
  */
 export const MetricPicker = ({ devices = [], onInsert }) => {
+    const { t } = useTranslation();
     const [deviceName, setDeviceName] = useState('');
     const [path, setPath] = useState('');
     const [paths, setPaths] = useState([]);
@@ -58,8 +60,7 @@ export const MetricPicker = ({ devices = [], onInsert }) => {
     return (
         <Stack spacing={1}>
             <Typography variant="caption" color="text.secondary">
-                Insert a device reading — it is resolved on the device at refresh
-                time, never sent as a fixed value.
+                {t('echoScreen.insertHint')}
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Autocomplete
@@ -69,7 +70,7 @@ export const MetricPicker = ({ devices = [], onInsert }) => {
                     value={deviceName || null}
                     onChange={handleDeviceChange}
                     renderInput={(params) => (
-                        <TextField {...params} label="Device" />
+                        <TextField {...params} label={t('echoScreen.device')} />
                     )}
                 />
                 <Autocomplete
@@ -83,8 +84,8 @@ export const MetricPicker = ({ devices = [], onInsert }) => {
                     renderInput={(params) => (
                         <TextField
                             {...params}
-                            label="Property path"
-                            helperText="e.g. level, state.temperature, state.properties.condition"
+                            label={t('echoScreen.propertyPath')}
+                            helperText={t('echoScreen.propertyPathHelper')}
                         />
                     )}
                 />
@@ -97,7 +98,7 @@ export const MetricPicker = ({ devices = [], onInsert }) => {
                 onClick={() => onInsert(buildPlaceholder(deviceName, path))}
                 sx={{ alignSelf: 'flex-start' }}
             >
-                Insert reading
+                {t('echoScreen.insertReading')}
             </Button>
         </Stack>
     );

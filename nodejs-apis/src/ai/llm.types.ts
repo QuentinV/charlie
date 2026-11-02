@@ -18,6 +18,16 @@ export interface LlmChatCompletionsRequest {
     messages: LlmChatMessage[];
     tools: LlmChatCompletionsTools[];
     response_format?: any;
+    /**
+     * Model id to route the request to. Router mode (`llama-server
+     * --models-dir`) loads the model on demand when it is not loaded yet and
+     * keeps it warm afterwards; left undefined for a single-model server.
+     */
+    model?: string;
+    /** Extraction tasks want the greedy default, not creativity. */
+    temperature?: number;
+    /** Upper bound on the answer, so a confused small model cannot ramble. */
+    max_tokens?: number;
 }
 
 export interface LlmChatCompletionsChoicesTool {

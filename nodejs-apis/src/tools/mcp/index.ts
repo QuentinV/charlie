@@ -9,6 +9,7 @@ import devices from './impl/devices';
 import notifications from './impl/notifications';
 import music from './impl/music';
 import memory from './impl/memory';
+import shopping from './impl/shopping';
 
 let CACHE_SCHEMAS: ToolsSchema | null = null;
 let CACHE_TOOLS_EXEC: ToolsExecutors | null = null;
@@ -44,6 +45,7 @@ export async function toolsSchemas(): Promise<ToolsSchema> {
             ...weather,
             ...(process.env.TOOL_MUSIC === 'true' ? music : {}),
             ...memory,
+            ...shopping,
             ...(await devices()),
             ...(await getProvidersTools()),
         };

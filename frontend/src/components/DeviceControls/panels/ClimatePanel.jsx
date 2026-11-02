@@ -16,6 +16,7 @@ import { Stepper } from '../primitives/Stepper';
 import { ChipRow } from '../primitives/ChipRow';
 import { TileGrid } from '../primitives/TileGrid';
 import { climatePresentation } from '../presentation/climate';
+import { useTranslation } from 'react-i18next';
 
 /**
  * The climate panel — one implementation for every climate-ish device.
@@ -36,6 +37,7 @@ export const ClimatePanel = ({
     capabilities,
     variant = 'default',
 }) => {
+    const { t } = useTranslation();
     const premium = variant === 'clim';
 
     const state = device?.state ?? {};
@@ -111,14 +113,12 @@ export const ClimatePanel = ({
             spacing={premium ? 3 : 2}
             slotSx={premium ? { width: 70 } : { my: 0.5 }}
             display={premium ? targetTemperature : `${targetTemperature}°C`}
-            caption={premium ? '°C — cible' : 'Consigne'}
+            caption={premium ? t('deviceControls.setpointTarget') : t('deviceControls.setpoint')}
             ariaLabels={{
                 decrease: premium
-                    ? 'Baisser la température'
-                    : 'Diminuer la température',
-                increase: premium
-                    ? 'Augmenter la température'
-                    : 'Augmenter la température',
+                    ? t('deviceControls.decreaseTemperature')
+                    : t('deviceControls.decreaseTemperature'),
+                increase: t('deviceControls.increaseTemperature'),
             }}
             onChange={(next) => setProperty(view.temperatureKey, next)}
         />
@@ -128,16 +128,20 @@ export const ClimatePanel = ({
         return (
             <TypePanel
                 type="thermostat"
-                title="Thermostat"
+                title={t('deviceControls.type.thermostat')}
                 power={power}
                 onTogglePower={setPower}
             >
-                <Typography sx={SECTION_LABEL}>Température cible</Typography>
+                <Typography sx={SECTION_LABEL}>
+                    {t('deviceControls.targetTemperature')}
+                </Typography>
                 {stepper}
 
                 {view.modeOptions.length > 1 ? (
                     <Box sx={{ mt: 1 }}>
-                        <Typography sx={SECTION_LABEL}>Mode</Typography>
+                        <Typography sx={SECTION_LABEL}>
+                            {t('deviceControls.mode')}
+                        </Typography>
                         <ChipRow
                             options={view.modeOptions}
                             value={operationMode}
@@ -162,7 +166,7 @@ export const ClimatePanel = ({
                         }}
                     >
                         <Typography variant="body2" color="text.secondary">
-                            Mode
+                            {t('deviceControls.mode')}
                         </Typography>
                         <Typography
                             variant="subtitle1"
@@ -230,7 +234,7 @@ export const ClimatePanel = ({
                             fontWeight: 700,
                         }}
                     >
-                        Climatiseur
+                        {t('deviceControls.climate')}
                     </Typography>
                     <Box
                         sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
@@ -253,8 +257,8 @@ export const ClimatePanel = ({
                     onToggle={setPower}
                     ariaLabel={
                         power
-                            ? 'Éteindre le climatiseur'
-                            : 'Allumer le climatiseur'
+                            ? t('deviceControls.turnOffAc')
+                            : t('deviceControls.turnOnAc')
                     }
                 />
             </Stack>
@@ -323,8 +327,10 @@ export const ClimatePanel = ({
                             }}
                         >
                             {power
-                                ? `Pièce ${roomTemperature ?? '-'}`
-                                : 'Éteint'}
+                                ? t('deviceControls.roomTemp', {
+                                      temp: roomTemperature ?? '-',
+                                  })
+                                : t('values.off')}
                         </Typography>
                     </Stack>
                 </Box>
@@ -336,7 +342,9 @@ export const ClimatePanel = ({
             {/* ── Mode selector ───────────────────────────── */}
             {view.modeOptions.length > 0 && (
                 <Box sx={{ mt: 1 }}>
-                    <Typography sx={SECTION_LABEL}>Mode</Typography>
+                    <Typography sx={SECTION_LABEL}>
+                        {t('deviceControls.mode')}
+                    </Typography>
                     <ChipRow
                         options={view.modeOptions}
                         value={operationMode}
@@ -348,19 +356,19 @@ export const ClimatePanel = ({
 
             {/* ── Ventilation + orientation selectors ───────────────────────── */}
             {optionRow(
-                'Ventilation',
+                t('deviceControls.ventilation'),
                 view.fanKey,
                 view.fanSpeedOptions,
                 fanSpeed
             )}
             {optionRow(
-                'Orientation',
+                t('deviceControls.swing'),
                 view.swingKey,
                 view.swingOptions,
                 view.swingValue
             )}
             {optionRow(
-                'Orientation horiz.',
+                t('deviceControls.swingHorizontal'),
                 view.swingHorizontalKey,
                 view.swingHorizontalOptions,
                 view.swingHorizontalValue

@@ -15,6 +15,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useUnit } from 'effector-react';
+import { useTranslation } from 'react-i18next';
 import { api, apiStrict } from '../../api/charlie';
 import { auth } from '../../state/auth';
 import { settings } from '../../state/settings';
@@ -25,6 +26,7 @@ import { useSettings } from '../../state/settingsHooks';
  * password and register named API tokens.
  */
 export function Security() {
+    const { t } = useTranslation();
     const authState = useUnit(auth.$auth);
     const setup = useUnit(auth.setupFx);
     const currentSettings = useSettings();
@@ -71,11 +73,11 @@ export function Security() {
         setError(null);
         setInfo(null);
         if (password !== confirm) {
-            setError('Passwords do not match.');
+            setError(t('auth.passwordMismatch'));
             return;
         }
         if (password.length < 8) {
-            setError('Password must be at least 8 characters.');
+            setError(t('security.passwordMin'));
             return;
         }
 
@@ -88,11 +90,9 @@ export function Security() {
             setUsername('');
             setPassword('');
             setConfirm('');
-            setInfo(
-                'Protection is enabled. This browser stays signed in; create an API token for other apps.'
-            );
+            setInfo(t('security.protectionEnabledInfo'));
         } catch (e) {
-            setError(e?.message ?? 'Unable to enable protection.');
+            setError(e?.message ?? t('security.enableFailed'));
         } finally {
             setBusy(false);
         }
@@ -110,9 +110,9 @@ export function Security() {
             });
             setCurrentPassword('');
             setNewPassword('');
-            setInfo('Password updated. Other browser sessions were signed out.');
+            setInfo(t('security.passwordUpdated'));
         } catch (e) {
-            setError(e?.message ?? 'Unable to update the password.');
+            setError(e?.message ?? t('security.passwordUpdateFailed'));
         } finally {
             setBusy(false);
         }
@@ -123,7 +123,7 @@ export function Security() {
         setInfo(null);
         const name = tokenName.trim();
         if (!name) {
-            setError('Give the token a name, e.g. "Node-RED".');
+            setError(t('security.tokenNameRequired'));
             return;
         }
         setBusy(true);
@@ -136,28 +136,28 @@ export function Security() {
             setTokenName('');
             await loadTokens();
         } catch (e) {
-            setError(e?.message ?? 'Unable to create the token.');
+            setError(e?.message ?? t('security.tokenCreateFailed'));
         } finally {
             setBusy(false);
         }
     };
 
     const revoke = async (id) => {
-        if (!window.confirm('Revoke this token? Apps using it will stop working.')) {
+        if (!window.confirm(t('security.revokeConfirm'))) {
             return;
         }
         try {
             await apiStrict(`auth/tokens/${id}`, { method: 'DELETE' });
             await loadTokens();
         } catch (e) {
-            setError(e?.message ?? 'Unable to revoke the token.');
+            setError(e?.message ?? t('security.tokenRevokeFailed'));
         }
     };
 
     const copyToken = async () => {
         try {
             await navigator.clipboard.writeText(createdToken);
-            setInfo('Token copied to clipboard.');
+            setInfo(t('security.tokenCopied'));
         } catch {
             // Clipboard unavailable (insecure context): the text is visible.
         }
@@ -169,22 +169,16 @@ export function Security() {
         setBusy(true);
         try {
             await setProtection(true);
-            setInfo(
-                'Protection is enabled. Sign in with your existing account to continue.'
-            );
+            setInfo(t('security.protectionEnabledSignIn'));
         } catch (e) {
-            setError(e?.message ?? 'Unable to enable protection.');
+            setError(e?.message ?? t('security.enableFailed'));
         } finally {
             setBusy(false);
         }
     };
 
     const disableProtection = async () => {
-        if (
-            !window.confirm(
-                'Disable login and API token protection? Anyone who can reach the Charlie API will be able to control it.'
-            )
-        ) {
+        if (!window.confirm(t('security.disableConfirm'))) {
             return;
         }
         setError(null);
@@ -192,9 +186,9 @@ export function Security() {
         setBusy(true);
         try {
             await setProtection(false);
-            setInfo('Protection is disabled.');
+            setInfo(t('security.protectionDisabled'));
         } catch (e) {
-            setError(e?.message ?? 'Unable to disable protection.');
+            setError(e?.message ?? t('security.disableFailed'));
         } finally {
             setBusy(false);
         }
@@ -203,9 +197,9 @@ export function Security() {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
             <Box>
-                <Typography variant="h6">Security</Typography>
+                <Typography variant="h6">{t('security.title')}</Typography>
                 <Typography variant="body2" color="text.secondary">
-                    Login, password and API tokens for the Charlie brain.
+                    {t('security.subtitle')}
                 </Typography>
             </Box>
 
@@ -229,28 +223,26 @@ export function Security() {
                     }}
                 >
                     <Alert severity="info">
-                        The API is currently open to anyone who can reach this
-                        server. Create an administrator account to require a
-                        login and API tokens.
+                        {t('security.openApiWarning')}
                     </Alert>
                     <TextField
-                        label="Username"
+                        label={t('auth.username')}
                         size="small"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         autoComplete="username"
                     />
                     <TextField
-                        label="Password"
+                        label={t('auth.password')}
                         size="small"
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         autoComplete="new-password"
-                        helperText="At least 8 characters."
+                        helperText={t('auth.atLeast8')}
                     />
                     <TextField
-                        label="Confirm password"
+                        label={t('auth.confirmPassword')}
                         size="small"
                         type="password"
                         value={confirm}
@@ -263,7 +255,7 @@ export function Security() {
                             disabled={busy || !username || !password}
                             onClick={createAccountAndEnable}
                         >
-                            Create account and enable protection
+                            {t('security.createAndEnable')}
                         </Button>
                     </Box>
                 </Box>
@@ -278,8 +270,7 @@ export function Security() {
                     }}
                 >
                     <Alert severity="warning">
-                        Protection is off. An account already exists; enabling
-                        protection will ask you to sign in.
+                        {t('security.accountExistsWarning')}
                     </Alert>
                     <Box>
                         <Button
@@ -287,7 +278,7 @@ export function Security() {
                             disabled={busy}
                             onClick={enableExistingAccount}
                         >
-                            Enable protection
+                            {t('security.enable')}
                         </Button>
                     </Box>
                 </Box>
@@ -311,12 +302,14 @@ export function Security() {
                     >
                         <Chip
                             color="success"
-                            label="Protection enabled"
+                            label={t('security.enabledChip')}
                             size="small"
                         />
                         {authState.user && (
                             <Typography variant="body2">
-                                Signed in as <strong>{authState.user}</strong>
+                                {t('security.signedInAs', {
+                                    user: authState.user,
+                                })}
                             </Typography>
                         )}
                         <Button
@@ -325,17 +318,17 @@ export function Security() {
                             disabled={busy}
                             onClick={disableProtection}
                         >
-                            Disable protection
+                            {t('security.disable')}
                         </Button>
                     </Box>
 
                     <Divider />
                     <Typography variant="subtitle1">
-                        Change password
+                        {t('security.changePassword')}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                         <TextField
-                            label="Current password"
+                            label={t('security.currentPassword')}
                             size="small"
                             type="password"
                             value={currentPassword}
@@ -343,7 +336,7 @@ export function Security() {
                             autoComplete="current-password"
                         />
                         <TextField
-                            label="New password"
+                            label={t('security.newPassword')}
                             size="small"
                             type="password"
                             value={newPassword}
@@ -355,19 +348,20 @@ export function Security() {
                             disabled={busy || !currentPassword || !newPassword}
                             onClick={changePassword}
                         >
-                            Update
+                            {t('common.update')}
                         </Button>
                     </Box>
 
                     <Divider />
-                    <Typography variant="subtitle1">API tokens</Typography>
+                    <Typography variant="subtitle1">
+                        {t('security.apiTokens')}
+                    </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Register an app by name (Node-RED, a script, Home
-                        Assistant…) and copy its token once.
+                        {t('security.apiTokensHint')}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                         <TextField
-                            label="App name"
+                            label={t('security.appName')}
                             size="small"
                             value={tokenName}
                             onChange={(e) => setTokenName(e.target.value)}
@@ -377,7 +371,7 @@ export function Security() {
                             disabled={busy || !tokenName.trim()}
                             onClick={createToken}
                         >
-                            Create token
+                            {t('security.createToken')}
                         </Button>
                     </Box>
 
@@ -387,8 +381,7 @@ export function Security() {
                             onClose={() => setCreatedToken(null)}
                         >
                             <Typography variant="body2" sx={{ mb: 1 }}>
-                                Copy this token now — it will not be shown
-                                again:
+                                {t('security.copyTokenNow')}
                             </Typography>
                             <Box
                                 sx={{
@@ -410,7 +403,7 @@ export function Security() {
                                 <IconButton
                                     size="small"
                                     onClick={copyToken}
-                                    aria-label="Copy token"
+                                    aria-label={t('security.copyToken')}
                                 >
                                     <ContentCopyIcon fontSize="small" />
                                 </IconButton>
@@ -425,7 +418,7 @@ export function Security() {
                                 secondaryAction={
                                     <IconButton
                                         edge="end"
-                                        aria-label="Revoke token"
+                                        aria-label={t('security.revokeToken')}
                                         onClick={() => revoke(token._id)}
                                     >
                                         <DeleteIcon />
@@ -436,23 +429,27 @@ export function Security() {
                                     primary={`${token.name} — ${token.prefix}…`}
                                     secondary={`${
                                         token.kind === 'session'
-                                            ? 'Browser session'
-                                            : 'API token'
-                                    } · created ${new Date(
-                                        token.createdAt
-                                    ).toLocaleString()}${
+                                            ? t('security.browserSession')
+                                            : t('security.apiToken')
+                                    } · ${t('security.created', {
+                                        date: new Date(
+                                            token.createdAt
+                                        ).toLocaleString(),
+                                    })}${
                                         token.lastUsedAt
-                                            ? ` · last used ${new Date(
-                                                  token.lastUsedAt
-                                              ).toLocaleString()}`
-                                            : ' · never used'
+                                            ? ` · ${t('security.lastUsed', {
+                                                  date: new Date(
+                                                      token.lastUsedAt
+                                                  ).toLocaleString(),
+                                              })}`
+                                            : ` · ${t('security.neverUsed')}`
                                     }`}
                                 />
                             </ListItem>
                         ))}
                         {!tokens.length && (
                             <ListItem>
-                                <ListItemText primary="No tokens yet." />
+                                <ListItemText primary={t('security.noTokens')} />
                             </ListItem>
                         )}
                     </List>

@@ -3,8 +3,10 @@ import { Box, Typography, Paper } from '@mui/material';
 import { api } from '../../api/charlie';
 import { RoutineListItem } from './RoutineListItem';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export const RoutinesList = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [routines, setRoutines] = useState(/** @type {any[]} */ ([]));
 
@@ -57,7 +59,7 @@ export const RoutinesList = () => {
                 mb={3}
             >
                 <Typography variant="h4" fontWeight={700}>
-                    Routines
+                    {t('nav.routines')}
                 </Typography>
                 <Box
                     sx={{
@@ -70,7 +72,9 @@ export const RoutinesList = () => {
                         fontSize: '0.8125rem',
                     }}
                 >
-                    {routines.filter((r) => r.active).length} actives
+                    {t('routines.activesCount', {
+                        n: routines.filter((r) => r.active).length,
+                    })}
                 </Box>
             </Box>
 
@@ -92,7 +96,7 @@ export const RoutinesList = () => {
                         }}
                     >
                         <Typography sx={{ color: 'text.secondary' }}>
-                            Aucune routines
+                            {t('routines.empty')}
                         </Typography>
                     </Paper>
                 ) : (

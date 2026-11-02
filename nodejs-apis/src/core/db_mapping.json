@@ -12,5 +12,6 @@
     "echoSettings": "echo_settings",
     "settings": "settings",
     "memories": "memories",
+    "shoppingLists": "shopping_lists",
     "haCustomIntegrations": "ha_custom_integrations"
 }

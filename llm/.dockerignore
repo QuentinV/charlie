@@ -1,0 +1,4 @@
+# Model weights live on the host, mounted at run time (./llm/models): never ship
+# them in the build context (they are multi-GB and the Dockerfile only needs
+# presets/ and entrypoint.sh).
+models/

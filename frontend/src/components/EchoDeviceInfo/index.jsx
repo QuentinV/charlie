@@ -8,6 +8,7 @@ import {
     Typography,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api/charlie';
 
 const mono = { fontFamily: 'monospace' };
@@ -34,6 +35,7 @@ const Info = ({ label, value, monospace = false }) =>
  * not the ip).
  */
 export const EchoDeviceInfo = ({ echo, onReload }) => {
+    const { t } = useTranslation();
     const [asking, setAsking] = useState(false);
 
     const askVersions = () => {
@@ -53,10 +55,10 @@ export const EchoDeviceInfo = ({ echo, onReload }) => {
         <Box sx={{ mb: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
                 <Typography variant="h6">
-                    {echo.deviceType ?? 'Echo device'}
+                    {echo.deviceType ?? t('echo.device')}
                 </Typography>
                 <Box sx={{ flexGrow: 1 }} />
-                <Tooltip title="Ask the device to report its versions again">
+                <Tooltip title={t('echo.askVersionsHint')}>
                     <span>
                         <Button
                             size="small"
@@ -64,24 +66,24 @@ export const EchoDeviceInfo = ({ echo, onReload }) => {
                             onClick={askVersions}
                             disabled={asking}
                         >
-                            {asking ? 'Refreshing…' : 'Refresh info'}
+                            {asking ? t('echo.refreshing') : t('echo.refreshInfo')}
                         </Button>
                     </span>
                 </Tooltip>
             </Stack>
             <Divider sx={{ my: 1 }} />
             <Stack spacing={0.5}>
-                <Info label="IP" value={echo.ip} monospace />
+                <Info label={t('echo.ip')} value={echo.ip} monospace />
                 <Info
-                    label="MAC"
-                    value={echo.mac ?? 'not reported by the firmware'}
+                    label={t('echo.mac')}
+                    value={echo.mac ?? t('echo.macNotReported')}
                     monospace
                 />
-                <Info label="Type" value={echo.deviceType} />
-                <Info label="Library" value={echo.versions?.lib} />
-                <Info label="Firmware" value={echo.versions?.device} />
+                <Info label={t('common.type')} value={echo.deviceType} />
+                <Info label={t('echo.library')} value={echo.versions?.lib} />
+                <Info label={t('echo.firmware')} value={echo.versions?.device} />
                 <Info
-                    label="Last seen"
+                    label={t('echo.lastSeen')}
                     value={
                         echo.lastSeen
                             ? new Date(echo.lastSeen).toLocaleString()

@@ -5,8 +5,10 @@ import { api } from '../api/charlie';
 import { EchoChangelogs } from '../components/EchoChangelogs';
 import { EchoScreenSetting } from '../components/EchoScreenSetting';
 import { EchoDeviceInfo } from '../components/EchoDeviceInfo';
+import { useTranslation } from 'react-i18next';
 
 export const EchoPage = () => {
+    const { t } = useTranslation();
     const [selectedEcho, setSelectedEcho] = useState('');
     const [echos, setEchos] = useState([]);
     const [changelogs, setChangelogs] = useState([]);
@@ -29,12 +31,12 @@ export const EchoPage = () => {
     return (
         <Box>
             <Box>
-                To flash your echo device please visit :{' '}
+                {t('echo.flashHint')}{' '}
                 <Link
                     href="https://quentinv.github.io/charlie-echos/"
                     target="_blank"
                 >
-                    Charlie echo webflasher
+                    {t('echo.webflasher')}
                 </Link>
             </Box>
             {!!echos?.length && (
@@ -42,7 +44,7 @@ export const EchoPage = () => {
                     <Select
                         labelId="device-select-label"
                         value={selectedEcho}
-                        label="Select Echo Device"
+                        label={t('echo.selectDevice')}
                         onChange={(e) => setSelectedEcho(e.target.value)}
                     >
                         {echos.map((echo) => (
@@ -68,7 +70,9 @@ export const EchoPage = () => {
             {!!changelogs?.length && (
                 <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
                     <Box>
-                        <Typography variant="h6">Available versions</Typography>
+                        <Typography variant="h6">
+                            {t('echo.availableVersions')}
+                        </Typography>
                         <Box sx={{ overflow: 'auto', maxHeight: '300px' }}>
                             <EchoChangelogs data={changelogs} />
                         </Box>

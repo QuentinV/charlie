@@ -7,14 +7,15 @@ FROM ${LLAMA_BASE}
 RUN apt-get update -qq && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 ENV MODEL_DIR=/app/models
-ENV MODEL_FILE=Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf
-ENV HF_REPO=unsloth/Qwen3-4B-Instruct-2507-GGUF
-ENV LLAMA_ARG_THREADS=6
-ENV LLAMA_ARG_CTX_SIZE=4096
-ENV LLAMA_ARG_BATCH=1024
+# Models served by the router: "<id>=<hf-repo>/<file.gguf>", space/comma
+# separated. Served on demand and kept warm — see llm/README.md.
+ENV MODELS="qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf qwen2.5-1.5b=Qwen/Qwen2.5-1.5B-Instruct-GGUF/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+# How many models may stay loaded at the same time (LRU eviction above that).
+ENV MODELS_MAX=2
 ENV LLAMA_ARG_KV_UNIFIED=on
 ENV LLAMA_PORT=9308
 
+COPY presets /app/presets
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

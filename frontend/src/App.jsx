@@ -27,6 +27,7 @@ import { RoutinesPage } from './pages/Routines';
 import { RoomPage } from './pages/Room';
 import { DevicePage } from './pages/Device';
 import { AiPage } from './pages/AiPage';
+import { ShoppingPage } from './pages/Shopping';
 import { DashboardPage } from './pages/Dashboard';
 import { useUnit } from 'effector-react';
 import { ActivitiesPage } from './pages/Activities';
@@ -40,6 +41,7 @@ import { MusicsPage } from './pages/Musics';
 import { auth } from './state/auth';
 import { AuthGate } from './components/AuthGate';
 import { subscribePush } from './api/push';
+import { useTranslation, withTranslation } from 'react-i18next';
 
 // Probe protection status before anything else: when auth is enabled every
 // other endpoint (settings included) requires a token.
@@ -75,7 +77,7 @@ class ErrorBoundary extends React.Component {
                     }}
                 >
                     <Typography variant="h6" color="error">
-                        Une erreur est survenue sur cette page.
+                        {this.props.t('errors.pageError')}
                     </Typography>
                     <Typography
                         variant="body2"
@@ -93,7 +95,7 @@ class ErrorBoundary extends React.Component {
                         variant="outlined"
                         onClick={() => this.setState({ error: null })}
                     >
-                        Réessayer
+                        {this.props.t('common.retry')}
                     </Button>
                 </Box>
             );
@@ -102,7 +104,10 @@ class ErrorBoundary extends React.Component {
     }
 }
 
+const LocalizedErrorBoundary = withTranslation()(ErrorBoundary);
+
 function LoadingScreen() {
+    const { t } = useTranslation();
     return (
         <Box
             sx={{
@@ -113,7 +118,7 @@ function LoadingScreen() {
             }}
         >
             <CircularProgress
-                aria-label="Loading..."
+                aria-label={t('common.loading')}
                 size={48}
                 thickness={4}
             />
@@ -206,7 +211,7 @@ function AppLayout({ showAiAsk }) {
                 className="overlay smooth-scroll"
             >
                 <Box sx={{ flexGrow: 1, minHeight: 0 }} className="page-enter">
-                    <ErrorBoundary key={location.pathname}>
+                    <LocalizedErrorBoundary key={location.pathname}>
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/discovery" element={<DiscoveryPage />} />
@@ -223,6 +228,7 @@ function AppLayout({ showAiAsk }) {
                             element={<ActivitiesPage />}
                         />
                         <Route path="/memory" element={<MemoryPage />} />
+                        <Route path="/shopping" element={<ShoppingPage />} />
                         <Route path="/echos" element={<EchoPage />} />
                         <Route path="/dashboard" element={<DashboardPage />} />
                         <Route path="/musics" element={<MusicsPage />} />
@@ -230,7 +236,7 @@ function AppLayout({ showAiAsk }) {
                         <Route path="/providers" element={<ProvidersPage />} />
                         <Route path="*" element={<NotFoundPage />} />
                     </Routes>
-                    </ErrorBoundary>
+                    </LocalizedErrorBoundary>
                 </Box>
             </Box>
             {showAiAsk && !isAiRoute && (

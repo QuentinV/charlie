@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const MicStreamer = () => {
+    const { t } = useTranslation();
     const [isStreaming, setIsStreaming] = useState(false);
     const wsRef = useRef(null);
     const audioContextRef = useRef(null);
@@ -81,12 +83,15 @@ export const MicStreamer = () => {
     return (
         <div>
             <button onClick={startStreaming} disabled={isStreaming}>
-                Start Streaming
+                {t('mic.start')}
             </button>
             <button onClick={stopStreaming} disabled={!isStreaming}>
-                Stop Streaming
+                {t('mic.stop')}
             </button>
-            <p>Status: {isStreaming ? 'Streaming…' : 'Stopped'}</p>
+            <p>
+                {t('mic.status')}{' '}
+                {isStreaming ? t('mic.streaming') : t('mic.stopped')}
+            </p>
         </div>
     );
 };

@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import LockIcon from '@mui/icons-material/Lock';
+import { useTranslation } from 'react-i18next';
 import { ScreenCanvas } from './ScreenCanvas';
 
 /**
@@ -45,7 +46,9 @@ export const ScreenLayoutGrid = ({
     preview,
     overrides,
     scale = 2,
-}) => (
+}) => {
+    const { t } = useTranslation();
+    return (
     <Box
         sx={{
             display: 'grid',
@@ -89,7 +92,8 @@ export const ScreenLayoutGrid = ({
                                 }}
                             >
                                 <Typography variant="subtitle2">
-                                    {panel.label ?? `Panel ${panel.k}`}
+                                    {panel.label ??
+                                        t('echoScreen.panel', { k: panel.k })}
                                 </Typography>
                                 <Chip
                                     size="small"
@@ -105,14 +109,19 @@ export const ScreenLayoutGrid = ({
                             </Box>
 
                             {reserved ? (
-                                <Tooltip title={panel.note ?? 'Firmware-owned panel'}>
+                                <Tooltip
+                                    title={
+                                        panel.note ??
+                                        t('echoScreen.firmwareOwnedPanel')
+                                    }
+                                >
                                     <LockIcon
                                         fontSize="small"
                                         color="disabled"
                                     />
                                 </Tooltip>
                             ) : (
-                                <Tooltip title="Add a text to this panel">
+                                <Tooltip title={t('echoScreen.addText')}>
                                     <IconButton
                                         size="small"
                                         onClick={() => onAddText(panel.k)}
@@ -139,16 +148,17 @@ export const ScreenLayoutGrid = ({
 
                         <Typography variant="caption" color="text.secondary">
                             {reserved
-                                ? panel.note ?? 'Firmware-owned'
-                                : `${texts.length} text${
-                                      texts.length === 1 ? '' : 's'
-                                  }`}
+                                ? panel.note ?? t('echoScreen.firmwareOwned')
+                                : t('echoScreen.texts', {
+                                      count: texts.length,
+                                  })}
                         </Typography>
                     </Stack>
                 </Paper>
             );
         })}
     </Box>
-);
+    );
+};
 
 export default ScreenLayoutGrid;

@@ -77,7 +77,17 @@ services:
         volumes:
             - ./llm/models:/app/models
         environment:
-            - LLAMA_ARG_THREADS=${LLAMA_ARG_THREADS:-6}
+            # Router mode: both models are served by one server, loaded on demand
+            # and kept warm. See llm/README.md.
+            - MODELS=${LLM_MODELS:-qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf,qwen2.5-1.5b=Qwen/Qwen2.5-1.5B-Instruct-GGUF/qwen2.5-1.5b-instruct-q4_k_m.gguf}
+            - MODELS_MAX=${LLM_MODELS_MAX:-2}
+            # Per-model tuning (ctx/batch/threads) lives in presets/charlie.ini,
+            # applied by default; the entrypoint ignores the file if a key or
+            # section does not match. With MODELS_PRESET="" llama.cpp defaults
+            # apply (native context ⇒ much larger KV cache).
+            # - MODELS_PRESET=  # empty disables the per-model tuning
+            # Uncomment to unload models after 15 min without a request.
+            # - LLAMA_SLEEP_IDLE_SECONDS=${LLM_SLEEP_IDLE_SECONDS:-900}
         restart: unless-stopped
     voiceprofiler:
         build: ./voiceprofiler

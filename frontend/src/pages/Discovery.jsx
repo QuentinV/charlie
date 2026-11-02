@@ -24,6 +24,7 @@ import DeviceUnknownIcon from '@mui/icons-material/DeviceUnknown';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import RouterIcon from '@mui/icons-material/Router';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
+import { useTranslation } from 'react-i18next';
 
 const deviceIcons = {
     light: <LightbulbIcon />,
@@ -49,17 +50,19 @@ const getTypeColor = (type) => {
 };
 
 /** Turn a machine category (`tradfri`, `grid-2`) into display text (`Tradfri`). */
-const prettyCategory = (cat) =>
+const prettyCategory = (cat, fallback = 'Other') =>
     cat
         ? cat
               .split(/[_-]/)
               .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
               .join(' ')
-        : 'Other';
+        : fallback;
 
 /** Render a grid of discovered device cards (for a whole group or one category). */
-const DeviceCards = ({ provider, devices, addingDevice, onAdd }) => (
-    <Grid container spacing={2}>
+const DeviceCards = ({ provider, devices, addingDevice, onAdd }) => {
+    const { t } = useTranslation();
+    return (
+        <Grid container spacing={2}>
         {devices.map(
             /** @param {any} device */ (device) => (
                 <Grid
@@ -157,7 +160,7 @@ const DeviceCards = ({ provider, devices, addingDevice, onAdd }) => (
                                             fontSize="small"
                                             color="success"
                                         />
-                                        Added
+                                        {t('discovery.added')}
                                     </Typography>
                                 ) : (
                                     <Button
@@ -185,9 +188,11 @@ const DeviceCards = ({ provider, devices, addingDevice, onAdd }) => (
             )
         )}
     </Grid>
-);
+    );
+};
 
 export const DiscoveryPage = () => {
+    const { t } = useTranslation();
     const [discoveredDevices, setDiscoveredDevices] = useState(
         /** @type {any[]} */ ([])
     );
@@ -208,7 +213,7 @@ export const DiscoveryPage = () => {
             setDiscoveredDevices(data || []);
         } catch (e) {
             console.error(e);
-            setError('Failed to discover devices');
+            setError(t('discovery.discoverFailed'));
         } finally {
             setLoading(false);
             setAddingDevice(null);
@@ -253,14 +258,14 @@ export const DiscoveryPage = () => {
 
             setSnackbar({
                 severity: 'success',
-                message: `${device.name} added`,
+                message: t('discovery.deviceAdded', { name: device.name }),
             });
             handleDiscover();
         } catch (e) {
             console.error(e);
             setSnackbar({
                 severity: 'error',
-                message: 'Failed to add device',
+                message: t('discovery.addFailed'),
             });
         }
     };
@@ -282,7 +287,7 @@ export const DiscoveryPage = () => {
                 }}
             >
                 <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                    Device Discovery
+                    {t('discovery.title')}
                 </Typography>
                 <Button
                     variant="contained"
@@ -293,7 +298,7 @@ export const DiscoveryPage = () => {
                     {loading ? (
                         <CircularProgress size={20} color="inherit" />
                     ) : (
-                        'Discover Devices'
+                        t('discovery.discoverDevices')
                     )}
                 </Button>
             </Box>
@@ -331,7 +336,7 @@ export const DiscoveryPage = () => {
                         {group.publicDiscovery && (
                             <Chip
                                 icon={<TravelExploreIcon />}
-                                label="Public Discovery"
+                                label={t('discovery.publicDiscovery')}
                                 size="small"
                                 color="secondary"
                                 variant="outlined"
@@ -364,7 +369,7 @@ export const DiscoveryPage = () => {
                             color="text.secondary"
                             sx={{ ml: 1, mb: 1 }}
                         >
-                            No devices found
+                            {t('discovery.noDevices')}
                         </Typography>
                     ) : group.devices.some((d) => d.category) ? (
                         <Box>
@@ -381,7 +386,7 @@ export const DiscoveryPage = () => {
                                         color="text.secondary"
                                         sx={{ ml: 0.5, mb: 1 }}
                                     >
-                                        {prettyCategory(cat)} ({devices.length})
+                                        {prettyCategory(cat, t('discovery.other'))} ({devices.length})
                                     </Typography>
                                     <DeviceCards
                                         provider={group.provider}
@@ -405,16 +410,11 @@ export const DiscoveryPage = () => {
 
             {discoveredDevices.length === 0 && !loading && (
                 <Paper sx={{ p: 4, textAlign: 'center' }}>
-                    <Typography
-                        variant="h6"
-                        color="text.secondary"
-                        gutterBottom
-                    >
-                        No providers configured
+                    <Typography variant="h6" gutterBottom>
+                        {t('discovery.noProviders')}
                     </Typography>
                     <Typography color="text.secondary" paragraph>
-                        Go to the Providers page to add providers, then click
-                        "Discover Devices" to find devices on your network.
+                        {t('discovery.noProvidersHint')}
                     </Typography>
                 </Paper>
             )}
