@@ -17,8 +17,8 @@ const host = process.env.LLM_HOST ?? 'llm:9308';
  * models behind llama-server's router mode and loads each one on demand, so the
  * brain has to name the model it wants. Unset = single-model server.
  */
-const CHAT_MODEL = process.env.LLM_MODEL;
-const SHOPPING_MODEL = process.env.LLM_SHOPPING_MODEL ?? CHAT_MODEL;
+const CHAT_MODEL = process.env.LLM_MODEL ?? 'qwen3-4b';
+const SHOPPING_MODEL = process.env.LLM_SHOPPING_MODEL ?? 'qwen2.5-1.5b';
 const LIMIT_TURN = 10;
 const LLM_LANG_OUTPUT = process.env.LLM_LANGUAGE?.toUpperCase() ?? 'FRENCH';
 
