@@ -25,6 +25,7 @@ import SpeakerIcon from '@mui/icons-material/Speaker';
 import SettingsIcon from '@mui/icons-material/Settings';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUnit } from 'effector-react';
 import { useTranslation } from 'react-i18next';
@@ -110,6 +111,13 @@ export const Menu = () => {
         route: '/memory',
         icon: <AccountTreeIcon fontSize="small" />,
     });
+
+    useSetting('shopping.enabled', true) &&
+        navItems.push({
+            labelKey: 'nav.shopping',
+            route: '/shopping',
+            icon: <ShoppingCartIcon fontSize="small" />,
+        });
 
     echosMenu &&
         navItems.push({

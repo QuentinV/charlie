@@ -5,6 +5,7 @@ import timer from './impl/timer';
 import questions from './impl/questions';
 import profile from './impl/profile';
 import memory from './impl/memory';
+import shopping from './impl/shopping';
 
 export const getActions = async (): Promise<Tools> => ({
     ...greetings,
@@ -13,4 +14,5 @@ export const getActions = async (): Promise<Tools> => ({
     ...questions,
     ...profile,
     ...memory,
+    ...shopping,
 });

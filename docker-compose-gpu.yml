@@ -81,7 +81,15 @@ services:
         volumes:
             - ./llm/models:/app/models
         environment:
-            - LLAMA_ARG_THREADS=${LLAMA_ARG_THREADS:-6}
+            # Router mode: one server, several models, loaded on demand and kept
+            # warm. On a GPU with little VRAM, set LLM_MODELS_MAX=1 (the router
+            # then evicts the model that is not in use) and/or
+            # LLM_SLEEP_IDLE_SECONDS=900 to unload the idle one.
+            - MODELS=${LLM_MODELS:-qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf,qwen2.5-1.5b=Qwen/Qwen2.5-1.5B-Instruct-GGUF/qwen2.5-1.5b-instruct-q4_k_m.gguf}
+            - MODELS_MAX=${LLM_MODELS_MAX:-2}
+            # Per-model tuning (ctx/batch/threads) lives in presets/charlie.ini.
+            # - MODELS_PRESET=  # empty disables the per-model tuning
+            # - LLAMA_SLEEP_IDLE_SECONDS=${LLM_SLEEP_IDLE_SECONDS:-900}
             - LLAMA_ARG_N_GPU_LAYERS=${LLAMA_ARG_N_GPU_LAYERS:-99}
             - LLAMA_ARG_FLASH_ATTN=on
         deploy:

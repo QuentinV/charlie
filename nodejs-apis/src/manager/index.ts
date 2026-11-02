@@ -8,6 +8,7 @@ import activities from './activities';
 import settings from './settings';
 import notifications from './notifications';
 import memory from './memory';
+import shopping from './shopping';
 import auth from '../auth/api';
 
 export default {
@@ -21,5 +22,6 @@ export default {
     ...echo,
     ...settings,
     ...memory,
+    ...shopping,
     ...notifications,
 };

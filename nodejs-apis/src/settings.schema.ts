@@ -135,6 +135,25 @@ const schema: JSONSchema7 = {
             title: 'Conversation context time-to-live (ms)',
             tags: ['AI', 'Memory'],
         },
+        'shopping.enabled': {
+            type: 'boolean',
+            title: 'Enable the shopping list (voice, chat and Shopping tab)',
+            tags: ['Shopping'],
+        },
+        'shopping.restructureDelayMs': {
+            type: 'number',
+            title: 'Delay before the shopping list is restructured (ms)',
+            description:
+                'How long Charlie waits after the last added item before turning the raw requests into a structured list.',
+            tags: ['Shopping'],
+        },
+        'shopping.model': {
+            type: 'string',
+            title: 'Small model used to structure the shopping list',
+            description:
+                'Model id served by the LLM router (informational: the restructure request uses LLM_SHOPPING_MODEL).',
+            tags: ['Shopping'],
+        },
     },
 };
 

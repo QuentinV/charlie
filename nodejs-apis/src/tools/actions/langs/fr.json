@@ -37,6 +37,13 @@
         "serviceDown": "Je n'ai pas pu joindre le service de reconnaissance vocale. Réessaie plus tard.",
         "aborted": "D'accord, j'annule l'enregistrement du profil vocal."
     },
+    "shopping": {
+        "added": "C'est noté, je l'ajoute à la liste de courses. Je range la liste dans %{seconds} secondes.",
+        "empty": "Ta liste de courses est vide pour le moment.",
+        "pending": "Ta liste de courses est en cours d'analyse, redemande-moi dans un instant.",
+        "list": "Dans ta liste de courses : %{items}.",
+        "listMore": "Dans ta liste de courses : %{items}, et %{count} autres articles."
+    },
     "temperature": {},
     "thanks": {
         "response": "Avec plaisir."

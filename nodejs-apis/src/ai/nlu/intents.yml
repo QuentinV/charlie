@@ -257,6 +257,39 @@ intents:
             - predefinedRoom
             - room
 
+    # --- Shopping list (raw requests are structured in the background) ---
+    # "ajoute du lait à ma liste de courses", "ajoute des pommes et du pain"
+    addShoppingItem:
+        starts:
+            - ajoute du
+            - ajoute de la
+            - ajoute de l
+            - ajoute des
+            - ajoute un
+            - ajoute une
+            - ajoute a la liste
+            - ajoute dans la liste
+            - ajoute a ma liste
+            - ajoute sur la liste
+            - rajoute du
+            - rajoute des
+            - rajoute a la liste
+            - mets sur la liste
+            - mets dans la liste
+        slots:
+            - text
+
+    # "qu'est-ce qu'il y a dans la liste de courses ?"
+    askShoppingList:
+        starts:
+            - liste de courses
+            - qu est ce qu il y a dans la liste de courses
+            - il y a quoi dans la liste de courses
+            - lis moi la liste de courses
+            - montre moi la liste de courses
+            - contenu de la liste de courses
+            - dans ma liste de courses
+
     thanks:
         starts:
             - merci
