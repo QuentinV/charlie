@@ -9,7 +9,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends curl ca-cer
 ENV MODEL_DIR=/app/models
 # Models served by the router: "<id>=<hf-repo>/<file.gguf>", space/comma
 # separated. Served on demand and kept warm — see llm/README.md.
-ENV MODELS="qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf qwen2.5-1.5b=Qwen/Qwen2.5-1.5B-Instruct-GGUF/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+ENV MODELS="qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf qwen3-1.7b=unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf"
 # How many models may stay loaded at the same time (LRU eviction above that).
 ENV MODELS_MAX=2
 ENV LLAMA_ARG_KV_UNIFIED=on

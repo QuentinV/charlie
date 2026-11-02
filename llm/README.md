@@ -8,12 +8,12 @@ One `llama-server` container serves **several models** thanks to llama.cpp's
 | Model id                  | Used by                                      |
 | ------------------------- | -------------------------------------------- |
 | `qwen3-4b` (Qwen3-4B)     | conversation, agentic fallback, memory summary |
-| `qwen2.5-1.5b` (Qwen2.5)  | background jobs — the shopping list restructurer |
+| `qwen3-1.7b` (Qwen3)      | background jobs — the shopping list restructurer |
 
 Both are declared in `MODELS` (`<id>=<hf-repo>/<file.gguf>`, space/comma
 separated) and downloaded into `$MODEL_DIR/<id>/<file>`. The router names a
 model after **its folder** (verified against the running router:
-`GET /v1/models` → `qwen3-4b`, `qwen2.5-1.5b`), which is why each model gets its
+`GET /v1/models` → `qwen3-4b`, `qwen3-1.7b`), which is why each model gets its
 own folder — the ids are what `LLM_MODEL` / `LLM_SHOPPING_MODEL` use in the
 brain. A model downloaded by the previous single-model layout is **moved** into
 its folder instead of downloaded again. The router serves every `.gguf` it finds
@@ -35,7 +35,7 @@ under `--models-dir`; `MODELS` only controls what this entrypoint downloads.
 
 | Variable | Default | Meaning |
 | -------- | ------- | ------- |
-| `MODELS` | 4B + 1.5B | `id=repo/file.gguf` list to serve |
+| `MODELS` | 4B + 1.7B | `id=repo/file.gguf` list to serve |
 | `MODELS_MAX` | `2` | loaded models at once (LRU above that; `1` on a small GPU) |
 | `LLAMA_SLEEP_IDLE_SECONDS` | unset | idle sleep before unloading a model |
 | `MODELS_PRESET` | `/app/presets/charlie.ini` | **the only place per-model tuning is defined**; `""` disables it, a path replaces the file |
@@ -66,7 +66,7 @@ from the CLI/env defaults:
 [qwen3-4b]                 # 4096 ctx, batch 1024, 6 threads
 LLAMA_ARG_CTX_SIZE = 4096
 
-[qwen2.5-1.5b]             # half the context: it only structures text
+[qwen3-1.7b]             # half the context: it only structures text
 LLAMA_ARG_CTX_SIZE = 2048
 LLAMA_ARG_BATCH = 512
 ```
@@ -88,7 +88,7 @@ model, so this works even before anything is loaded:
 
 ```sh
 curl -s localhost:9308/models | jq -r '.data[] | "\(.id) \(.status.args | join(" "))"'
-# qwen2.5-1.5b /app/llama-server … --ctx-size 2048 --batch-size 512 --threads 4 …
+# qwen3-1.7b /app/llama-server … --ctx-size 2048 --batch-size 512 --threads 4 …
 # qwen3-4b     /app/llama-server … --ctx-size 4096 --batch-size 1024 --threads 6 …
 ```
 
@@ -103,7 +103,7 @@ build):
 ```sh
 curl -s http://localhost:9308/v1/models | jq -r '.data[].id'
 # qwen3-4b
-# qwen2.5-1.5b
+# qwen3-1.7b
 ```
 
 Those are the values in `LLM_MODEL` / `LLM_SHOPPING_MODEL` (`nodejs-apis/.env`).

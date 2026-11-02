@@ -18,7 +18,7 @@ const host = process.env.LLM_HOST ?? 'llm:9308';
  * brain has to name the model it wants. Unset = single-model server.
  */
 const CHAT_MODEL = process.env.LLM_MODEL ?? 'qwen3-4b';
-const SHOPPING_MODEL = process.env.LLM_SHOPPING_MODEL ?? 'qwen2.5-1.5b';
+const SHOPPING_MODEL = process.env.LLM_SHOPPING_MODEL ?? 'qwen3-1.7b';
 const LIMIT_TURN = 10;
 const LLM_LANG_OUTPUT = process.env.LLM_LANGUAGE?.toUpperCase() ?? 'FRENCH';
 

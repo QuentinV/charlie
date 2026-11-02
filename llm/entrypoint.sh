@@ -6,7 +6,7 @@
 # field of /v1/chat/completions) and kept warm afterwards — a loaded model is
 # only evicted when another one needs the memory (--models-max,
 # --models-memory-margin) or when the optional idle sleep fires. The brain asks
-# for the 4B (conversation) or the 1.5B (background jobs, e.g. the shopping
+# for the 4B (conversation) or the 1.7B (background jobs, e.g. the shopping
 # list). See llm/README.md.
 set -e
 
@@ -105,7 +105,7 @@ has_flag() {
 
 # Per-model arguments (INI presets). On by default: llama-server builds one
 # preset per folder under --models-dir and merges the matching INI section over
-# it (name-based cascade), so `[qwen2.5-1.5b]` only tunes that model.
+# it (name-based cascade), so `[qwen3-1.7b]` only tunes that model.
 # This file is the only definition of the per-model tuning: no ctx/batch/threads
 # default is passed on the command line. MODELS_PRESET="" disables it, another
 # path replaces the file — both then mean "llama.cpp defaults", i.e. the model's
