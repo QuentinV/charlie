@@ -65,18 +65,22 @@ export default function MemoryBrain({ profile }) {
         e.currentTarget.setPointerCapture?.(e.pointerId);
     };
     const onPointerMove = (e) => {
-        if (!drag.current || !svgRef.current) return;
-        const rect = svgRef.current.getBoundingClientRect();
+        // Capture the gesture start NOW: the `setView` updater below runs later
+        // (during React's render phase), by which time a `pointerup` may already
+        // have nulled `drag.current`. Reading the ref inside the updater threw
+        // "Cannot read properties of null (reading 'tx')" and crashed the page.
+        const start = drag.current;
+        const el = svgRef.current;
+        if (!start || !el) return;
+        const rect = el.getBoundingClientRect();
         const dx =
-            (e.clientX - drag.current.x) *
-            (bounds.width / Math.max(rect.width, 1));
+            (e.clientX - start.x) * (bounds.width / Math.max(rect.width, 1));
         const dy =
-            (e.clientY - drag.current.y) *
-            (bounds.height / Math.max(rect.height, 1));
+            (e.clientY - start.y) * (bounds.height / Math.max(rect.height, 1));
         setView((v) => ({
             ...v,
-            tx: drag.current.tx + dx,
-            ty: drag.current.ty + dy,
+            tx: start.tx + dx,
+            ty: start.ty + dy,
         }));
     };
     const onPointerUp = () => {

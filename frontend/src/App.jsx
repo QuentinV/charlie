@@ -24,6 +24,7 @@ import { BottomNav } from './components/BottomNav';
 import { DiscoveryPage } from './pages/Discovery';
 import { ProvidersPage } from './pages/Providers';
 import { RoutinesPage } from './pages/Routines';
+import { AutomationsPage } from './pages/Automations';
 import { RoomPage } from './pages/Room';
 import { DevicePage } from './pages/Device';
 import { AiPage } from './pages/AiPage';
@@ -218,6 +219,10 @@ function AppLayout({ showAiAsk }) {
                         <Route path="/room/:id" element={<RoomPage />} />
                         <Route path="/device/:id" element={<DevicePage />} />
                         <Route path="/routines" element={<RoutinesPage />} />
+                        <Route
+                            path="/automations"
+                            element={<AutomationsPage />}
+                        />
                         <Route
                             path="/routine/:id"
                             element={<RoutineEditPage />}

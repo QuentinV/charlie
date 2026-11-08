@@ -73,6 +73,14 @@ export const Menu = () => {
             icon: <AutoModeIcon fontSize="small" />,
         });
 
+    // Automations are always enabled (no feature flag), so the entry is always
+    // in the menu — it is the one place that shows the whole house as a graph.
+    navItems.push({
+        labelKey: 'nav.automations',
+        route: '/automations',
+        icon: <AccountTreeIcon fontSize="small" />,
+    });
+
     devicesDiscovery &&
         navItems.push({
             labelKey: 'nav.discover',
