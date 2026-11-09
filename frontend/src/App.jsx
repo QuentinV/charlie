@@ -23,7 +23,6 @@ import { Footer } from './components/Footer';
 import { BottomNav } from './components/BottomNav';
 import { DiscoveryPage } from './pages/Discovery';
 import { ProvidersPage } from './pages/Providers';
-import { RoutinesPage } from './pages/Routines';
 import { AutomationsPage } from './pages/Automations';
 import { RoomPage } from './pages/Room';
 import { DevicePage } from './pages/Device';
@@ -34,7 +33,6 @@ import { useUnit } from 'effector-react';
 import { ActivitiesPage } from './pages/Activities';
 import { EchoPage } from './pages/Echo';
 import { MemoryPage } from './pages/Memory';
-import { RoutineEditPage } from './pages/RoutineEdit';
 import { settings } from './state/settings';
 import { useSetting } from './state/settingsHooks';
 import SettingsPage from './pages/Settings';
@@ -218,14 +216,9 @@ function AppLayout({ showAiAsk }) {
                         <Route path="/discovery" element={<DiscoveryPage />} />
                         <Route path="/room/:id" element={<RoomPage />} />
                         <Route path="/device/:id" element={<DevicePage />} />
-                        <Route path="/routines" element={<RoutinesPage />} />
                         <Route
                             path="/automations"
                             element={<AutomationsPage />}
-                        />
-                        <Route
-                            path="/routine/:id"
-                            element={<RoutineEditPage />}
                         />
                         <Route path="/ai" element={<AiPage />} />
                         <Route

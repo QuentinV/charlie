@@ -6,10 +6,10 @@ it, and a small model can draft one from a sentence.
 
 Two neighbours are worth naming up front, because they are *not* this module:
 
-- `src/routines/` (CRON-only jobs) — a different code path; automations and
-  routines coexist and share nothing but the `node-cron` dependency.
 - `src/tools/mcp/` (the agentic tools) — an `action` node does not reimplement
   anything: it runs its text through the existing `ask()`.
+- The retired `src/routines/` (one CRON schedule → a list of NL actions) is what
+  this module replaced: a routine is now a `CRON` trigger node plus `action` nodes.
 
 There is **no feature flag**: the module is always active, and each automation's
 own `active` flag is the only switch. `setupAutomations()` is called once at boot

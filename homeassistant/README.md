@@ -5,7 +5,7 @@ exclusively as its **device-provider layer** (HA's ~3000 community
 integrations: Shelly, Tuya, IKEA, Meross, Nanoleaf, Bravia, Samsung,
 Mitsubishi, MQTT, Zigbee/Z-Wave, ESPHome, …).
 
-Charlie keeps its **brain** (NLU → LLM fallback, echo audio, TTS, routines,
+Charlie keeps its **brain** (NLU → LLM fallback, echo audio, TTS, automations,
 activities, Mongo history) and its **frontend**. The Home Assistant UI is
 **never used** and is **not exposed**:
 

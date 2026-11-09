@@ -363,29 +363,19 @@ export interface Activity {
     modified?: Date;
 }
 
-// --- Routines
+// --- Automations (event-driven graph)
+
+/**
+ * A CRON schedule as `node-cron` parses it (`'00 07 * * *'`), shared by the
+ * automation CRON trigger and anything else that needs an expression.
+ */
 export interface TimeTrigger {
     expression: string;
 }
 
-export type TriggerType = TimeTrigger;
-export enum TriggerKind {
-    CRON = 'CRON',
-}
-
-export interface Routine {
-    _id?: string;
-    name: string;
-    triggers: { type: TriggerKind; obj: TriggerType }[];
-    actions: string[];
-    active: boolean;
-}
-
-// --- Automations (event-driven graph, coexists with routines)
-
 /** How a trigger node wakes its branch up. */
 export type AutomationTriggerType =
-    | 'CRON' // reuse Routine's TimeTrigger { expression }
+    | 'CRON' // a `node-cron` expression (see `TimeTrigger`)
     | 'DEVICE_STATE' // a device attribute transitions
     | 'EVENT' // another action completed (chaining)
     | 'MANUAL'; // run from the UI / REST

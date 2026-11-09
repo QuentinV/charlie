@@ -14,7 +14,6 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import AutoModeIcon from '@mui/icons-material/AutoMode';
 import ExploreIcon from '@mui/icons-material/Explore';
 import RouterIcon from '@mui/icons-material/Router';
 import ChatIcon from '@mui/icons-material/Chat';
@@ -42,7 +41,6 @@ export const Menu = () => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
     const location = useLocation();
-    const enableAddRoutine = useSetting('routines.enabled');
     const showAiAsk = useSetting('experimental.ai.ask.show');
     const pwaPrompt = useUnit($pwaPrompt);
     const authState = useUnit(auth.$auth);
@@ -65,13 +63,6 @@ export const Menu = () => {
             icon: <DashboardIcon fontSize="small" />,
         },
     ];
-
-    enableAddRoutine &&
-        navItems.push({
-            labelKey: 'nav.routines',
-            route: '/routines',
-            icon: <AutoModeIcon fontSize="small" />,
-        });
 
     // Automations are always enabled (no feature flag), so the entry is always
     // in the menu — it is the one place that shows the whole house as a graph.

@@ -29,7 +29,6 @@
 
     "nav.home": "Accueil",
     "nav.dashboard": "Dashboard",
-    "nav.routines": "Routines",
     "nav.automations": "Automatisations",
     "nav.discover": "Découvrir",
     "nav.providers": "Fournisseurs",
@@ -62,7 +61,6 @@
 
     "home.devices": "Appareils",
     "home.rooms": "Pièces",
-    "home.routines": "Routines",
     "rooms.untitled": "Pièce sans titre",
 
     "device.properties": "Propriétés",
@@ -190,20 +188,6 @@
     "ai.errorReply": "Une erreur est survenue, réessaie s'il te plaît.",
     "ai.micErrorReply": "Je n'ai pas pu accéder au micro. Autorise le microphone pour ce site puis réessaie.",
     "ai.insecureReply": "Le micro nécessite une connexion sécurisée (HTTPS) ou localhost.",
-
-    "routines.lastRun": "Dernière exécution :",
-    "routines.neverRun": "Jamais exécutée",
-    "routines.activesCount": "{{n}} actives",
-    "routines.empty": "Aucune routine",
-    "routines.namePlaceholder": "Nom de la routine (ex. Réveil du matin)",
-    "routines.actions": "Actions",
-    "routines.actionPlaceholder": "Action (ex. « Allume la lumière du salon... »)",
-    "routines.confirmDelete": "Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.",
-    "routines.repeat": "Répéter",
-    "routines.daily": "Quotidien",
-    "routines.weekly": "Hebdomadaire",
-    "routines.minutesShort": "{{n}} min",
-    "routines.weekdays": ["D", "L", "M", "Me", "J", "V", "S"],
 
     "automations.empty": "Aucune automatisation",
     "automations.activesCount": "{{n}} actives",
@@ -484,7 +468,6 @@
     "settings.tags.Flow": "Flux",
     "settings.tags.AI": "IA",
     "settings.tags.Security": "Sécurité",
-    "settings.tags.Routines": "Routines",
     "settings.tags.restart": "redémarrage",
     "settings.tags.Echo": "Echo",
     "settings.tags.mqtt": "MQTT",
@@ -496,7 +479,6 @@
 
     "settings.flow.agentic.enabled.title": "Activer le flux de repli agentique",
     "settings.auth.enabled.title": "Protection par connexion et jetons API (gérée dans Sécurité ci-dessous)",
-    "settings.routines.enabled.title": "Activer les routines",
     "settings.echos.menu.enabled.title": "Activer le menu",
     "settings.echos.listen.title": "Activer le serveur d'écoute des appareils Echo",
     "settings.mqtt.enabled.title": "Activer le serveur mqtt",

@@ -15,11 +15,6 @@ const schema: JSONSchema7 = {
             readOnly: true,
             tags: ['Security'],
         },
-        'routines.enabled': {
-            type: 'boolean',
-            title: 'Enable Routines',
-            tags: ['Routines', 'restart'],
-        },
         'echos.menu.enabled': {
             type: 'boolean',
             title: 'Enable menu',

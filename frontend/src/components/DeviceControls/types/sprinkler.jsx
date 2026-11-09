@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 /**
  * Default `sprinkler` control panel: simple power toggle. The watering
- * duration is configured via routines, so no duration slider here.
+ * duration is configured by an automation, so no duration slider here.
  */
 export const SprinklerControls = ({ device, onStateChange }) => {
     const { t } = useTranslation();

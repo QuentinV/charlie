@@ -29,7 +29,6 @@
 
     "nav.home": "Home",
     "nav.dashboard": "Dashboard",
-    "nav.routines": "Routines",
     "nav.automations": "Automations",
     "nav.discover": "Discover",
     "nav.providers": "Providers",
@@ -62,7 +61,6 @@
 
     "home.devices": "Devices",
     "home.rooms": "Rooms",
-    "home.routines": "Routines",
     "rooms.untitled": "Untitled room",
 
     "device.properties": "Properties",
@@ -190,20 +188,6 @@
     "ai.errorReply": "Something went wrong, please try again.",
     "ai.micErrorReply": "I couldn't access the microphone. Allow microphone access for this site and try again.",
     "ai.insecureReply": "The microphone requires a secure connection (HTTPS) or localhost.",
-
-    "routines.lastRun": "Last run:",
-    "routines.neverRun": "Never run",
-    "routines.activesCount": "{{n}} active",
-    "routines.empty": "No routines",
-    "routines.namePlaceholder": "Routine Name (e.g. Morning Sync)",
-    "routines.actions": "Actions",
-    "routines.actionPlaceholder": "Action (e.g. 'Turn on the living room light...')",
-    "routines.confirmDelete": "Are you sure you want to delete this item? This action cannot be undone.",
-    "routines.repeat": "Repeat",
-    "routines.daily": "Daily",
-    "routines.weekly": "Weekly",
-    "routines.minutesShort": "{{n}}m",
-    "routines.weekdays": ["S", "M", "T", "W", "T", "F", "S"],
 
     "automations.empty": "No automations yet",
     "automations.activesCount": "{{n}} active",
@@ -484,7 +468,6 @@
     "settings.tags.Flow": "Flow",
     "settings.tags.AI": "AI",
     "settings.tags.Security": "Security",
-    "settings.tags.Routines": "Routines",
     "settings.tags.restart": "restart",
     "settings.tags.Echo": "Echo",
     "settings.tags.mqtt": "MQTT",
@@ -496,7 +479,6 @@
 
     "settings.flow.agentic.enabled.title": "Enable agentic fallback flow",
     "settings.auth.enabled.title": "Login and API token protection (managed in Security below)",
-    "settings.routines.enabled.title": "Enable Routines",
     "settings.echos.menu.enabled.title": "Enable menu",
     "settings.echos.listen.title": "Turn on server to listen for echo device",
     "settings.mqtt.enabled.title": "Turn on mqtt server",

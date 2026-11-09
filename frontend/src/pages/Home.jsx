@@ -2,7 +2,6 @@ import React from 'react';
 import { SpeedDialAdd } from '../components/SpeedDialAdd';
 import DevicesIcon from '@mui/icons-material/Devices';
 import RoomPreferencesIcon from '@mui/icons-material/RoomPreferences';
-import AutoModeIcon from '@mui/icons-material/AutoMode';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { RoomsList } from '../components/Rooms';
@@ -20,7 +19,6 @@ export const HomePage = () => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
     const enableAddDevice = useSetting('experimental.devices.add.enabled');
-    const enableAddRoutine = useSetting('routines.enabled');
     const favoriteDeviceIds = useUnit($favoriteDeviceIds);
     const [allDevices, setAllDevices] = React.useState(
         /** @type {any[]} */ ([])
@@ -63,17 +61,8 @@ export const HomePage = () => {
             },
         });
 
-        if (enableAddRoutine)
-            a.push({
-                icon: <AutoModeIcon />,
-                name: t('home.routines'),
-                click: () => {
-                    navigate(`/routine/new`);
-                },
-            });
-
         return a;
-    }, [navigate, enableAddDevice, enableAddRoutine, t]);
+    }, [navigate, enableAddDevice, t]);
 
     // Register shared quick-add actions for the mobile bottom FAB
     React.useEffect(() => {

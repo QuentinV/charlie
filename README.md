@@ -117,7 +117,7 @@ for details.
 
 Node.js backend providing:
 
-- **Management** of home (devices, rooms, activities, routines)
+- **Management** of home (devices, rooms, activities, automations)
 - **MCP tools** : tools are defined and send to LLM through prompt, no MCP server created but could me
 - **REST API** — [Swagger docs](http://localhost:9300/api-docs)
 - **Audio listeners** — WebSocket (browser) and UDP (ESP32-S3 / other echo devices)
