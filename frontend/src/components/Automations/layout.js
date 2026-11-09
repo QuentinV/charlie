@@ -1,117 +1,43 @@
-// Pure geometry for the read-only automations graph.
+// Pure geometry for the house graph.
 //
-// No React / no DOM: it turns the stored `{ nodes, edges }` subgraphs into
-// positioned boxes and edge paths so the SVG component only draws. Every
-// automation becomes one horizontal band, so the whole house is one picture
-// ("one big graph in one view"); a node with an explicit `position` keeps it,
-// otherwise the depth is derived from the graph shape (left → right).
+// No React, no DOM. It turns the backend's `{ nodes, edges }` payload (see
+// `nodejs-apis/src/automations/graph.ts`) into positioned boxes and routed arcs:
+// left → right by longest-path rank, columns centred vertically. An arc whose
+// target can reach back to its source is a **cycle** and bows outside, so the
+// feedback loop the engine's cascade guards exist for is visible.
 
 export const KIND_COLORS = {
-    trigger: '#FFB300', // amber — what wakes the branch
+    state: '#FF7043', // deep orange — a device state definition
+    schedule: '#FFB300', // amber — a clock
+    manual: '#90A4AE', // grey — run by hand
+    event: '#26C6DA', // cyan — an action completed
     condition: '#B388FF', // violet — a gate
     action: '#4EC8F5', // blue — a natural-language action
     notify: '#4CD964', // green — a push notification
 };
 
-const COL_W = 280; // horizontal step between depths
-const NODE_W = 200;
-const MARGIN_X = 28;
-const BAND_GAP = 48;
+export const CYCLE_COLOR = '#FF5252';
 
-// A node grows with its wrapped label: the kind caption sits on top and the
-// label lines under it, so every word stays visible (never ellipsized).
-const NODE_PAD_TOP = 38; // caption + gap above the first label line
-const LABEL_LINE_H = 15;
-const LABEL_FONT = 12.5;
-const NODE_PAD_BOTTOM = 14;
-const ROW_GAP = 18; // breathing space between two stacked nodes
-const BAND_TITLE_FONT = 15;
-const TITLE_TOP = 28; // baseline of the first title line
-const TITLE_LINE_H = 20;
-const TITLE_PAD = 18; // gap between the title block and the first node
-const BAND_PAD_BOTTOM = 22;
+export const NODE_METRICS = {
+    width: 215,
+    captionY: 18,
+    padTop: 36,
+    lineH: 15,
+    labelFont: 12.5,
+    subtitleGap: 16,
+    subtitleFont: 9.5,
+    radius: 12,
+};
 
-/** Cubic bezier bending between two horizontally-aligned boxes. */
-export function edgePath(x1, y1, x2, y2) {
-    const dx = Math.max(Math.abs(x2 - x1) * 0.5, 40);
-    return `M ${x1} ${y1} C ${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2} ${y2}`;
-}
-
-/**
- * Depth of every node: a trigger is always depth 0, everything else is one past
- * its deepest predecessor. Relaxation (not a single pass) so diamonds settle.
- */
-export function computeDepths(nodes, edges) {
-    const ids = new Set((nodes ?? []).map((n) => n.id));
-    const preds = new Map();
-    for (const e of edges ?? []) {
-        if (!ids.has(e.from) || !ids.has(e.to)) continue;
-        const list = preds.get(e.to) ?? [];
-        list.push(e.from);
-        preds.set(e.to, list);
-    }
-
-    const depth = new Map((nodes ?? []).map((n) => [n.id, 0]));
-    for (let iter = 0; iter < (nodes?.length ?? 0) + 1; iter++) {
-        let changed = false;
-        for (const n of nodes ?? []) {
-            const incoming = preds.get(n.id) ?? [];
-            let d = n.kind === 'trigger' ? 0 : depth.get(n.id) ?? 0;
-            for (const p of incoming) {
-                d = Math.max(d, (depth.get(p) ?? 0) + 1);
-            }
-            if (n.kind === 'trigger') d = 0;
-            if (d !== depth.get(n.id)) {
-                depth.set(n.id, d);
-                changed = true;
-            }
-        }
-        if (!changed) break;
-    }
-    return depth;
-}
-
-/** Human label for a node, resolving a device id when the caller knows it. */
-export function nodeLabel(node, deviceName) {
-    const device =
-        deviceName ??
-        node.trigger?.device?.deviceId ??
-        node.condition?.deviceId ??
-        '';
-    switch (node.kind) {
-        case 'trigger': {
-            const t = node.trigger;
-            if (!t) return 'trigger';
-            if (t.type === 'CRON') return `⏰ ${t.cron?.expression ?? ''}`;
-            if (t.type === 'DEVICE_STATE') {
-                const d = t.device;
-                return `${device} · ${d?.attribute ?? ''} → ${
-                    d?.to ?? 'change'
-                }`;
-            }
-            if (t.type === 'EVENT') return `↳ ${t.event || 'action done'}`;
-            return '▶ manual';
-        }
-        case 'action':
-            return node.action?.text || 'action';
-        case 'notify':
-            return node.notify?.body || 'notify';
-        case 'condition': {
-            const c = node.condition;
-            const value = Array.isArray(c?.value)
-                ? c.value.join('–')
-                : c?.value ?? '';
-            return `${device} ${c?.attribute ?? ''} ${c?.op ?? ''} ${value}`;
-        }
-        default:
-            return node.label ?? node.id;
-    }
-}
+const COL_W = 300; // horizontal step between ranks
+const ROW_GAP = 22;
+const MARGIN = 32;
+const MAX_LABEL_LINES = 4;
 
 /**
  * Rough advance width of a string in a UI sans-serif. SVG offers no measurement
  * at layout time, so we estimate ~0.53em per glyph, a little more for caps and
- * digits, less for spaces and narrow letters — good enough to wrap on.
+ * digits, less for the narrow ones — good enough to wrap on.
  */
 function textWidth(text, fontSize) {
     let units = 0;
@@ -126,8 +52,8 @@ function textWidth(text, fontSize) {
 
 /**
  * Greedy word wrap: a word stays whole whenever it can, and a word wider than a
- * whole line is hard-broken — so no character is ever dropped. Returns at least
- * one line, so callers can always render something.
+ * whole line is hard-broken — so no character is ever dropped. Always returns at
+ * least one line.
  */
 export function wrapText(text, maxWidth, fontSize) {
     const value = String(text ?? '').trim();
@@ -166,156 +92,287 @@ export function wrapText(text, maxWidth, fontSize) {
 }
 
 /**
- * Lay every automation out as its own band and stack them vertically.
- * @param {any[]} automations
- * @param {(node: any) => (string | undefined)} [deviceName]
+ * Longest-path rank per node, computed on the **acyclic** arcs only. Cyclic arcs
+ * are excluded on purpose: a loop (state → action → that state) would otherwise
+ * push its own rank up on every relaxation pass and stretch the picture.
  */
-export function layoutAutomations(automations, deviceName) {
-    const bands = [];
-    const nodes = [];
-    const links = [];
-
-    let cursorY = 0;
-    let maxWidth = 0;
-
-    for (const automation of automations ?? []) {
-        const sourceNodes = automation.nodes ?? [];
-        const edges = automation.edges ?? [];
-        const depth = computeDepths(sourceNodes, edges);
-
-        // Group ids by depth to stack siblings vertically.
-        const byDepth = new Map();
-        for (const n of sourceNodes) {
-            const d = depth.get(n.id) ?? 0;
-            const list = byDepth.get(d) ?? [];
-            list.push(n.id);
-            byDepth.set(d, list);
-        }
-        const maxDepth = byDepth.size ? Math.max(...byDepth.keys()) : 0;
-
-        const bandW =
-            MARGIN_X * 2 + (maxDepth + 1) * COL_W - (COL_W - NODE_W);
-
-        // Wrap every label first: the wrap decides each node's height.
-        const prepared = new Map();
-        for (const n of sourceNodes) {
-            const lines = wrapText(
-                nodeLabel(n, deviceName?.(n)),
-                NODE_W - 32,
-                LABEL_FONT
-            );
-            prepared.set(n.id, {
-                lines,
-                height:
-                    NODE_PAD_TOP +
-                    (lines.length - 1) * LABEL_LINE_H +
-                    NODE_PAD_BOTTOM,
-            });
-        }
-
-        // Stack each depth column, remember the tallest, then centre them all.
-        const columns = [];
-        let contentH = 0;
-        for (const [d, ids] of byDepth) {
-            const placed = [];
-            let y = 0;
-            for (const id of ids) {
-                placed.push({ id, y });
-                y += prepared.get(id).height + ROW_GAP;
-            }
-            const colH = Math.max(y - ROW_GAP, 0);
-            contentH = Math.max(contentH, colH);
-            columns.push({ depth: d, placed, colH });
-        }
-
-        const titleLines = wrapText(
-            automation.name ?? '',
-            bandW - 48,
-            BAND_TITLE_FONT
-        );
-        const titleH =
-            TITLE_TOP + (titleLines.length - 1) * TITLE_LINE_H + TITLE_PAD;
-        const bandH = titleH + contentH + BAND_PAD_BOTTOM;
-        const bandY = cursorY;
-        const nodeTop = bandY + titleH;
-
-        const positioned = new Map();
-        for (const col of columns) {
-            const offset = (contentH - col.colH) / 2;
-            for (const { id, y } of col.placed) {
-                const explicit = sourceNodes.find(
-                    (n) => n.id === id
-                )?.position;
-                positioned.set(id, {
-                    x: explicit?.x ?? MARGIN_X + col.depth * COL_W,
-                    y: explicit?.y ?? y + offset,
-                });
-            }
-        }
-
-        for (const n of sourceNodes) {
-            const p = prepared.get(n.id);
-            const pos = positioned.get(n.id) ?? { x: MARGIN_X, y: 0 };
-            nodes.push({
-                id: n.id,
-                automationId: automation._id,
-                kind: n.kind,
-                label: p.lines.join(' '),
-                lines: p.lines,
-                color: KIND_COLORS[n.kind] ?? '#9E9E9E',
-                x: pos.x,
-                y: nodeTop + pos.y,
-                w: NODE_W,
-                h: p.height,
-                padTop: NODE_PAD_TOP,
-                lineH: LABEL_LINE_H,
-                fontSize: LABEL_FONT,
-            });
-        }
-
-        for (const e of edges ?? []) {
-            const from = positioned.get(e.from);
-            const to = positioned.get(e.to);
-            if (!from || !to) continue;
-            links.push({
-                id: `${automation._id}:${e.from}>${e.to}`,
-                automationId: automation._id,
-                when: e.when ?? 'always',
-                color: KIND_COLORS.trigger,
-                d: edgePath(
-                    from.x + NODE_W,
-                    nodeTop + from.y + prepared.get(e.from).height / 2,
-                    to.x,
-                    nodeTop + to.y + prepared.get(e.to).height / 2
-                ),
-            });
-        }
-
-        bands.push({
-            id: automation._id,
-            name: automation.name,
-            active: automation.active,
-            x: 0,
-            y: bandY,
-            w: bandW,
-            h: bandH,
-            titleLines,
-            titleTop: TITLE_TOP,
-            titleLineH: TITLE_LINE_H,
-        });
-
-        cursorY += bandH + BAND_GAP;
-        maxWidth = Math.max(maxWidth, bandW);
+export function computeRanks(nodes, edges) {
+    const ids = new Set((nodes ?? []).map((n) => n.id));
+    const preds = new Map();
+    for (const edge of edges ?? []) {
+        if (!ids.has(edge.from) || !ids.has(edge.to)) continue;
+        const list = preds.get(edge.to) ?? [];
+        list.push(edge.from);
+        preds.set(edge.to, list);
     }
 
-    const width = Math.max(maxWidth, 400);
-    const height = Math.max(cursorY - BAND_GAP, 200);
+    const rank = new Map((nodes ?? []).map((n) => [n.id, 0]));
+    for (let pass = 0; pass < (nodes?.length ?? 0) + 1; pass++) {
+        let changed = false;
+        for (const node of nodes ?? []) {
+            let value = 0;
+            for (const pred of preds.get(node.id) ?? []) {
+                value = Math.max(value, (rank.get(pred) ?? 0) + 1);
+            }
+            if (rank.get(node.id) !== value) {
+                rank.set(node.id, value);
+                changed = true;
+            }
+        }
+        if (!changed) break;
+    }
+    return rank;
+}
 
+/**
+ * Order each column by the barycentre of its predecessors (a few sweeps), which
+ * is what keeps arcs from crossing in a layered picture. Mutates `byRank`.
+ */
+export function orderRanks(byRank, edges) {
+    const order = new Map();
+    for (const ids of byRank.values()) {
+        ids.forEach((id, i) => order.set(id, i));
+    }
+
+    const preds = new Map();
+    for (const edge of edges ?? []) {
+        const list = preds.get(edge.to) ?? [];
+        list.push(edge.from);
+        preds.set(edge.to, list);
+    }
+
+    const ranks = [...byRank.keys()].sort((a, b) => a - b);
+    for (let sweep = 0; sweep < 4; sweep++) {
+        for (const rank of ranks) {
+            const ids = byRank.get(rank);
+            const scored = ids.map((id) => {
+                const values = (preds.get(id) ?? [])
+                    .map((pred) => order.get(pred))
+                    .filter((value) => value !== undefined);
+                const bary = values.length
+                    ? values.reduce((a, b) => a + b, 0) / values.length
+                    : order.get(id) ?? 0;
+                return { id, bary, tie: order.get(id) ?? 0 };
+            });
+            scored.sort((a, b) => a.bary - b.bary || a.tie - b.tie);
+            scored.forEach((entry, i) => {
+                order.set(entry.id, i);
+                ids[i] = entry.id;
+            });
+        }
+    }
+    return byRank;
+}
+
+/**
+ * A forward arc is a clean bezier; a cycle bows outside so it reads as a loop.
+ * Returns the path plus the point at `t = 0.5`, where a transition label sits
+ * (on the curve, never floating beside it).
+ */
+export function routeEdge({ x1, y1, x2, y2, back }) {
+    let cx1;
+    let cx2;
+    let cy1 = y1;
+    let cy2 = y2;
+    if (!back) {
+        const dx = Math.max(Math.abs(x2 - x1) * 0.5, 40);
+        cx1 = x1 + dx;
+        cx2 = x2 - dx;
+    } else {
+        const bow = 70 + Math.abs(y2 - y1) * 0.35;
+        const direction = y2 >= y1 ? 1 : -1;
+        cx1 = x1 + 130;
+        cx2 = x2 - 130;
+        cy1 = y1 + direction * bow;
+        cy2 = y2 + direction * bow;
+    }
     return {
-        bands,
-        nodes,
-        links,
-        bounds: { minX: 0, minY: 0, maxX: width, maxY: height, width, height },
+        d: `M ${x1} ${y1} C ${cx1} ${cy1} ${cx2} ${cy2} ${x2} ${y2}`,
+        midX: (x1 + 3 * cx1 + 3 * cx2 + x2) / 8,
+        midY: (y1 + 3 * cy1 + 3 * cy2 + y2) / 8,
     };
 }
+
+const PAD_BOTTOM = 12;
+
+/**
+ * Lay the house graph out. Returns positioned nodes (`x/y/w/h/lines/subtitle/
+ * color`) and routed edges (`d/x1/y1/x2/y2/color/dashed/cycle`), plus `bounds`
+ * for the pan/zoom maths.
+ */
+export function layoutHouseGraph(nodes = [], edges = []) {
+    // A self-loop cannot be routed to itself: drop it from the drawing.
+    const drawn = (edges ?? []).filter(
+        (edge) => edge.from && edge.to && edge.from !== edge.to
+    );
+    const rank = computeRanks(nodes, drawn.filter((edge) => !edge.cycle));
+
+    const byRank = new Map();
+    for (const node of nodes ?? []) {
+        const value = rank.get(node.id) ?? 0;
+        const list = byRank.get(value) ?? [];
+        list.push(node.id);
+        byRank.set(value, list);
+    }
+    orderRanks(byRank, drawn);
+
+    // Size first: the wrap decides each node's height.
+    const sized = new Map();
+    for (const node of nodes ?? []) {
+        const lines = wrapText(
+            node.label ?? node.id,
+            NODE_METRICS.width - 30,
+            NODE_METRICS.labelFont
+        ).slice(0, MAX_LABEL_LINES);
+        const subtitle = node.subtitle ?? node.automationName ?? '';
+        sized.set(node.id, {
+            lines,
+            subtitle,
+            height:
+                NODE_METRICS.padTop +
+                (lines.length - 1) * NODE_METRICS.lineH +
+                (subtitle ? NODE_METRICS.subtitleGap : 0) +
+                PAD_BOTTOM,
+        });
+    }
+
+    // Stack each column, remember the tallest, then centre them all.
+    const columns = [];
+    let contentH = 0;
+    for (const value of [...byRank.keys()].sort((a, b) => a - b)) {
+        const ids = byRank.get(value);
+        let y = 0;
+        const placed = [];
+        for (const id of ids) {
+            const size = sized.get(id);
+            if (!size) continue;
+            placed.push({ id, y });
+            y += size.height + ROW_GAP;
+        }
+        const colH = Math.max(y - ROW_GAP, 0);
+        contentH = Math.max(contentH, colH);
+        columns.push({ rank: value, placed, colH });
+    }
+
+    const position = new Map();
+    for (const column of columns) {
+        const offset = (contentH - column.colH) / 2;
+        for (const { id, y } of column.placed) {
+            position.set(id, {
+                x: MARGIN + column.rank * COL_W,
+                y: MARGIN + y + offset,
+            });
+        }
+    }
+
+    const outNodes = (nodes ?? []).map((node) => {
+        const size = sized.get(node.id);
+        const point = position.get(node.id) ?? { x: MARGIN, y: MARGIN };
+        return {
+            ...node,
+            x: point.x,
+            y: point.y,
+            w: NODE_METRICS.width,
+            h: size?.height ?? 48,
+            lines: size?.lines ?? [node.label ?? node.id],
+            subtitle: size?.subtitle ?? '',
+            color: KIND_COLORS[node.kind] ?? '#9E9E9E',
+        };
+    });
+    const byId = new Map(outNodes.map((node) => [node.id, node]));
+
+    const outEdges = [];
+    for (const edge of drawn) {
+        const from = byId.get(edge.from);
+        const to = byId.get(edge.to);
+        if (!from || !to) continue;
+        const x1 = from.x + from.w;
+        const y1 = from.y + from.h / 2;
+        const x2 = to.x;
+        const y2 = to.y + to.h / 2;
+        const back = to.x <= from.x;
+        const route = routeEdge({ x1, y1, x2, y2, back });
+        outEdges.push({
+            ...edge,
+            x1,
+            y1,
+            x2,
+            y2,
+            back,
+            d: route.d,
+            // Where the transition label sits (on the curve, at t = 0.5).
+            labelX: route.midX,
+            labelY: route.midY,
+            color: edge.cycle ? CYCLE_COLOR : from.color,
+            dashed: edge.kind === 'effect',
+        });
+    }
+
+    const width = outNodes.length
+        ? Math.max(...outNodes.map((node) => node.x + node.w)) + MARGIN
+        : 480;
+    const height = contentH ? contentH + MARGIN * 2 : 240;
+
+    return { nodes: outNodes, edges: outEdges, bounds: { width, height } };
+}
+
+/**
+ * Fit a laid-out graph into a fixed-size viewport: scale down until the whole
+ * picture fits (never up — 1 is the ceiling), then centre it.
+ *
+ * The group transform is `translate(tx ty) translate(cx cy) scale(s)
+ * translate(-cx -cy)` with `cx = bounds.width / 2`, so `tx = vw / 2 - cx` maps
+ * the content centre onto the viewport centre.
+ */
+export function fitView(bounds, viewport, padding = 16) {
+    const width = bounds?.width ?? 0;
+    const height = bounds?.height ?? 0;
+    const vw = viewport?.width ?? 0;
+    const vh = viewport?.height ?? 0;
+    if (!vw || !vh || !width || !height) return { scale: 1, tx: 0, ty: 0 };
+    return {
+        scale: Math.min(
+            1,
+            (vw - padding * 2) / width,
+            (vh - padding * 2) / height
+        ),
+        tx: vw / 2 - width / 2,
+        ty: vh / 2 - height / 2,
+    };
+}
+
+/**
+ * The card filter: keep the arcs declared by (or observed for) one automation.
+ * The shared state nodes come along because a kept arc touches them — which is
+ * the whole point of the merged picture.
+ */
+export function filterGraph(graph, automationId) {
+    if (!automationId) return graph ?? { nodes: [], edges: [] };
+
+    const byId = new Map((graph.nodes ?? []).map((node) => [node.id, node]));
+    const edges = (graph.edges ?? []).filter((edge) => {
+        if (edge.automationId !== automationId) return false;
+        // A listen arc points at another automation's action: only keep it when
+        // that action is inside the filter too.
+        if (edge.kind === 'listens') {
+            return byId.get(edge.to)?.automationId === automationId;
+        }
+        return true;
+    });
+
+    const keep = new Set();
+    for (const edge of edges) {
+        keep.add(edge.from);
+        keep.add(edge.to);
+    }
+    for (const node of graph.nodes ?? []) {
+        if (node.automationId === automationId) keep.add(node.id);
+    }
+
+    return {
+        nodes: (graph.nodes ?? []).filter((node) => keep.has(node.id)),
+        edges,
+    };
+}
+
 

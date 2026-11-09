@@ -3,6 +3,7 @@ import { initAll } from './init';
 import { setupEchoListen } from './echo/listen';
 import { setupMqttServer } from './messaging/receive';
 import { setupRoutines } from './routines';
+import { setupAutomations } from './automations';
 import { setupRotateProvidersIp } from './devices/rotateip.job';
 import { settings } from './manager/services/settings';
 import { setupRestApi } from './restapi-setup.';
@@ -28,6 +29,8 @@ import { setupChatServer } from './ai/chat-server';
     if (settings.routines?.enabled) {
         setupRoutines();
     }
+
+    setupAutomations();
 
     if (settings.devices?.providers?.rotateIp?.enabled) {
         setupRotateProvidersIp();

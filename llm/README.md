@@ -14,7 +14,7 @@ Both are declared in `MODELS` (`<id>=<hf-repo>/<file.gguf>`, space/comma
 separated) and downloaded into `$MODEL_DIR/<id>/<file>`. The router names a
 model after **its folder** (verified against the running router:
 `GET /v1/models` → `qwen3-4b`, `qwen3-1.7b`), which is why each model gets its
-own folder — the ids are what `LLM_MODEL` / `LLM_SHOPPING_MODEL` use in the
+own folder — the ids are what `LLM_MODEL` / `LLM_SMALL_TASK_MODEL` use in the
 brain. A model downloaded by the previous single-model layout is **moved** into
 its folder instead of downloaded again. The router serves every `.gguf` it finds
 under `--models-dir`; `MODELS` only controls what this entrypoint downloads.
@@ -53,7 +53,7 @@ of its preset section. Add `-e LLAMA_ARG_CTX_SIZE=4096` if you want a cap
 without presets.
 
 The brain side is configured in `nodejs-apis/.env`: `LLM_HOST`, `LLM_MODEL`
-(chat) and `LLM_SHOPPING_MODEL` (small model). Leave the two model variables
+(chat) and `LLM_SMALL_TASK_MODEL` (small model). Leave the two model variables
 empty to keep talking to a single-model server.
 
 ## Per-model arguments (`presets/charlie.ini`)
@@ -106,7 +106,7 @@ curl -s http://localhost:9308/v1/models | jq -r '.data[].id'
 # qwen3-1.7b
 ```
 
-Those are the values in `LLM_MODEL` / `LLM_SHOPPING_MODEL` (`nodejs-apis/.env`).
+Those are the values in `LLM_MODEL` / `LLM_SMALL_TASK_MODEL` (`nodejs-apis/.env`).
 The brain tolerates a mismatch: it retries once without the `model` field
 (logged), which keeps a single-model deployment working.
 

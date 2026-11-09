@@ -50,7 +50,7 @@ download_model() {
 # MODELS: "<id>=<hf-repo>/<file.gguf>", separated by spaces or commas. Each id
 # gets its own folder: llama-server keys a router-served model (and its preset)
 # on that folder name, so the ids stay stable for LLM_MODEL /
-# LLM_SHOPPING_MODEL and for llm/presets/charlie.ini.
+# LLM_SMALL_TASK_MODEL and for llm/presets/charlie.ini.
 FIRST_ID=""
 FIRST_FILE=""
 MODEL_IDS=""

@@ -167,8 +167,10 @@ describe('LLM structuring', () => {
         );
 
         const body = JSON.parse(init.body);
+        // The brain's own fallback, which is what applies when the env var is
+        // unset (this used to compare against `undefined` and always failed).
         expect(body.model).toBe(
-            process.env.LLM_SHOPPING_MODEL ?? process.env.LLM_MODEL
+            process.env.LLM_SMALL_TASK_MODEL ?? 'qwen3-1.7b'
         );
         expect(body.tools).toEqual([]);
         expect(body.temperature).toBe(0);

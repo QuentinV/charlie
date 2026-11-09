@@ -7,6 +7,7 @@ import custom_gate from './custom_gate';
 import custom_relays from './custom_relays';
 import homeassistant from './homeassistant';
 import weather from './weather';
+import probe from './probe';
 
 export default {
     ikea,
@@ -18,4 +19,5 @@ export default {
     custom_relays,
     homeassistant,
     weather,
+    probe
 };

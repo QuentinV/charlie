@@ -6,6 +6,7 @@
     "providers": "providers",
     "plugins": "plugins",
     "routines": "routines",
+    "automations": "automations",
     "states": "states",
     "musics_playlists": "musics_playlists",
     "activities": "activities",
@@ -13,5 +14,6 @@
     "settings": "settings",
     "memories": "memories",
     "shoppingLists": "shopping_lists",
-    "haCustomIntegrations": "ha_custom_integrations"
+    "haCustomIntegrations": "ha_custom_integrations",
+    "automationEffects": "automation_effects"
 }

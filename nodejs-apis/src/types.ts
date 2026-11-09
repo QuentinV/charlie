@@ -381,6 +381,112 @@ export interface Routine {
     active: boolean;
 }
 
+// --- Automations (event-driven graph, coexists with routines)
+
+/** How a trigger node wakes its branch up. */
+export type AutomationTriggerType =
+    | 'CRON' // reuse Routine's TimeTrigger { expression }
+    | 'DEVICE_STATE' // a device attribute transitions
+    | 'EVENT' // another action completed (chaining)
+    | 'MANUAL'; // run from the UI / REST
+
+export type AutomationNodeKind = 'trigger' | 'action' | 'notify' | 'condition';
+
+/**
+ * Which devices/attributes can be watched. `attribute` is either one of the two
+ * canonical numbers (`power`, `level`) or a free `properties` key — the same
+ * vocabulary the device provider exposes.
+ */
+export interface DeviceStateTrigger {
+    deviceId: string;
+    attribute: 'power' | 'level' | string;
+    /** Target value: the branch runs when the attribute *enters* it. */
+    to?: PropertyValue;
+    /** Optional origin value (used with `edge: 'leave'`, or to pin a transition). */
+    from?: PropertyValue;
+    /** `enter` (default) fires when value == to; `leave` when it leaves from; */
+    /** `change` fires on any change of the attribute. */
+    edge?: 'enter' | 'leave' | 'change';
+    /** Ignore repeated firings within this window (flapping sensors). */
+    cooldownMs?: number;
+}
+
+export interface AutomationTrigger {
+    type: AutomationTriggerType;
+    cron?: TimeTrigger;
+    device?: DeviceStateTrigger;
+    /**
+     * For EVENT triggers: the completion to listen to. Empty = any action
+     * completion. Also accepts `action-completed`, or the precise
+     * `action:<automationId>:<nodeId>`.
+     */
+    event?: string;
+    /** Allow this automation to be re-triggered by its own action (default off). */
+    allowSelfTrigger?: boolean;
+}
+
+/** A gate: the branch continues only when the device attribute matches. */
+export interface ConditionDef {
+    deviceId: string;
+    attribute: 'power' | 'level' | string;
+    op: 'eq' | 'neq' | 'gt' | 'lt' | 'between';
+    /** Single value, or `[min, max]` for `between`. */
+    value?: PropertyValue | PropertyValue[];
+}
+
+export interface AutomationNode {
+    id: string;
+    kind: AutomationNodeKind;
+    label?: string;
+    /** kind === 'trigger' */
+    trigger?: AutomationTrigger;
+    /** kind === 'action' — natural language, run through the existing `ask()`. */
+    action?: { text: string };
+    /** kind === 'notify' — a push notification (no NLU). */
+    notify?: { title?: string; body: string };
+    /** kind === 'condition' */
+    condition?: ConditionDef;
+    /** Graph layout; auto-laid out left→right when absent. */
+    position?: { x: number; y: number };
+}
+
+/** `when` gates whether an edge is followed, from the source node's result. */
+export interface AutomationEdge {
+    id?: string;
+    from: string;
+    to: string;
+    when?: 'always' | 'success' | 'failure';
+}
+
+export interface Automation {
+    _id?: string;
+    name: string;
+    active: boolean;
+    nodes: AutomationNode[];
+    edges: AutomationEdge[];
+    lastRun?: Date;
+}
+
+/**
+ * One observed `action → state` arc, counted over time (`automation_effects`).
+ *
+ * Written by the runtime observer (`automations/effects.ts`) when a device-state
+ * transition lands inside an action's correlation window. This is how the house
+ * graph draws "this action produced that state" without ever guessing it.
+ */
+export interface AutomationEffect {
+    _id: string;
+    automationId: string;
+    nodeId: string;
+    deviceId: string;
+    attribute: string;
+    value: PropertyValue;
+    /** How many times the arc was observed. */
+    count: number;
+    firstAt: number;
+    lastAt: number;
+}
+
 // --- Shopping list
 
 /** Aisle of a grocery item: drives the grouping/order of the shopping tab. */

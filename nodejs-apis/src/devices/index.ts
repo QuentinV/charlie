@@ -15,6 +15,7 @@ import {
 import { log } from '../manager/services/activities';
 import { createPlugin } from './providers/plugin';
 import defaultProviders from './providers';
+import { logDeviceState } from './history';
 import {
     getCachedCapabilities,
     setCachedCapabilities,
@@ -194,10 +195,13 @@ export async function changeDeviceState(
     });
 
     if (res === true) {
-        return getDeviceState(deviceId);
+        const state = await getDeviceState(deviceId);
+        await logDeviceState({ deviceId });
+        return state;
     }
     if (res === false) return false;
     await cs.devices.updateOne({ _id: deviceId }, { $set: { state: res } });
+    if (res) await logDeviceState({ deviceId });
     return res;
 }
 

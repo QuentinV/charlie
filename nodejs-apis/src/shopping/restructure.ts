@@ -3,7 +3,7 @@
  *
  * Raw user requests (voice, chat, free text) pile up in the active list; a few
  * seconds after the last one, a small local model (router-served
- * `LLM_SHOPPING_MODEL`, Qwen3-1.7B by default) turns them into structured
+ * `LLM_SMALL_TASK_MODEL`, Qwen3-1.7B by default) turns them into structured
  * items — names, quantities, units and aisles — with schema-constrained JSON
  * output. A failure never loses a request: the raw entries stay pending and the
  * UI can retry (or apply the deterministic fallback parser).

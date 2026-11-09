@@ -18,7 +18,11 @@ const host = process.env.LLM_HOST ?? 'llm:9308';
  * brain has to name the model it wants. Unset = single-model server.
  */
 const CHAT_MODEL = process.env.LLM_MODEL ?? 'qwen3-4b';
-const SHOPPING_MODEL = process.env.LLM_SHOPPING_MODEL ?? 'qwen3-1.7b';
+/**
+ * Small model, for the background tasks that only extract text: shopping-list
+ * restructuring and automation drafting. Same router, loaded on demand.
+ */
+const SMALL_TASK_MODEL = process.env.LLM_SMALL_TASK_MODEL ?? 'qwen3-1.7b';
 const LIMIT_TURN = 10;
 const LLM_LANG_OUTPUT = process.env.LLM_LANGUAGE?.toUpperCase() ?? 'FRENCH';
 
@@ -27,9 +31,9 @@ export function chatModel(): string | undefined {
     return CHAT_MODEL;
 }
 
-/** Model id the shopping restructurer uses (small model). */
+/** Model id background tasks use (shopping restructure, automation compose). */
 export function shoppingModel(): string | undefined {
-    return SHOPPING_MODEL;
+    return SMALL_TASK_MODEL;
 }
 
 /** Host serving the small model (same container unless overridden). */
@@ -44,7 +48,7 @@ export function shoppingHost(): string {
  */
 export async function warmUp(): Promise<void> {
     if (!CHAT_MODEL) return;
-    const models = [...new Set([CHAT_MODEL, SHOPPING_MODEL])].filter(
+    const models = [...new Set([CHAT_MODEL, SMALL_TASK_MODEL])].filter(
         (m): m is string => !!m
     );
     for (const model of models) {

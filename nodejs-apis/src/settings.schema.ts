@@ -147,13 +147,6 @@ const schema: JSONSchema7 = {
                 'How long Charlie waits after the last added item before turning the raw requests into a structured list.',
             tags: ['Shopping'],
         },
-        'shopping.model': {
-            type: 'string',
-            title: 'Small model used to structure the shopping list',
-            description:
-                'Model id served by the LLM router (informational: the restructure request uses LLM_SHOPPING_MODEL).',
-            tags: ['Shopping'],
-        },
     },
 };
 

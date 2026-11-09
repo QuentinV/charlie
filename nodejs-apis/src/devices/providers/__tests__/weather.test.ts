@@ -4,7 +4,21 @@ jest.mock('uuid', () => ({
     v4: () => '00000000-0000-4000-8000-000000000000',
 }));
 
-import weather from '../weather';
+jest.mock('../../../core/db', () => ({
+    cs: {
+        devices: { findOne: jest.fn(), updateOne: jest.fn() },
+    },
+}));
+
+jest.mock('../../history', () => ({ logDeviceState: jest.fn() }));
+
+import weather, {
+    onBoot,
+    refreshWeatherDevice,
+    WEATHER_EXTERNAL_ID,
+} from '../weather';
+import { cs } from '../../../core/db';
+import { logDeviceState } from '../../history';
 import { settings } from '../../../manager/services/settings';
 import {
     WEATHER_STATE_SCHEMA,
@@ -27,6 +41,7 @@ describe('weather provider', () => {
         ({ ok, json: async () => body }) as unknown as Response;
 
     beforeEach(() => {
+        jest.clearAllMocks();
         setWeatherFetch((async () =>
             jsonResponse(payload)) as unknown as typeof fetch);
         resetWeatherCache();
@@ -87,5 +102,34 @@ describe('weather provider', () => {
         await expect(
             api.changeDeviceState!({} as any, { level: 30 } as any)
         ).resolves.toBe(false);
+    });
+
+    it('refreshes the météo device and publishes its state', async () => {
+        (cs.devices.findOne as jest.Mock).mockResolvedValue({
+            _id: 'w1',
+            externalId: WEATHER_EXTERNAL_ID,
+        });
+        (cs.devices.updateOne as jest.Mock).mockResolvedValue({});
+
+        await refreshWeatherDevice();
+
+        expect(cs.devices.updateOne).toHaveBeenCalledWith(
+            { _id: 'w1' },
+            { $set: { state: expect.objectContaining({ level: 9.8 }) } }
+        );
+        // The fresh state reaches the bus through the ordinary history hook —
+        // that is what lets a DEVICE_STATE automation fire on day_night.
+        expect(logDeviceState).toHaveBeenCalledWith({ deviceId: 'w1' });
+    });
+
+    it('does nothing when the météo device was never added', async () => {
+        (cs.devices.findOne as jest.Mock).mockResolvedValue(null);
+        await refreshWeatherDevice();
+        expect(cs.devices.updateOne).not.toHaveBeenCalled();
+        expect(logDeviceState).not.toHaveBeenCalled();
+    });
+
+    it('exposes an onBoot poller', () => {
+        expect(typeof onBoot).toBe('function');
     });
 });
