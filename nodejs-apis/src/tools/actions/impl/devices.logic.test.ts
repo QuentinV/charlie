@@ -9,25 +9,24 @@ import {
 describe('devices.logic — partial moves', () => {
     describe('nuanceDelta', () => {
         test('a nuance becomes a SIGNED change: opening +, closing -', () => {
-            expect(nuanceDelta('open', 'slightly')).toBe(NUANCE_STEPS.slightly);
-            expect(nuanceDelta('close', 'slightly')).toBe(
+            expect(nuanceDelta('on', 'slightly')).toBe(NUANCE_STEPS.slightly);
+            expect(nuanceDelta('off', 'slightly')).toBe(
                 -NUANCE_STEPS.slightly
             );
-            expect(nuanceDelta('open', 'strongly')).toBe(NUANCE_STEPS.strongly);
-            expect(nuanceDelta('close', 'strongly')).toBe(
+            expect(nuanceDelta('on', 'strongly')).toBe(NUANCE_STEPS.strongly);
+            expect(nuanceDelta('off', 'strongly')).toBe(
                 -NUANCE_STEPS.strongly
             );
         });
 
         test('no nuance -> no relative change (a plain full move)', () => {
-            expect(nuanceDelta('open', undefined)).toBeUndefined();
-            expect(nuanceDelta('close', '')).toBeUndefined();
-            expect(nuanceDelta('close', 'unknown-word')).toBeUndefined();
+            expect(nuanceDelta('on', undefined)).toBeUndefined();
+            expect(nuanceDelta('off', '')).toBeUndefined();
+            expect(nuanceDelta('off', 'unknown-word')).toBeUndefined();
         });
 
-        test('a direction that is neither open nor close has no delta', () => {
-            expect(nuanceDelta('all', 'slightly')).toBeUndefined();
-            expect(nuanceDelta('onoff', 'slightly')).toBeUndefined();
+        test('a power that is neither on nor off has no delta', () => {
+            expect(nuanceDelta('pause', 'slightly')).toBeUndefined();
         });
     });
 

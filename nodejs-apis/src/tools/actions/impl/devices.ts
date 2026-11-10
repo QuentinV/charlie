@@ -1,9 +1,11 @@
 import {
     Device,
+    DeviceCapabilities,
     DeviceState,
     DeviceTypes,
     PowerType,
     Room,
+    StatePropertySchema,
     Tools,
 } from '../../../types';
 import { cs } from '../../../core/db';
@@ -192,9 +194,8 @@ async function partialLevel(
  * A plain full move (`{ power }`), optionally carrying a remembered absolute
  * level when powering on with an explicit number ("allume à 50"). A nuance
  * request ("un peu" / "beaucoup") instead moves by a SIGNED delta applied to the
- * device's current level, and only for a `shutter` that advertises a writable
- * level: a device without one (e.g. a toggle-only gate) keeps the plain full
- * move.
+ * device's current level, for ANY device that advertises a writable level: a
+ * device without one (e.g. a toggle-only gate) keeps the plain full move.
  */
 async function deviceMoveState(
     device: Device,
@@ -217,7 +218,7 @@ async function deviceMoveState(
     const rawNumber = req.slots?.number;
     if (power === 'on' && rawNumber != null && !isRelativeLevel(rawNumber)) {
         const level = Number(rawNumber);
-        if (!Number.isNaN(level)) state.level = clampLevel(level);
+        if (!Number.isNaN(level)) state.level = clampToField(level);
     }
     return state;
 }
@@ -248,12 +249,37 @@ async function changeDevice(
     return "Je ne trouves pas l'appareil demandé.";
 }
 
-function clampLevel(value: number): number {
-    return Math.max(0, Math.min(100, Math.round(value)));
+/**
+ * First advertised field that is both numeric and writable: the control a "set
+ * the number" request drives. A slider domain advertises `level`; a climate
+ * device advertises its canonical setpoint (`temperature`) first. `undefined`
+ * when the device exposes no numeric control (a sensor, or a custom device whose
+ * schema is telemetry-only).
+ */
+function primaryControl(
+    capabilities?: DeviceCapabilities
+): StatePropertySchema | undefined {
+    return capabilities?.state?.find(
+        (field) =>
+            field.readonly !== true &&
+            (field.type === 'number' || field.type === 'range')
+    );
 }
 
-/** Devices targeted by a level (brightness/volume) request. */
-async function findLevelTargets(
+/**
+ * Clamp a control value to the range its schema advertises, rounded to its step.
+ * Falls back to the 0..100 level scale when the device advertises no field.
+ */
+function clampToField(value: number, field?: StatePropertySchema): number {
+    const min = field?.min ?? 0;
+    const max = field?.max ?? 100;
+    const clamped = Math.min(max, Math.max(min, value));
+    const step = field?.step;
+    return step ? Math.round(clamped / step) * step : Math.round(clamped);
+}
+
+/** Devices targeted by a numeric-control (brightness/volume/temperature) request. */
+async function findControlTargets(
     req: DeviceRequest,
     defaultType: string
 ): Promise<Device[] | string> {
@@ -301,74 +327,50 @@ async function findByType(req: DeviceRequest): Promise<Device[]> {
     return cs.devices.find(filter).toArray();
 }
 
-async function applyLevel(
+/**
+ * Apply a numeric control to the devices matched by the request.
+ *
+ * The control is DISCOVERED from the device's capabilities — `level` for a
+ * slider domain, the canonical setpoint (`temperature`) for a climate device —
+ * never hardcoded, and the provider maps whichever key it is to a service. The
+ * value is clamped to the advertised range. A device with no advertised numeric
+ * control (a custom device whose schema is telemetry-only) keeps the `level`
+ * convention.
+ */
+async function applyControl(
     req: DeviceRequest,
     defaultType: string,
-    resolveLevel: (current: number | undefined) => number | undefined
+    resolve: (current: number | undefined) => number | undefined
 ): Promise<boolean | string> {
-    const targets = await findLevelTargets(req, defaultType);
+    const targets = await findControlTargets(req, defaultType);
     if (typeof targets === 'string') {
         return targets;
     }
 
     for (const device of targets) {
         if (!device._id) continue;
-        const state = await getDeviceState(device._id);
-        const level = resolveLevel(state?.level);
-        if (level === undefined) return false;
-        const changed = await changeDeviceState(device._id, { level });
-        if (!changed) {
-            return `Impossible de modifier le niveau de ${device.name}.`;
-        }
-    }
-    memory.setActiveDevice(scopeOf(req), targets[0]._id, targets[0].name);
-    return true;
-}
-
-/**
- * Canonical capability property carrying the target temperature — the skin of
- * every climate device (`providers/homeassistant/domains.ts`), so this works
- * for any climate device without per-provider code.
- */
-const TEMPERATURE_KEY = 'temperature';
-
-/**
- * Apply a temperature to the devices matched by the request, clamped to the
- * range the device advertises through its capabilities.
- */
-async function applyTemperature(
-    req: DeviceRequest,
-    resolve: (current: number | undefined) => number | undefined
-): Promise<boolean | string> {
-    const targets = await findLevelTargets(req, DeviceTypes.thermostat);
-    if (typeof targets === 'string') return targets;
-
-    for (const device of targets) {
-        if (!device._id) continue;
 
         const capabilities = await getDeviceCapabilities(device._id);
-        const field = capabilities?.state?.find(
-            (f) => f.key === TEMPERATURE_KEY
-        );
-        if (!field) {
-            return `${device.name} n'a pas de réglage de température.`;
-        }
+        const field = primaryControl(capabilities);
+        const key = field?.key ?? 'level';
 
-        const current = Number(device.state?.properties?.[TEMPERATURE_KEY]);
+        const state = await getDeviceState(device._id);
+        const current =
+            key === 'level' ? state?.level : Number(state?.properties?.[key]);
         const wanted = resolve(
-            Number.isFinite(current) ? current : undefined
+            current != null && Number.isFinite(current) ? current : undefined
         );
         if (wanted === undefined) return false;
 
-        const min = field.min ?? 16;
-        const max = field.max ?? 30;
-        const value = Math.min(max, Math.max(min, wanted));
-
-        const changed = await changeDeviceState(device._id, {
-            properties: { [TEMPERATURE_KEY]: value },
-        });
+        const value = clampToField(wanted, field);
+        const changed = await changeDeviceState(
+            device._id,
+            key === 'level'
+                ? { level: value }
+                : { properties: { [key]: value } }
+        );
         if (!changed) {
-            return `Impossible de régler la température de ${device.name}.`;
+            return `Impossible de modifier ${device.name}.`;
         }
     }
 
@@ -376,7 +378,24 @@ async function applyTemperature(
     return true;
 }
 
-function describeDeviceState(device: Device, state?: DeviceState): string {
+/**
+ * Unit of the number a state answer shows: read from the device's advertised
+ * schema (the `level` field for a slider domain, else the primary control's
+ * unit) instead of being guessed from the device type.
+ */
+async function levelUnit(device: Device): Promise<string | undefined> {
+    if (!device._id) return undefined;
+    const capabilities = await getDeviceCapabilities(device._id);
+    return (
+        capabilities?.state?.find((field) => field.key === 'level')?.unit ??
+        primaryControl(capabilities)?.unit
+    );
+}
+
+async function describeDeviceState(
+    device: Device,
+    state?: DeviceState
+): Promise<string> {
     // A measurement's value IS its state: report the reading with the gateway's
     // own unit instead of speaking about power (a sensor is never "on").
     if (device.type === DeviceTypes.sensor && state?.level != null) {
@@ -394,12 +413,13 @@ function describeDeviceState(device: Device, state?: DeviceState): string {
               : 'éteint';
     let description = `${device.name} est ${power}`;
     if (state.level != null) {
-        // `level` is the device's canonical numeric value: a percentage for most
-        // domains, the ambient temperature for a thermostat (see the provider's
-        // `LEVEL_SOURCES`).
+        // `level` is the device's canonical numeric value (see the provider's
+        // `LEVEL_SOURCES`); its unit comes from the advertised schema, so a
+        // thermostat reports °C and a light a percentage with no per-type code.
+        const unit = await levelUnit(device);
         description +=
-            device.type === DeviceTypes.thermostat
-                ? ` (${state.level} °C)`
+            unit && unit !== '%'
+                ? ` (${state.level} ${unit})`
                 : ` à ${state.level}%`;
     }
     return `${description}.`;
@@ -442,7 +462,7 @@ export const tools: Tools = {
                 const state = device._id
                     ? await getDeviceState(device._id)
                     : undefined;
-                descriptions.push(describeDeviceState(device, state));
+                descriptions.push(await describeDeviceState(device, state));
             }
             return descriptions.join(' ');
         },
@@ -451,54 +471,54 @@ export const tools: Tools = {
         exec: async (req: DeviceRequest) => {
             const value = Number(req.slots?.number);
             if (!req.slots?.number || Number.isNaN(value)) return false;
-            return applyLevel(req, 'light', () => clampLevel(value));
+            return applyControl(req, DeviceTypes.light, () => value);
         },
     },
     brightnessUp: {
-        exec: async (req: DeviceRequest) =>
-            applyLevel(req, 'light', (current) =>
-                clampLevel((current ?? 50) + 10)
-            ),
+        exec: (req: DeviceRequest) =>
+            applyControl(req, DeviceTypes.light, (current) => (current ?? 50) + 10),
     },
     brightnessDown: {
-        exec: async (req: DeviceRequest) =>
-            applyLevel(req, 'light', (current) =>
-                clampLevel((current ?? 50) - 10)
-            ),
+        exec: (req: DeviceRequest) =>
+            applyControl(req, DeviceTypes.light, (current) => (current ?? 50) - 10),
     },
     setVolume: {
         exec: async (req: DeviceRequest) => {
             const value = Number(req.slots?.number);
             if (!req.slots?.number || Number.isNaN(value)) return false;
-            return applyLevel(req, 'tv', () => clampLevel(value));
+            return applyControl(req, DeviceTypes.tv, () => value);
         },
     },
     volumeUp: {
-        exec: async (req: DeviceRequest) =>
-            applyLevel(req, 'tv', (current) =>
-                clampLevel((current ?? 50) + 10)
-            ),
+        exec: (req: DeviceRequest) =>
+            applyControl(req, DeviceTypes.tv, (current) => (current ?? 50) + 10),
     },
     volumeDown: {
-        exec: async (req: DeviceRequest) =>
-            applyLevel(req, 'tv', (current) =>
-                clampLevel((current ?? 50) - 10)
-            ),
+        exec: (req: DeviceRequest) =>
+            applyControl(req, DeviceTypes.tv, (current) => (current ?? 50) - 10),
     },
     setTemperature: {
         exec: async (req: DeviceRequest) => {
             const value = Number(req.slots?.number);
             if (!req.slots?.number || Number.isNaN(value)) return false;
-            return applyTemperature(req, () => value);
+            return applyControl(req, DeviceTypes.thermostat, () => value);
         },
     },
     temperatureUp: {
         exec: (req: DeviceRequest) =>
-            applyTemperature(req, (current) => (current ?? 20) + 1),
+            applyControl(
+                req,
+                DeviceTypes.thermostat,
+                (current) => (current ?? 20) + 1
+            ),
     },
     temperatureDown: {
         exec: (req: DeviceRequest) =>
-            applyTemperature(req, (current) => (current ?? 20) - 1),
+            applyControl(
+                req,
+                DeviceTypes.thermostat,
+                (current) => (current ?? 20) - 1
+            ),
     },
 };
 
