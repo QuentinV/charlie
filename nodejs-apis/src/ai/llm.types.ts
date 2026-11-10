@@ -7,9 +7,25 @@ export interface LlmChatCompletionsTools {
     };
 }
 
+/**
+ * One part of a multimodal message (llama.cpp's OpenAI-compatible API). A
+ * vision message is `[{ type: 'image_url', … }, { type: 'text', … }]`.
+ */
+export interface LlmChatContentPart {
+    type: 'text' | 'image_url';
+    /** Set when `type` is `text`. */
+    text?: string;
+    /**
+     * Set when `type` is `image_url`: an http(s) URL, or a
+     * `data:image/<type>;base64,<payload>` URL (what a camera snapshot gives).
+     */
+    image_url?: { url: string };
+}
+
 export interface LlmChatMessage {
     role: 'system' | 'user' | 'assistant' | 'tool';
-    content: string;
+    /** Plain text, or content parts for a multimodal (vision) message. */
+    content: string | LlmChatContentPart[];
     tool_call_id?: string;
     name?: string;
 }

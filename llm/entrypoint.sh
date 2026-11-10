@@ -4,10 +4,10 @@
 # One container serves *several* models: every model under $MODEL_DIR is exposed
 # by the router, loaded on demand as soon as a request names it (the `model`
 # field of /v1/chat/completions) and kept warm afterwards — a loaded model is
-# only evicted when another one needs the memory (--models-max,
-# --models-memory-margin) or when the optional idle sleep fires. The brain asks
-# for the 4B (conversation) or the 1.7B (background jobs, e.g. the shopping
-# list). See llm/README.md.
+# only evicted when another one needs the memory (--models-max) or when the
+# optional idle sleep fires. The brain asks for the 4B (conversation), the 1.7B
+# (background jobs, e.g. the shopping list) or the Qwen3-VL model (image
+# description). See llm/README.md.
 set -e
 
 MODEL_DIR="${MODEL_DIR:-/app/models}"
@@ -50,7 +50,13 @@ download_model() {
 # MODELS: "<id>=<hf-repo>/<file.gguf>", separated by spaces or commas. Each id
 # gets its own folder: llama-server keys a router-served model (and its preset)
 # on that folder name, so the ids stay stable for LLM_MODEL /
-# LLM_SMALL_TASK_MODEL and for llm/presets/charlie.ini.
+# LLM_SMALL_TASK_MODEL / VISION_MODEL and for llm/presets/charlie.ini.
+#
+# An entry may also name a companion multimodal projector after a "+":
+#   id=<repo>/<model.gguf>+<repo>/<mmproj.gguf>
+# Both files are downloaded into the same $MODEL_DIR/<id>/ folder, which is
+# exactly the layout the router's directory scan expects: it sees the mmproj as a
+# sidecar (never as a model of its own) and spawns the instance with --mmproj.
 FIRST_ID=""
 FIRST_FILE=""
 MODEL_IDS=""
@@ -60,9 +66,18 @@ for entry in $(echo "${MODELS}" | tr ',' ' '); do
     fi
     name="${entry%%=*}"
     rest="${entry#*=}"
+    # Optional "+<repo>/<mmproj.gguf>" sidecar (multimodal models).
+    sidecar=""
+    if [ "${rest#*+}" != "${rest}" ]; then
+        sidecar="${rest#*+}"
+        rest="${rest%%+*}"
+    fi
     repo="${rest%/*}"
     file="${rest##*/}"
     download_model "${name}" "${repo}" "${file}"
+    if [ -n "${sidecar}" ]; then
+        download_model "${name}" "${sidecar%/*}" "${sidecar##*/}"
+    fi
     MODEL_IDS="${MODEL_IDS} ${name}"
     if [ -z "${FIRST_ID}" ]; then
         FIRST_ID="${name}"

@@ -77,17 +77,29 @@ services:
         volumes:
             - ./llm/models:/app/models
         environment:
-            # Router mode: both models are served by one server, loaded on demand
-            # and kept warm. See llm/README.md.
-            - MODELS=${LLM_MODELS:-qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf,qwen3-1.7b=unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf}
+            # Router mode: all models are served by one server, loaded on demand
+            # and kept warm. The vision model (Qwen3-VL + its mmproj, see the "+"
+            # in MODELS) loses its slot as soon as another model needs one, so it
+            # holds RAM only while someone looks at an image. llm/README.md.
+            - MODELS=${LLM_MODELS:-qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf,qwen3-1.7b=unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf,qwen3vl-4b=Qwen/Qwen3-VL-4B-Instruct-GGUF/Qwen3VL-4B-Instruct-Q4_K_M.gguf+Qwen/Qwen3-VL-4B-Instruct-GGUF/mmproj-Qwen3VL-4B-Instruct-F16.gguf}
+            # Models loaded at the same time (LRU eviction above that): 2 keeps
+            # chat + the small model warm and lets vision fall out of memory;
+            # set 3 to keep all of them resident (≈3.5 GB more RAM).
             - MODELS_MAX=${LLM_MODELS_MAX:-2}
-            # Per-model tuning (ctx/batch/threads) lives in presets/charlie.ini,
-            # applied by default; the entrypoint ignores the file if a key or
-            # section does not match. With MODELS_PRESET="" llama.cpp defaults
-            # apply (native context ⇒ much larger KV cache).
+            # Per-model tuning (ctx/batch/threads, vision kept on CPU) lives in
+            # presets/charlie.ini, applied by default; the entrypoint ignores
+            # the file if a key or section does not match. With MODELS_PRESET=""
+            # llama.cpp defaults apply (native context ⇒ much larger KV cache).
             # - MODELS_PRESET=  # empty disables the per-model tuning
             # Uncomment to unload models after 15 min without a request.
             # - LLAMA_SLEEP_IDLE_SECONDS=${LLM_SLEEP_IDLE_SECONDS:-900}
+        # The base image healthchecks port 8080; this server listens on 9308.
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:9308/health']
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 30s
         restart: unless-stopped
     voiceprofiler:
         build: ./voiceprofiler
@@ -114,21 +126,6 @@ services:
             - ./voiceprofiler/models:/app/models
         networks:
             - internal
-    vision:
-        image: ghcr.io/ggml-org/llama.cpp:server
-        container_name: charlie-vision
-        ports:
-            - "9311:8080"
-        volumes:
-            - ./vision/models:/models
-        command: >
-            -m /models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
-            --mmproj /models/mmproj-Qwen3VL-4B-Instruct-F16.gguf
-            --host 0.0.0.0
-            --port 8080
-            --threads 4
-            -c 2048
-        restart: unless-stopped
     db:
         container_name: charlie-db
         image: mongo

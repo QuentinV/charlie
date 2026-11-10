@@ -79,7 +79,13 @@ A Python/FastAPI service responsible for running AI models and acting as an MCP 
 
 ### 🤖 AI Agent
 
-`llm` service will startup `llama.cpp` server after downloading one of the latest `qwen` model compatible with tool calling.
+The `llm` service starts a `llama.cpp` server in **router mode**: it serves
+several `qwen` models from one container, loading each one **on demand** (the
+request names it) and keeping it warm — chat and tools (`Qwen3-4B`), background
+jobs such as the shopping list (`Qwen3-1.7B`) and image description
+(`Qwen3-VL-4B` + its `mmproj`). With `MODELS_MAX=2` the vision model loses its
+slot as soon as another model needs one, so it costs RAM only while somebody
+looks at an image. See [`llm/README.md`](llm/README.md).
 
 The setting `flow.agentic.enabled` needs to be turned on for the flow to be enhanced with agentic fallback in case NLU doesn't get it.
 
@@ -131,7 +137,10 @@ To run it locally, create a `.env` file in the `nodejs-apis` folder:
 TTS_HOST=localhost:9301
 DB_HOST=localhost:27017
 STT_HOST=localhost:9307
-LLM_HOST=localhost:9308
+LLM_HOST=localhost:9308                 # router serving every model
+LLM_MODEL=qwen3-4b                      # optional: chat + tools (router id)
+LLM_SMALL_TASK_MODEL=qwen3-1.7b         # optional: background jobs
+VISION_MODEL=qwen3vl-4b                 # optional: image descriptions
 
 SUBNET_IP=192.168.1                     # optional
 

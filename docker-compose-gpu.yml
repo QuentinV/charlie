@@ -82,12 +82,18 @@ services:
             - ./llm/models:/app/models
         environment:
             # Router mode: one server, several models, loaded on demand and kept
-            # warm. On a GPU with little VRAM, set LLM_MODELS_MAX=1 (the router
-            # then evicts the model that is not in use) and/or
+            # warm. The vision model (Qwen3-VL + its mmproj, see the "+" in
+            # MODELS) stays on the CPU — presets/charlie.ini pins its layers to 0
+            # and disables the projector offload, so its ~3.5 GB never compete
+            # with the chat model for VRAM.
+            # On a GPU with little VRAM, set LLM_MODELS_MAX=1 (the router then
+            # evicts the model that is not in use) and/or
             # LLM_SLEEP_IDLE_SECONDS=900 to unload the idle one.
-            - MODELS=${LLM_MODELS:-qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf,qwen3-1.7b=unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf}
+            - MODELS=${LLM_MODELS:-qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf,qwen3-1.7b=unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf,qwen3vl-4b=Qwen/Qwen3-VL-4B-Instruct-GGUF/Qwen3VL-4B-Instruct-Q4_K_M.gguf+Qwen/Qwen3-VL-4B-Instruct-GGUF/mmproj-Qwen3VL-4B-Instruct-F16.gguf}
+            # Models loaded at the same time (LRU eviction above that).
             - MODELS_MAX=${LLM_MODELS_MAX:-2}
-            # Per-model tuning (ctx/batch/threads) lives in presets/charlie.ini.
+            # Per-model tuning (ctx/batch/threads, vision kept on CPU) lives in
+            # presets/charlie.ini.
             # - MODELS_PRESET=  # empty disables the per-model tuning
             # - LLAMA_SLEEP_IDLE_SECONDS=${LLM_SLEEP_IDLE_SECONDS:-900}
             - LLAMA_ARG_N_GPU_LAYERS=${LLAMA_ARG_N_GPU_LAYERS:-99}
@@ -99,6 +105,13 @@ services:
                         - driver: nvidia
                           count: all
                           capabilities: [gpu]
+        # The base image healthchecks port 8080; this server listens on 9308.
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:9308/health']
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 30s
         restart: unless-stopped
     voiceprofiler:
         build: ./voiceprofiler
@@ -125,21 +138,6 @@ services:
             - ./voiceprofiler/models:/app/models
         networks:
             - internal
-    vision:
-        image: ghcr.io/ggml-org/llama.cpp:server
-        container_name: charlie-vision
-        ports:
-            - "9311:8080"
-        volumes:
-            - ./vision/models:/models
-        command: >
-            -m /models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
-            --mmproj /models/mmproj-Qwen3VL-4B-Instruct-F16.gguf
-            --host 0.0.0.0
-            --port 8080
-            --threads 4
-            -c 2048
-        restart: unless-stopped
     db:
         container_name: charlie-db
         image: mongo

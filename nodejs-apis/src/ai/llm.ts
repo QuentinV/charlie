@@ -23,6 +23,14 @@ const CHAT_MODEL = process.env.LLM_MODEL ?? 'qwen3-4b';
  * restructuring and automation drafting. Same router, loaded on demand.
  */
 const SMALL_TASK_MODEL = process.env.LLM_SMALL_TASK_MODEL ?? 'qwen3-1.7b';
+/**
+ * Vision model id served by the same router (`VISION_MODEL`): the multimodal
+ * Qwen3-VL folder whose `mmproj` the router picks up as a sidecar. Loaded on
+ * demand; the LRU drops it as soon as another model needs the slot
+ * (`MODELS_MAX=2`), so a description does not hold RAM/VRAM indefinitely — it is
+ * deliberately absent from `warmUp()`.
+ */
+const VISION_MODEL = process.env.VISION_MODEL ?? 'qwen3vl-4b';
 const LIMIT_TURN = 10;
 const LLM_LANG_OUTPUT = process.env.LLM_LANGUAGE?.toUpperCase() ?? 'FRENCH';
 
@@ -41,10 +49,22 @@ export function shoppingHost(): string {
     return process.env.LLM_SHOPPING_HOST ?? host;
 }
 
+/** Model id image descriptions use (served by the same router). */
+export function visionModel(): string | undefined {
+    return VISION_MODEL;
+}
+
+/** Host serving the vision model (same router unless overridden). */
+export function visionHost(): string {
+    return process.env.LLM_VISION_HOST ?? host;
+}
+
 /**
  * Ask the router to load the models ahead of the first request: in router mode
  * nothing is loaded at startup, and the load would otherwise delay the first
  * voice command. Best-effort: a single-model server has no `/models` endpoint.
+ * The vision model is left out on purpose — warming it would hold its ~3.5 GB
+ * until something else needs the slot.
  */
 export async function warmUp(): Promise<void> {
     if (!CHAT_MODEL) return;
@@ -259,6 +279,62 @@ export async function req(
     }
 
     return res.json();
+}
+
+// ===== Vision =====
+/** Question asked about an image when the caller does not supply one. */
+const VISION_PROMPT = 'Décris cette image en une ou deux phrases.';
+
+/**
+ * Describe an image with the vision model (Qwen3-VL, served on demand by the
+ * same llama.cpp router). `image` is either an http(s) URL or a
+ * `data:image/<type>;base64,<payload>` URL — what a camera snapshot gives.
+ * Returns the description, or an empty string when the router could not answer
+ * (an unusable image must never break the turn that asked for it).
+ *
+ * The router loads the model on the first call and the LRU drops it as soon as
+ * another model needs the slot (see llm/README.md), so nothing has to be
+ * unloaded here.
+ */
+export async function describeImage(
+    image: string,
+    prompt?: string,
+    hostOverride?: string
+): Promise<string> {
+    try {
+        const res = await req(
+            {
+                messages: [
+                    {
+                        role: 'user',
+                        content: [
+                            { type: 'image_url', image_url: { url: image } },
+                            {
+                                type: 'text',
+                                text: `${prompt ?? VISION_PROMPT} (ALWAYS ANSWER IN ${LLM_LANG_OUTPUT})`,
+                            },
+                        ],
+                    },
+                ],
+                tools: [],
+                // Name the model so the router loads/keeps it warm.
+                model: VISION_MODEL,
+                // Describing is an observation, not a creative task.
+                temperature: 0,
+            },
+            hostOverride ?? visionHost()
+        );
+
+        const answer = res.choices?.[0]?.message?.content;
+        if (!answer) {
+            log('vision: empty answer', { data: { model: VISION_MODEL } });
+            return '';
+        }
+        return answer.trim();
+    } catch (e) {
+        log('vision failed', { data: { error: JSON.stringify(e) } });
+        return '';
+    }
 }
 
 // ===== Orchestration =====
