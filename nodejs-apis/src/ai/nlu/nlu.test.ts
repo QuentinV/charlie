@@ -414,6 +414,51 @@ describe('findIntent', () => {
         });
     });
 
+    test('device move nuance (un peu / beaucoup)', async () => {
+        // "un peu" / "beaucoup" become a `nuance` slot (slightly / strongly) that
+        // the action turns into a signed level change. Like every slot, the
+        // phrase stays in `freeText`; the action strips it for the device search
+        // only (see `stripNuance`).
+        expect(await findIntent('ferme un peu le volet')).toStrictEqual({
+            name: 'closeDevice',
+            freeText: 'un peu le volet',
+            slots: { nuance: 'slightly', deviceType: 'shutter' },
+        });
+        expect(await findIntent('ouvre un peu le volet')).toStrictEqual({
+            name: 'openDevice',
+            freeText: 'un peu le volet',
+            slots: { nuance: 'slightly', deviceType: 'shutter' },
+        });
+        expect(await findIntent('ferme beaucoup le volet')).toStrictEqual({
+            name: 'closeDevice',
+            freeText: 'beaucoup le volet',
+            slots: { nuance: 'strongly', deviceType: 'shutter' },
+        });
+        expect(await findIntent('ferme un petit peu le volet')).toStrictEqual({
+            name: 'closeDevice',
+            freeText: 'un petit peu le volet',
+            slots: { nuance: 'slightly', deviceType: 'shutter' },
+        });
+        // A device with no known type (a gate) is not a deviceType: it lands in
+        // freeText/room, as it does without the nuance.
+        expect(await findIntent('ferme un peu le portail')).toStrictEqual({
+            name: 'closeDevice',
+            freeText: 'un peu le portail',
+            slots: { nuance: 'slightly', room: 'portail' },
+        });
+        // Regression: a bare move is untouched.
+        expect(await findIntent('ferme le volet')).toStrictEqual({
+            name: 'closeDevice',
+            freeText: 'le volet',
+            slots: { deviceType: 'shutter' },
+        });
+        expect(await findIntent('ferme le portail')).toStrictEqual({
+            name: 'closeDevice',
+            freeText: 'le portail',
+            slots: { room: 'portail' },
+        });
+    });
+    
     test('small talk', async () => {
         expect(await findIntent('merci')).toStrictEqual({ name: 'thanks' });
         expect(await findIntent('merci beaucoup')).toStrictEqual({

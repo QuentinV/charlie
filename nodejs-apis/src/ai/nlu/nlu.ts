@@ -389,16 +389,14 @@ export function findIntent(
                     break;
                 }
             }
-        } else {
-            if (remainingWords.length) {
-                const joined = remainingWords.join(' ');
-                const value =
-                    slotConfig.filterFillingsWords === false
-                        ? joined
-                        : normalizeAndSplit(joined, true).join(' ');
-                if (value) {
-                    intent.slots[slotKey] = value;
-                }
+        } else if (remainingWords.length) { 
+            const joined = remainingWords.join(' ');
+            const value =
+                slotConfig.filterFillingsWords === false
+                    ? joined
+                    : normalizeAndSplit(joined, true).join(' ');
+            if (value) {
+                intent.slots[slotKey] = value;
             }
         }
     }

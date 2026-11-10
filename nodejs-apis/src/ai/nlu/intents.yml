@@ -34,6 +34,7 @@ intents:
             - relève
         slots:
             - plurial
+            - nuance
             - deviceType
             - predefinedRoom
             - room
@@ -45,6 +46,7 @@ intents:
             - abaisse
         slots:
             - plurial
+            - nuance
             - deviceType
             - predefinedRoom
             - room
@@ -344,6 +346,13 @@ slots:
         keys:
             - plurial
 
+    nuance:
+        type: 'synonym'
+        filterFillingsWords: false
+        keys:
+            - slightly
+            - strongly
+
     deviceType:
         type: 'synonym'
         keys:
@@ -390,6 +399,14 @@ synonyms:
         - tous
         - les
         - des
+
+    slightly:
+        - un peu
+        - un petit peu
+        - un tout petit peu
+
+    strongly:
+        - beaucoup
 
     house:
         - maison

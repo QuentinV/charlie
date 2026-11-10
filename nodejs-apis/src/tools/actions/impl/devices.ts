@@ -10,6 +10,12 @@ import { cs } from '../../../core/db';
 import Fuse from 'fuse.js';
 import { changeDeviceState, getDeviceCapabilities, getDeviceState } from '../../../devices';
 import { normalizeAndSplit } from './../../../ai/nlu/utils';
+import {
+    applyDelta,
+    isRelativeLevel,
+    nuanceDelta,
+    signedLevel,
+} from './devices.logic';
 import { log } from '../../../manager/services/activities';
 import * as memory from '../../../ai/memory';
 
@@ -22,6 +28,8 @@ interface DeviceRequest {
         plurial?: 'plurial';
         predefinedRoom?: string;
         deviceId?: string;
+        /** Degree of a move: `slightly` ("un peu") / `strongly` ("beaucoup"). */
+        nuance?: string;
     };
     user?: string;
     sessionId?: string;
@@ -60,7 +68,7 @@ async function getRoom(q: string): Promise<Room | undefined> {
     return (fuse.search(q)[0]?.item as Room) ?? null;
 }
 
-async function findDevices(req: DeviceRequest, verbIntent: VerbIntentType): Promise<Device[] | undefined> {
+async function findDevices(req: DeviceRequest, verbIntent: VerbIntentType): Promise<Device[] | undefined | null> {
     if (req.slots?.deviceId) {
         const d = await cs.devices.findOne({ _id: req.slots.deviceId });
         if (d) {
@@ -156,6 +164,64 @@ async function findDevices(req: DeviceRequest, verbIntent: VerbIntentType): Prom
     return res ? [res] : null;
 }
 
+/**
+ * Target level for a partial move: the device's current level shifted by `delta`.
+ * `undefined` when the device cannot take a level (`capabilities.state` has no
+ * `level` field) or when its current level is unknown — the caller then performs
+ * the plain full move.
+ */
+async function partialLevel(
+    deviceId: string,
+    delta: number
+): Promise<number | undefined> {
+    const capabilities = await getDeviceCapabilities(deviceId);
+    const hasLevel = capabilities?.state?.some(
+        (field) => field.key === 'level'
+    );
+    if (!hasLevel) return undefined;
+
+    const current = (await getDeviceState(deviceId))?.level;
+    if (current == null) return undefined;
+
+    return applyDelta(current, delta);
+}
+
+/**
+ * State to send for one device.
+ *
+ * A plain full move (`{ power }`), optionally carrying a remembered absolute
+ * level when powering on with an explicit number ("allume à 50"). A nuance
+ * request ("un peu" / "beaucoup") instead moves by a SIGNED delta applied to the
+ * device's current level, and only for a `shutter` that advertises a writable
+ * level: a device without one (e.g. a toggle-only gate) keeps the plain full
+ * move.
+ */
+async function deviceMoveState(
+    device: Device,
+    power: PowerType,
+    req: DeviceRequest,
+    delta: number | undefined
+): Promise<DeviceState> {
+    if (delta !== undefined && device._id) {
+        const level = await partialLevel(device._id, delta);
+        if (level !== undefined) {
+            log(
+                'devices-actions',
+                `partial move ${signedLevel(delta)} on ${device.name}: level ${level}`
+            );
+            return { power, level };
+        }
+    }
+
+    const state: DeviceState = { power };
+    const rawNumber = req.slots?.number;
+    if (power === 'on' && rawNumber != null && !isRelativeLevel(rawNumber)) {
+        const level = Number(rawNumber);
+        if (!Number.isNaN(level)) state.level = clampLevel(level);
+    }
+    return state;
+}
+
 async function changeDevice(
     req: DeviceRequest,
     power: PowerType,
@@ -163,16 +229,11 @@ async function changeDevice(
 ): Promise<boolean | string> {
     const devices = await findDevices(req, verbIntent);
     if (devices?.length) {
-        // Turning a device on may carry a remembered level (preference).
-        const state: DeviceState = { power };
-        if (power === 'on' && req.slots?.number != null) {
-            const level = Number(req.slots.number);
-            if (!Number.isNaN(level)) state.level = clampLevel(level);
-        }
-
+        const delta = nuanceDelta(power, req.slots?.nuance);
         let ok = true;
         for (const device of devices) {
             if (!device._id) continue;
+            const state = await deviceMoveState(device, power, req, delta);
             ok = ok && !!(await changeDeviceState(device._id, state));
         }
         if (ok) {
