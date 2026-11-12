@@ -8,6 +8,7 @@ import { HttpError } from './errors';
 import swaggerUi from 'swagger-ui-express';
 import { defaultApiPath, getSwaggerDoc } from './swagger';
 import { registerNotificationApi } from './core/notifications';
+import { registerVisionUpload } from './vision/api';
 import { authGate } from './auth/middleware';
 
 export async function setupRestApi() {
@@ -25,6 +26,12 @@ export async function setupRestApi() {
     // `auth.enabled` is off; the public allowlist (login, status, setup, OTA
     // firmware, Swagger) lives in auth/middleware.ts.
     app.use(authGate);
+
+    // Vision uploads carry a photo: raw bytes (or a base64 JSON body) far above
+    // the 100 kB default of `express.json()`, so that route brings its own
+    // parsers and must be mounted before the global one, which would otherwise
+    // reject the request first.
+    registerVisionUpload(app);
 
     app.use(express.json());
 

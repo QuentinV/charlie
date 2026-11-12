@@ -103,3 +103,23 @@ export const apiStrict = async (url, init = undefined) => {
     return data;
 };
 
+/**
+ * Fetch a binary endpoint (a scan image, a recording…) with the same auth
+ * handling as `api()` and return an object URL: an `<img src>` cannot carry the
+ * Authorization header. The caller revokes the URL when it is done with it.
+ */
+export const apiBlob = async (url) => {
+    const hadToken = !!getToken();
+    const res = await fetch(`${HOST}/${url}`, { headers: buildHeaders({}) });
+
+    if (res.status === 401 && hadToken) {
+        clearToken();
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+        }
+    }
+    if (!res.ok) return null;
+
+    return URL.createObjectURL(await res.blob());
+};
+

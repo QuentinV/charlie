@@ -25,6 +25,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import DocumentScannerIcon from '@mui/icons-material/DocumentScanner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUnit } from 'effector-react';
 import { useTranslation } from 'react-i18next';
@@ -116,6 +117,13 @@ export const Menu = () => {
             labelKey: 'nav.shopping',
             route: '/shopping',
             icon: <ShoppingCartIcon fontSize="small" />,
+        });
+
+    useSetting('vision.enabled', true) &&
+        navItems.push({
+            labelKey: 'nav.vision',
+            route: '/vision',
+            icon: <DocumentScannerIcon fontSize="small" />,
         });
 
     echosMenu &&

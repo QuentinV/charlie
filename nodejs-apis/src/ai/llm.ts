@@ -337,6 +337,78 @@ export async function describeImage(
     }
 }
 
+export interface VisionJsonOptions {
+    /** Instruction sent with the image (the module's prompt). */
+    prompt: string;
+    /** JSON schema the answer is constrained to (`response_format`). */
+    schema: unknown;
+    /** Schema name, for the router logs. */
+    schemaName?: string;
+    /** Upper bound on the answer. */
+    maxTokens?: number;
+    /** Model id (defaults to `VISION_MODEL`). */
+    model?: string;
+    /** Host (defaults to `visionHost()`). */
+    host?: string;
+}
+
+/**
+ * Structured answer from the multimodal model: the schema-constrained sibling of
+ * `describeImage`. The vision modules own the prompts and validate the data this
+ * returns (raw content) — here is only the transport, exactly as `req()` is for
+ * the shopping restructurer. Returns null when the router could not answer.
+ *
+ * Measured on the shipped build (Qwen3-VL-4B Q4_K_M, CPU): constrained decoding
+ * works with an image and `--jinja`, and the router's prompt cache reuses the
+ * encoded image between two consecutive calls on the same model, so a
+ * classify-then-extract scan pays the image prefill once (72 new tokens and 5 s
+ * for the second call, against 30-36 s for the first).
+ */
+export async function visionJson(
+    image: string,
+    options: VisionJsonOptions
+): Promise<string | null> {
+    const model = options.model ?? VISION_MODEL;
+    try {
+        const res = await req(
+            {
+                messages: [
+                    {
+                        role: 'user',
+                        content: [
+                            { type: 'image_url', image_url: { url: image } },
+                            { type: 'text', text: options.prompt },
+                        ],
+                    },
+                ],
+                tools: [],
+                model,
+                // Extraction is an observation: greedy decoding.
+                temperature: 0,
+                ...(options.maxTokens ? { max_tokens: options.maxTokens } : {}),
+                response_format: {
+                    type: 'json_schema',
+                    json_schema: {
+                        name: options.schemaName ?? 'vision_answer',
+                        schema: options.schema,
+                    },
+                },
+            },
+            options.host ?? visionHost()
+        );
+
+        const answer = res.choices?.[0]?.message?.content;
+        if (!answer) {
+            log('vision: empty answer', { data: { model } });
+            return null;
+        }
+        return answer;
+    } catch (e) {
+        log('vision failed', { data: { error: JSON.stringify(e) } });
+        return null;
+    }
+}
+
 // ===== Orchestration =====
 export interface ChatOptions {
     /** Name of the speaker recognized through the voice profile, if any. */

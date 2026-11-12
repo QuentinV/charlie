@@ -292,6 +292,31 @@ intents:
             - contenu de la liste de courses
             - dans ma liste de courses
 
+    # --- Scanned documents (the photo comes from the Scan tab; the voice reads
+    # the result — see vision/modules/) ---
+    # "lis le dernier document", "qu'est-ce que j'ai scanné ?"
+    readLastScan:
+        starts:
+            - lis le dernier document
+            - lis le dernier scan
+            - lis moi le dernier document
+            - dernier document scanne
+            - dernier scan
+            - qu est ce que j ai scanne
+            - document que j ai scanne
+            - montre moi le dernier document
+
+    # "ajoute les ingrédients à ma liste de courses"
+    addScanToShopping:
+        starts:
+            - ajoute les ingredients
+            - mets les ingredients
+            - ajoute la recette
+            - mets la recette
+            - ingredients a la liste
+            - ingredients dans la liste
+            - ingredients sur la liste
+
     thanks:
         starts:
             - merci

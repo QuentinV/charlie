@@ -13,6 +13,7 @@
     "settings": "settings",
     "memories": "memories",
     "shoppingLists": "shopping_lists",
+    "visionScans": "vision_scans",
     "haCustomIntegrations": "ha_custom_integrations",
     "automationEffects": "automation_effects"
 }

@@ -142,6 +142,23 @@ const schema: JSONSchema7 = {
                 'How long Charlie waits after the last added item before turning the raw requests into a structured list.',
             tags: ['Shopping'],
         },
+        'vision.enabled': {
+            type: 'boolean',
+            title: 'Enable the vision module (scan a document and have it read)',
+            tags: ['Vision'],
+        },
+        'vision.keepScans': {
+            type: 'number',
+            title: 'Number of scanned documents kept (images on disk)',
+            description:
+                'Older scans and their images are deleted above this count. The extracted data of the recent ones stays readable meanwhile.',
+            tags: ['Vision'],
+        },
+        'vision.maxImageMb': {
+            type: 'number',
+            title: 'Largest accepted scan image (MB)',
+            tags: ['Vision'],
+        },
     },
 };
 

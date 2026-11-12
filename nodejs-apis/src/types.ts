@@ -546,3 +546,53 @@ export interface ShoppingList {
     items: ShoppingItem[];
     processing?: ShoppingProcessing;
 }
+
+// --- Vision (scanned documents)
+
+/** `pending` while the model works, then `done` or `failed` (retryable). */
+export type VisionScanStatus = 'pending' | 'done' | 'failed';
+
+/** Where the image came from: the tab, an API client, a voice flow, a camera. */
+export type VisionScanSource = 'ui' | 'api' | 'voice' | 'camera';
+
+/** `forced` = the caller named the type (no classifier call was needed). */
+export type VisionTypeSource = 'detected' | 'forced';
+
+/** The image of a scan, stored on disk (metadata only here). */
+export interface VisionImageRef {
+    /** File name in the vision images directory. */
+    file: string;
+    mime: string;
+    bytes: number;
+    /** sha256 of the bytes: the same photo sent twice is recognizable. */
+    hash: string;
+}
+
+/**
+ * One scanned document: the image, the type the vision module resolved and the
+ * data extracted with that type's schema. A failed scan keeps its image, so the
+ * user can retry or correct the type without photographing the paper again.
+ */
+export interface VisionScan {
+    _id: string;
+    status: VisionScanStatus;
+    /** Module id once the document type is known (`recipe`, `generic`…). */
+    type?: string;
+    typeSource?: VisionTypeSource;
+    source: VisionScanSource;
+    /** Recognized speaker / account that sent the image, if any. */
+    user?: string;
+    image: VisionImageRef;
+    /** Module payload: module-specific (see `vision/modules/*.ts`). */
+    data?: any;
+    /** Raw model answer, kept for prompt debugging. */
+    raw?: string;
+    model?: string;
+    /** Module summary, for the list rows and the voice. */
+    summary?: string;
+    error?: string;
+    timingMs?: { detect?: number; extract?: number };
+    createdAt: number;
+    updatedAt: number;
+}
+

@@ -9,6 +9,7 @@ import settings from './settings';
 import notifications from './notifications';
 import memory from './memory';
 import shopping from './shopping';
+import vision from '../vision/api';
 import auth from '../auth/api';
 
 export default {
@@ -23,5 +24,6 @@ export default {
     ...settings,
     ...memory,
     ...shopping,
+    ...vision,
     ...notifications,
 };

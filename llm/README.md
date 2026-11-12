@@ -113,7 +113,9 @@ Consequences worth remembering:
 * the brain calls it through `describeImage()` (`nodejs-apis/src/ai/llm.ts`) with
   `model: VISION_MODEL` and a content array
   (`[{ type: 'image_url', … }, { type: 'text', … }]`) — an http(s) URL or a
-  `data:image/…;base64,…` payload both work. Verify the end to end with:
+  `data:image/…;base64,…` payload both work. `visionJson()` is the same call with
+  a JSON-schema-constrained answer, used by the document pipeline
+  (`nodejs-apis/src/vision`, see its README). Verify the end to end with:
 
 ```sh
 # child args must show --mmproj, the preset's --ctx-size/--threads and, on GPU,

@@ -6,6 +6,7 @@ import questions from './impl/questions';
 import profile from './impl/profile';
 import memory from './impl/memory';
 import shopping from './impl/shopping';
+import vision from './impl/vision';
 
 export const getActions = async (): Promise<Tools> => ({
     ...greetings,
@@ -15,4 +16,5 @@ export const getActions = async (): Promise<Tools> => ({
     ...profile,
     ...memory,
     ...shopping,
+    ...vision,
 });

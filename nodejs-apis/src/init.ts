@@ -24,6 +24,14 @@ export async function initAll() {
         console.error('[DB init] shopping_lists index failed:', e?.message ?? e);
     }
 
+    // Vision: the scan history is read newest-first, and filtered by type/status.
+    try {
+        await cs.visionScans.createIndex({ createdAt: -1 });
+        await cs.visionScans.createIndex({ status: 1, createdAt: -1 });
+    } catch (e: any) {
+        console.error('[DB init] vision_scans index failed:', e?.message ?? e);
+    }
+
     // Break-glass: create the account from env when the settings UI is
     // unreachable (see README → Security).
     await bootstrapAccountFromEnv();

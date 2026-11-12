@@ -1,0 +1,45 @@
+{
+  "ingredients": [
+    {
+      "name": "œufs",
+      "quantity": 6,
+      "unit": "piece"
+    },
+    {
+      "name": "sel",
+      "quantity": 1,
+      "unit": "pincee"
+    },
+    {
+      "name": "farine",
+      "quantity": 500,
+      "unit": "g"
+    },
+    {
+      "name": "sucre",
+      "quantity": 200,
+      "unit": "g"
+    },
+    {
+      "name": "lait",
+      "quantity": 1,
+      "unit": "L"
+    },
+    {
+      "name": "beurre",
+      "quantity": 0,
+      "unit": "piece"
+    }
+  ],
+  "title": "La recette de la pâte à crêpes",
+  "estimatedFor": {
+    "persons": 30,
+    "name": "crepes",
+    "quantity": 30
+  },
+  "prep_time_s": 0,
+  "steps": [
+    "Dans un grand saladier, versez la farine, le sel, le sucre, les œufs et le lait. Remuez, remuez, jusqu'à ce que vous obteniez une pâte bien lisse.",
+    "À l'aide d'un escargot, étalez le beurre sur le fond de la poêle. Une fois que la poêle est bien chaude, versez l'équivalent d'une bonne louche de pâte. Étalez la pâte en faisant tourner la poêle. Laissez cuire un peu, puis décollez les bords et faites sauter la crêpe pour la retourner. Poursuivez la cuisson de l'autre côté."
+  ]
+}

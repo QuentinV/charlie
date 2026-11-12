@@ -15,6 +15,7 @@ services:
             - ~/media/musics:/musics
             - ${XDG_RUNTIME_DIR}/pulse/native:/tmp/pulse/native
             - ./nodejs-apis/recordings:/app/recordings
+            - ./nodejs-apis/vision:/app/vision
             - ./echo-devices:/echo-devices
             - ./homeassistant/config:/ha-config
         ports:

@@ -49,6 +49,15 @@
         "response": "Avec plaisir."
     },
     "timer": {},
+    "vision": {
+        "none": "Je n'ai encore rien scanné. Utilise l'onglet Scan pour photographier un document.",
+        "pending": "Je suis en train de lire ce document, redemande-moi dans un instant.",
+        "failed": "Je n'ai pas réussi à lire ce document. Tu peux réessayer depuis l'onglet Scan.",
+        "read": "J'ai lu un %{label}.",
+        "shoppingAdded": "C'est ajouté à la liste de courses.",
+        "nothingToAdd": "Je n'ai pas de recette à ajouter à la liste de courses.",
+        "actionFailed": "Je n'ai pas réussi à ajouter les ingrédients à la liste de courses."
+    },
     "volume": {},
     "weather": {
         "answer": "Il fait actuellement %{temp}°C, avec %{rain} mm de pluie et %{windspeed} km/h de vent."

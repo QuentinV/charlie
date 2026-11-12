@@ -149,6 +149,7 @@ logs.txt
 TODO.md
 demo
 nodejs-apis/recordings
+nodejs-apis/vision/scans
 python-apis/qwen_models
 llm/models
 asr/models

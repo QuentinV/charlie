@@ -28,6 +28,7 @@ import { RoomPage } from './pages/Room';
 import { DevicePage } from './pages/Device';
 import { AiPage } from './pages/AiPage';
 import { ShoppingPage } from './pages/Shopping';
+import { VisionPage } from './pages/Vision';
 import { DashboardPage } from './pages/Dashboard';
 import { useUnit } from 'effector-react';
 import { ActivitiesPage } from './pages/Activities';
@@ -227,6 +228,7 @@ function AppLayout({ showAiAsk }) {
                         />
                         <Route path="/memory" element={<MemoryPage />} />
                         <Route path="/shopping" element={<ShoppingPage />} />
+                        <Route path="/vision" element={<VisionPage />} />
                         <Route path="/echos" element={<EchoPage />} />
                         <Route path="/dashboard" element={<DashboardPage />} />
                         <Route path="/musics" element={<MusicsPage />} />

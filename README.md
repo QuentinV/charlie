@@ -89,6 +89,8 @@ looks at an image. See [`llm/README.md`](llm/README.md).
 
 The setting `flow.agentic.enabled` needs to be turned on for the flow to be enhanced with agentic fallback in case NLU doesn't get it.
 
+The setting `vision.enabled` (on by default) turns on the **Scan** tab and the document pipeline: photograph a document and Charlie identifies its type (a recipe today, a description for anything else) and extracts a structured result — a recipe's ingredients can be pushed to the shopping list with one tap, by voice (*« ajoute les ingrédients à ma liste de courses »*) or by the agent. Adding a document type is one file in `nodejs-apis/src/vision/modules/`. See [`nodejs-apis/src/vision/README.md`](nodejs-apis/src/vision/README.md).
+
 ▶️ Running
 
 ```bash
