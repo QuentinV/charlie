@@ -12,21 +12,21 @@ jest.mock('../index', () => ({
 jest.mock('../keyframes', () => ({ readKeyframe: jest.fn() }));
 jest.mock('../snapshot', () => ({ fetchSnapshot: jest.fn() }));
 jest.mock('../../ai/llm', () => ({ visionJson: jest.fn() }));
-jest.mock('../../shopping/list', () => ({
+jest.mock('../../skills/shopping/list', () => ({
     addRequests: jest.fn(async (texts: string[]) => texts),
 }));
-jest.mock('../../shopping/restructure', () => ({
+jest.mock('../../skills/shopping/restructure', () => ({
     shoppingEnabled: jest.fn(() => true),
     scheduleRestructure: jest.fn(),
 }));
 jest.mock('../../manager/services/activities', () => ({ log: jest.fn() }));
 
 import { visionJson } from '../../ai/llm';
-import { addRequests } from '../../shopping/list';
+import { addRequests } from '../../skills/shopping/list';
 import {
     scheduleRestructure,
     shoppingEnabled,
-} from '../../shopping/restructure';
+} from '../../skills/shopping/restructure';
 import { VisionEvent } from '../../types';
 import { loadCamera } from '../index';
 import { readKeyframe } from '../keyframes';

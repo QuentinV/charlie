@@ -15,7 +15,7 @@
 import { z } from 'zod';
 import { req, shoppingHost, shoppingModel } from '../ai/llm';
 import { log } from '../manager/services/activities';
-import { parseLlmContent } from '../shopping/restructure';
+import { parseLlmContent } from '../skills/shopping/restructure';
 import {
     Automation,
     AutomationEdge,

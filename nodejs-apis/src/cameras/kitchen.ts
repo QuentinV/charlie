@@ -13,8 +13,8 @@
  */
 import { visionJson } from '../ai/llm';
 import { log } from '../manager/services/activities';
-import { addRequests } from '../shopping/list';
-import { scheduleRestructure, shoppingEnabled } from '../shopping/restructure';
+import { addRequests } from '../skills/shopping/list';
+import { scheduleRestructure, shoppingEnabled } from '../skills/shopping/restructure';
 import { Device, Provider, VisionEvent, VisionEventKind } from '../types';
 import { parseJsonAnswer } from '../vision/logic';
 import { loadCamera } from './index';

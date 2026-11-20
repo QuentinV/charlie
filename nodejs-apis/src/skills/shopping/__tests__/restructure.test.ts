@@ -11,7 +11,7 @@ jest.mock('uuid', () => ({
     v7: () => `uuid-${++uuidCounter}`,
 }));
 
-jest.mock('../../core/db', () => {
+jest.mock('../../../core/db', () => {
     const state: { shoppingLists: any[]; activities: any[]; writes: number } = {
         shoppingLists: [],
         activities: [],
@@ -90,7 +90,7 @@ import {
 import { applyFallback, parseLlmContent, restructure, RESTRUCTURE_PROMPT, SHOPPING_ITEMS_SCHEMA } from '../restructure';
 import { UNIT_ENUM } from '../items.logic';
 
-const db = jest.requireMock('../../core/db') as {
+const db = jest.requireMock('../../../core/db') as {
     __state: { shoppingLists: any[]; activities: any[]; writes: number };
 };
 

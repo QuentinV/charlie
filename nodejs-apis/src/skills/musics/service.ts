@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { settings } from '../manager/services/settings';
+import { settings } from '../../manager/services/settings';
 
 function getAuthHeaders() {
     const headers: any = { Aokccept: 'application/json' };

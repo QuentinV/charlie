@@ -574,7 +574,7 @@ export interface ShoppingList {
     _id?: string;
     /**
      * Scope of the list. Always `household`: the whole home shares one list
-     * (see `shopping/list.ts`), individual requests still record their speaker.
+     * (see `skills/shopping/list.ts`), individual requests still record their speaker.
      */
     scopeKey: string;
     status: 'active' | 'archived';

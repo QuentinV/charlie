@@ -16,7 +16,7 @@ jest.mock('uuid', () => ({
 }));
 
 // The shopping list writes to Mongo; the merge itself is tested elsewhere.
-jest.mock('../../shopping/list', () => ({
+jest.mock('../../skills/shopping/list', () => ({
     getActiveList: jest.fn(async () => ({ items: [] })),
     replaceItems: jest.fn(async () => {}),
     newItem: jest.fn((item: any) => ({ ...item, id: 'new', status: 'todo', addedAt: 0 })),
@@ -93,7 +93,7 @@ import os from 'os';
 import path from 'path';
 import * as db from '../../core/db';
 import { settings } from '../../manager/services/settings';
-import { replaceItems } from '../../shopping/list';
+import { replaceItems } from '../../skills/shopping/list';
 import { imagePath } from '../images';
 import {
     maxImageMb,

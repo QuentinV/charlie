@@ -19,8 +19,8 @@ import {
     mergeItems,
     normalizeUnit,
     unitAliases,
-} from '../../shopping/items.logic';
-import { getActiveList, newItem, replaceItems } from '../../shopping/list';
+} from '../../skills/shopping/items.logic';
+import { getActiveList, newItem, replaceItems } from '../../skills/shopping/list';
 import { asString, durationSeconds, positiveNumber } from '../logic';
 import { VisionModule } from './types';
 

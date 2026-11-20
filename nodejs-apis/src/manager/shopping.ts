@@ -20,14 +20,14 @@ import {
     removeItem,
     setItemStatus,
     uncheckAll,
-} from '../shopping/list';
+} from '../skills/shopping/list';
 import {
     applyFallback,
     restructure,
     scheduleRestructure,
     shoppingEnabled,
-} from '../shopping/restructure';
-import { isGroceryCategory, parseQuantity } from '../shopping/items.logic';
+} from '../skills/shopping/restructure';
+import { isGroceryCategory, parseQuantity } from '../skills/shopping/items.logic';
 
 /** Payload sent to the UI: pending requests stay visible while being handled. */
 function publicList(list: ShoppingList) {

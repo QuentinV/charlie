@@ -13,7 +13,7 @@ import {
     getWeather,
     isConfigured,
     toDeviceState,
-} from '../../../weather/service';
+} from '../../../skills/weather/service';
 
 /** Stable id shared by the device and by any echo-screen script. */
 export const WEATHER_EXTERNAL_ID = 'weather.home';

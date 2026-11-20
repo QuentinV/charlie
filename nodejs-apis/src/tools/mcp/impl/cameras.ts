@@ -6,7 +6,7 @@ import { loadCamera } from '../../../cameras/index';
 import { visionModesOf } from '../../../cameras/modes';
 import { cameraSourceView } from '../../../cameras/sources';
 import { fetchSnapshot } from '../../../cameras/snapshot';
-import { shoppingEnabled } from '../../../shopping/restructure';
+import { shoppingEnabled } from '../../../skills/shopping/restructure';
 import { Device, Provider, Tools } from '../../../types';
 
 /** A short line describing a camera for the agent. */

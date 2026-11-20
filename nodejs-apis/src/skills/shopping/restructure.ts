@@ -9,10 +9,10 @@
  * UI can retry (or apply the deterministic fallback parser).
  */
 import { z } from 'zod';
-import { req, shoppingHost, shoppingModel } from '../ai/llm';
-import { log } from '../manager/services/activities';
-import { settings } from '../manager/services/settings';
-import { ShoppingItem } from '../types';
+import { req, shoppingHost, shoppingModel } from '../../ai/llm';
+import { log } from '../../manager/services/activities';
+import { settings } from '../../manager/services/settings';
+import { ShoppingItem } from '../../types';
 import {
     dedupeItems,
     fallbackItems,

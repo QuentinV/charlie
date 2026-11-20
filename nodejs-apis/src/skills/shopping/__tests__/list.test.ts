@@ -10,7 +10,7 @@ jest.mock('uuid', () => ({
     v7: () => `uuid-${++uuidCounter}`,
 }));
 
-jest.mock('../../core/db', () => {
+jest.mock('../../../core/db', () => {
     const state: { shoppingLists: any[]; writes: number } = {
         shoppingLists: [],
         writes: 0,
@@ -99,7 +99,7 @@ import {
     uncheckAll,
 } from '../list';
 
-const db = jest.requireMock('../../core/db') as {
+const db = jest.requireMock('../../../core/db') as {
     __state: { shoppingLists: any[]; writes: number };
 };
 

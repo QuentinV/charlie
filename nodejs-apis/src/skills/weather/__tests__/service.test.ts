@@ -1,4 +1,4 @@
-import { settings } from '../../manager/services/settings';
+import { settings } from '../../../manager/services/settings';
 import {
     WEATHER_CACHE_MS,
     WEATHER_STATE_SCHEMA,

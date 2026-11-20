@@ -24,9 +24,9 @@ import {
     WEATHER_STATE_SCHEMA,
     resetWeatherCache,
     setWeatherFetch,
-} from '../../../weather/service';
+} from '../../../skills/weather/service';
 
-import payload from '../../../weather/__tests__/fixtures/open-meteo-current.json';
+import payload from '../../../skills/weather/__tests__/fixtures/open-meteo-current.json';
 
 /**
  * The weather provider advertises exactly what it can publish: the schema and

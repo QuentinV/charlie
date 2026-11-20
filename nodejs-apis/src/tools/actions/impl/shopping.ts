@@ -1,20 +1,20 @@
 /**
  * Tier-1 shopping actions (no LLM): they only append the raw utterance to the
  * list. The background restructurer turns the raw requests into structured
- * items a few seconds later (see `shopping/restructure.ts`), so a voice command
+ * items a few seconds later (see `skills/shopping/restructure.ts`), so a voice command
  * answers immediately.
  */
 import { Tools } from '../../../types';
 import {
     formatQuantity,
     sanitizeRequestText,
-} from '../../../shopping/items.logic';
-import { addRequests, getActiveList } from '../../../shopping/list';
+} from '../../../skills/shopping/items.logic';
+import { addRequests, getActiveList } from '../../../skills/shopping/list';
 import {
     restructureDelayMs,
     scheduleRestructure,
     shoppingEnabled,
-} from '../../../shopping/restructure';
+} from '../../../skills/shopping/restructure';
 import { t } from '../langs';
 
 interface ShoppingRequest {

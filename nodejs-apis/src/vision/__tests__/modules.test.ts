@@ -11,7 +11,7 @@ jest.mock('uuid', () => ({
 }));
 
 // The shopping list writes to Mongo: the module only has to call it.
-jest.mock('../../shopping/list', () => ({
+jest.mock('../../skills/shopping/list', () => ({
     getActiveList: jest.fn(async () => ({
         items: [
             {
@@ -33,7 +33,7 @@ jest.mock('../../shopping/list', () => ({
     })),
 }));
 
-import { getActiveList, newItem, replaceItems } from '../../shopping/list';
+import { getActiveList, newItem, replaceItems } from '../../skills/shopping/list';
 import {
     VISION_MODULES,
     classifierModules,

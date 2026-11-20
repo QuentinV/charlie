@@ -10,7 +10,7 @@ jest.mock('../../ai/llm', () => ({
 }));
 jest.mock('../../core/db', () => ({ cs: {} }));
 jest.mock('../../manager/services/activities', () => ({ log: jest.fn() }));
-jest.mock('../../shopping/restructure', () => ({
+jest.mock('../../skills/shopping/restructure', () => ({
     parseLlmContent: (content: string) => JSON.parse(content),
 }));
 

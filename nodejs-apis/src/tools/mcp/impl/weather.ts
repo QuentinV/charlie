@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Tools } from '../../../types';
-import { fetchCurrent } from '../../../weather/service';
+import { fetchCurrent } from '../../../skills/weather/service';
 
 const tools: Tools = {
     'fetch-weather': {

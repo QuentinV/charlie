@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { executeCommand, searchLibrary } from '../../../musics/service';
+import { executeCommand, searchLibrary } from '../../../skills/musics/service';
 import { Tools } from '../../../types';
 
 export const tools: Tools = {

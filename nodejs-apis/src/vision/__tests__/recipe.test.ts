@@ -13,7 +13,7 @@ jest.mock('uuid', () => ({
     v7: () => '00000000-0000-7000-8000-000000000000',
 }));
 
-import { UNIT_ENUM } from '../../shopping/items.logic';
+import { UNIT_ENUM } from '../../skills/shopping/items.logic';
 import recipe, {
     RECIPE_SCHEMA,
     RECIPE_UNITS,

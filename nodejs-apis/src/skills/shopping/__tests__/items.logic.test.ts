@@ -23,7 +23,7 @@ import {
     unitContradictsName,
     unitMentionedInTexts,
 } from '../items.logic';
-import { ShoppingItem } from '../../types';
+import { ShoppingItem } from '../../../types';
 
 function item(partial: Partial<ShoppingItem> & { name: string }): ShoppingItem {
     return {

@@ -8,7 +8,7 @@
  * of a free sentence into item chunks, and the fallback parser used when the
  * structuring model is unavailable.
  */
-import { GroceryCategory, ShoppingItem } from '../types';
+import { GroceryCategory, ShoppingItem } from '../../types';
 
 /** Item before it gets an id/status: what a parser (LLM or fallback) returns. */
 export type ParsedItem = Pick<

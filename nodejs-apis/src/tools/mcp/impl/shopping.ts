@@ -9,13 +9,13 @@ import {
     removeItem,
     setItemStatus,
     uncheckAll,
-} from '../../../shopping/list';
+} from '../../../skills/shopping/list';
 import {
     applyFallback,
     restructure,
     scheduleRestructure,
     shoppingEnabled,
-} from '../../../shopping/restructure';
+} from '../../../skills/shopping/restructure';
 
 /** Best match of a spoken item name among the list items. */
 function findItem(list: ShoppingList, name: string): ShoppingItem | undefined {

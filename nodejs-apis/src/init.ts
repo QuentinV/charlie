@@ -6,7 +6,7 @@ import { providersApis } from './devices';
 import { bootstrapAccountFromEnv } from './auth/store';
 import { ensureServiceToken } from './auth/serviceToken';
 import { warmUp } from './ai/llm';
-import { resumePending } from './shopping/restructure';
+import { resumePending } from './skills/shopping/restructure';
 
 export async function initAll() {
     await init();

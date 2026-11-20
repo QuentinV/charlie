@@ -6,14 +6,14 @@
  * is a single move to an archived document.
  */
 import { v4 as uuid } from 'uuid';
-import { cs } from '../core/db';
+import { cs } from '../../core/db';
 import {
     ShoppingItem,
     ShoppingItemStatus,
     ShoppingList,
     ShoppingProcessing,
     ShoppingRawRequest,
-} from '../types';
+} from '../../types';
 
 /** Scope of the list: one household list (see the architecture rules). */
 export const HOUSEHOLD_SCOPE = 'household';

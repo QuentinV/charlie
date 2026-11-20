@@ -1,5 +1,5 @@
-import { settings } from '../manager/services/settings';
-import { DeviceState, StatePropertySchema } from '../types';
+import { settings } from '../../manager/services/settings';
+import { DeviceState, StatePropertySchema } from '../../types';
 
 /**
  * Weather service — the single source of truth for current conditions.

@@ -1,5 +1,5 @@
 import { ToolExecutionContext, Tools } from '../../../types';
-import { getWeather } from '../../../weather/service';
+import { getWeather } from '../../../skills/weather/service';
 import { t } from '../langs';
 
 /**
