@@ -178,6 +178,10 @@ function AppLayout({ showAiAsk }) {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const location = useLocation();
     const isAiRoute = location.pathname === '/ai';
+    const isHomeRoute = location.pathname === '/';
+    const showAi = showAiAsk && !isAiRoute;
+    // The add-room shortcut is a home-page action only.
+    const showAddRoom = isHomeRoute;
 
     return (
         <Box
@@ -239,7 +243,8 @@ function AppLayout({ showAiAsk }) {
                     </LocalizedErrorBoundary>
                 </Box>
             </Box>
-            {showAiAsk && !isAiRoute && (
+            {/* Bottom action row: add room (home only) + AI chat (gated by its setting) */}
+            {(showAddRoom || showAi) && (
                 <Box
                     sx={{
                         flexGrow: 0,
@@ -252,7 +257,7 @@ function AppLayout({ showAiAsk }) {
                     }}
                 >
                     <Box sx={{ width: '100%', maxWidth: 1400, mx: 'auto' }}>
-                        <Footer />
+                        <Footer showAi={showAi} showAddRoom={showAddRoom} />
                     </Box>
                 </Box>
             )}
