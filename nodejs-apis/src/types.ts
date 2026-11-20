@@ -169,6 +169,7 @@ export interface Device {
      *  to pick a renderer (`<type>/<integration>`) and to group devices. */
     integration?: string;
     state?: DeviceState;
+    properties?: Record<string, PropertyValue>;
 }
 
 export enum DeviceTypes {
@@ -180,6 +181,7 @@ export enum DeviceTypes {
     sensor = 'sensor',
     thermostat = 'thermostat',
     button = 'button',
+    camera = 'camera',
     unknown = 'unknown',
 }
 
@@ -202,6 +204,7 @@ export interface Provider {
     host?: string;
     user?: string;
     password?: string;
+    properties?: Record<string, PropertyValue>;
     multidevices?: boolean;
 }
 
@@ -267,13 +270,22 @@ export interface ProviderFunctionDef extends ProviderFunction {
 export interface StatePropertySchema {
     key: string;
     label: string;
-    type: 'boolean' | 'number' | 'range' | 'enum' | 'string';
-    /** Allowed values for `enum` properties. */
-    options?: { value: string; label: string }[];
+    /**
+     * `multienum`: several `options` at once, carried as a CSV string (the flat
+     * `PropertyValue` vocabulary has no arrays) — e.g. a camera's vision modes.
+     */
+    type: 'boolean' | 'number' | 'range' | 'enum' | 'multienum' | 'string';
+    /**
+     * Allowed values for `enum` properties. `description` is an optional one-line
+     * hint for that value (e.g. what a vision mode does), rendered beside it.
+     */
+    options?: { value: string; label: string; description?: string }[];
     min?: number;
     max?: number;
     step?: number;
     unit?: string;
+    /** One line under the control: what the field does. */
+    description?: string;
     /** Telemetry: displayed by the UI, never sent back to the device. */
     readonly?: boolean;
 }
@@ -320,6 +332,17 @@ export interface ProviderApi {
         params: DeviceState
     ) => Promise<DeviceState | boolean>;
     getDeviceState?: (meta: ProviderApiMetaInfo) => Promise<DeviceState>;
+    /**
+     * The device's **durable property bag** (`Device.properties`) — config that
+     * must survive a state write.
+     */
+    getDeviceProperties?: (
+        meta: ProviderApiMetaInfo
+    ) => Promise<Record<string, PropertyValue>>;
+    changeDeviceProperties?: (
+        meta: ProviderApiMetaInfo,
+        patch: Record<string, PropertyValue>
+    ) => Promise<Record<string, PropertyValue>>;
     getCapabilities?: (
         meta: ProviderApiMetaInfo
     ) => Promise<DeviceCapabilities>;
@@ -334,6 +357,7 @@ export interface ProvidersApis {
     api: ProviderApi;
     restApi?: RestApis;
     tools?: Tools;
+    settings?: StatePropertySchema[];
     /** REST base path override (default: lowercased provider-row name).
      *  Lets a provider mount its routes even before a provider row exists /
      *  with a stable path (e.g. Home Assistant → 'ha'). */
@@ -378,6 +402,7 @@ export type AutomationTriggerType =
     | 'CRON' // a `node-cron` expression (see `TimeTrigger`)
     | 'DEVICE_STATE' // a device attribute transitions
     | 'EVENT' // another action completed (chaining)
+    | 'VISION' // a live-camera event (vision-feed)
     | 'MANUAL'; // run from the UI / REST
 
 export type AutomationNodeKind = 'trigger' | 'action' | 'notify' | 'condition';
@@ -401,10 +426,24 @@ export interface DeviceStateTrigger {
     cooldownMs?: number;
 }
 
+/** A live-camera event trigger (`vision-feed` → the automations bus). */
+export interface VisionTrigger {
+    /** Restrict to one camera (device id). */
+    cameraId?: string;
+    /** Require one of these vision modes on the event (empty = any). */
+    modes?: string[];
+    /** Event kind to react to (empty = any). */
+    kind?: VisionEventKind;
+    /** Require one of these classes to be present (empty = any). */
+    classes?: string[];
+}
+
 export interface AutomationTrigger {
     type: AutomationTriggerType;
     cron?: TimeTrigger;
     device?: DeviceStateTrigger;
+    /** For VISION triggers: which live-camera event wakes the branch. */
+    vision?: VisionTrigger;
     /**
      * For EVENT triggers: the completion to listen to. Empty = any action
      * completion. Also accepts `action-completed`, or the precise
@@ -520,7 +559,7 @@ export interface ShoppingRawRequest {
     text: string;
     at: number;
     /** `voice` = echo device or browser voice chat (both go through `ask`). */
-    source: 'voice' | 'ui' | 'api' | 'llm';
+    source: 'voice' | 'ui' | 'api' | 'llm' | 'camera';
     user?: string;
     processed: boolean;
 }
@@ -594,5 +633,45 @@ export interface VisionScan {
     timingMs?: { detect?: number; extract?: number };
     createdAt: number;
     updatedAt: number;
+}
+
+// --- Live cameras (vision-feed)
+
+/**
+ * A camera's live-analysis config is **not** a type of its own: the mode
+ * selection is an ordinary durable device property — `device.properties.visionModes`,
+ * a CSV of ids from `cameras/modes.ts`, where no mode means no analysis — written
+ * by the `camera` provider (`devices/providers/camera`) and read by
+ * `cameras/index.ts`.
+ *
+ * The frame source is **not** here either: a camera provider row is one camera,
+ * so `kind` / `host` / `snapshotUrl` live on the `Provider` (see
+ * `cameras/sources.ts#CameraSource`, a parsed view — never a stored struct).
+ */
+
+/** What a live vision event is. */
+export type VisionEventKind =
+    | 'motion'
+    | 'enter'
+    | 'leave'
+    | 'dwell'
+    | 'appear'
+    | 'disappear'
+    | 'gesture';
+
+/** One semantic observation published by `vision-feed`. */
+export interface VisionEvent {
+    at: number;
+    cameraId: string;
+    /** The selected modes that watch this event's class(es) — event tagging. */
+    modes: string[];
+    kind: VisionEventKind;
+    /** Detected classes (COCO names) on the track(s). */
+    classes: string[];
+    trackId?: number;
+    score?: number;
+    dwellMs?: number;
+    keyframeUrl?: string;
+    vlm?: { tier: 'fast' | 'heavy'; text: string };
 }
 

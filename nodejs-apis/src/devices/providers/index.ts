@@ -5,6 +5,7 @@ import default_custom from './default_custom';
 import shelly from './shelly';
 import custom_gate from './custom_gate';
 import custom_relays from './custom_relays';
+import camera from './camera';
 import homeassistant from './homeassistant';
 import weather from './weather';
 import probe from './probe';
@@ -17,6 +18,7 @@ export default {
     shelly,
     custom_gate,
     custom_relays,
+    camera,
     homeassistant,
     weather,
     probe

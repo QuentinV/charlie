@@ -4,6 +4,7 @@ import { loadSettingsCache } from './manager/services/settings';
 import { toolsSchemas } from './tools/mcp';
 import { providersApis } from './devices';
 import { bootstrapAccountFromEnv } from './auth/store';
+import { ensureServiceToken } from './auth/serviceToken';
 import { warmUp } from './ai/llm';
 import { resumePending } from './shopping/restructure';
 
@@ -37,6 +38,13 @@ export async function initAll() {
     await bootstrapAccountFromEnv();
 
     await loadSettingsCache();
+
+    // Co-located services (vision-feed) read their API token from `.private/`
+    // instead of being handed one by hand. Best effort — never block boot.
+    ensureServiceToken('vision-feed').catch((e) =>
+        console.error('[auth] service token failed:', e?.message ?? e)
+    );
+
     await toolsSchemas();
 
     // Shopping list: structure the requests a restart left pending, and ask the

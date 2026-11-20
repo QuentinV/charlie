@@ -1,0 +1,25 @@
+# Python caches and local virtualenvs
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.venv-train/
+
+# Local secrets
+.env
+
+# The recorded gesture dataset (`recorder.py`) — local, personal, never in an image.
+dataset/
+
+# Keep the exported model in the build context (so the builder stage can reuse
+# it instead of re-exporting), but nothing else under models/ (scratch, big).
+# A **trained** gesture classifier is deliberately not here either: it is a
+# runtime mount (compose mounts ./vision-feed/models), so it survives an image
+# rebuild and is never shipped to anyone.
+models/**
+!models/.gitkeep
+!models/yolo26n.onnx
+!models/yolo26n.names.json
+
+*.pt

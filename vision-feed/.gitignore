@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# The recorded gesture dataset (`recorder.py`): hands in your home, and big. Local only.
+dataset/
+
+# The trainer's venv (`requirements-train.txt`: mediapipe-model-maker needs Python
+# 3.10/3.11 and TensorFlow — it never runs in the feed).
+.venv-train/
+
+# The exported model is never committed (built at image build / mounted in
+# compose). The directory itself IS tracked (via models/.gitkeep) so the
+# Dockerfile can COPY it.
+models/*
+!models/.gitkeep
+
+# The torch checkpoint is a dev/build input only (`export.py` reads it to write
+# the ONNX the runtime loads), so it never ships.
+*.pt
+

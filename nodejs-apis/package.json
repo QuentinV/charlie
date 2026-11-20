@@ -9,7 +9,8 @@
     "dev": "nodemon --watch src --ext ts --exec tsx src/index.ts",
     "generate-webpush-keys": "tsx src/generate-webpush-keys.ts",
     "echo-test": "tsx src/echo/audio_test.ts",
-    "automations": "tsx src/automations/probe.ts"
+    "automations": "tsx src/automations/probe.ts",
+    "webcam": "tsx src/cameras/webcam.ts"
   },
   "repository": {
     "type": "git",

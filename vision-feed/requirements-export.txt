@@ -1,0 +1,4 @@
+# Build/dev only — the tool that PRODUCES the ONNX the runtime loads (export.py).
+# Never installed in the runtime image (see the Dockerfile's `model` builder
+# stage, which is discarded). Also handy on a host that exports once.
+ultralytics>=8.3

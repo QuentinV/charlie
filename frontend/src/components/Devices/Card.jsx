@@ -23,6 +23,7 @@ const TYPE_COLORS = {
     [DeviceType.sensor]: '#FF8F00',
     [DeviceType.thermostat]: '#FF6F00',
     [DeviceType.button]: '#B388FF',
+    [DeviceType.camera]: '#38BDF8',
 };
 
 /**

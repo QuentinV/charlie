@@ -1,0 +1,30 @@
+{
+    "names": [
+        { "name": "Closed_Fist", "source": "model" },
+        { "name": "Open_Palm", "source": "model" },
+        { "name": "Pointing_Up", "source": "model" },
+        { "name": "Thumb_Down", "source": "model" },
+        { "name": "Thumb_Up", "source": "model" },
+        { "name": "Victory", "source": "model" },
+        { "name": "ILoveYou", "source": "model", "enabled": false },
+        { "name": "Stop", "source": "rules" },
+        { "name": "Five", "source": "rules" },
+        { "name": "Four", "source": "rules" },
+        { "name": "Three", "source": "rules" },
+        { "name": "OK", "source": "rules" },
+        { "name": "Pinch", "source": "rules" },
+        { "name": "Point_Left", "source": "rules" },
+        { "name": "Point_Right", "source": "rules" },
+        { "name": "Point_Down", "source": "rules" },
+        { "name": "Thumbs_Sideways", "source": "rules" },
+        { "name": "Rock", "source": "rules" },
+        { "name": "Call_Me", "source": "rules" },
+        { "name": "Swipe_Left", "source": "motion" },
+        { "name": "Swipe_Right", "source": "motion" },
+        { "name": "Swipe_Up", "source": "motion" },
+        { "name": "Swipe_Down", "source": "motion" },
+        { "name": "Wave", "source": "motion" },
+        { "name": "Push", "source": "motion" },
+        { "name": "Pull", "source": "motion" }
+    ]
+}

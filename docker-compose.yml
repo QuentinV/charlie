@@ -16,6 +16,9 @@ services:
             - ${XDG_RUNTIME_DIR}/pulse/native:/tmp/pulse/native
             - ./nodejs-apis/recordings:/app/recordings
             - ./nodejs-apis/vision:/app/vision
+            # Service tokens the brain mints for co-located services (vision-feed
+            # reads this dir); see auth/serviceToken.ts.
+            - ./nodejs-apis/.private:/app/.private
             - ./echo-devices:/echo-devices
             - ./homeassistant/config:/ha-config
         ports:
@@ -82,11 +85,12 @@ services:
             # and kept warm. The vision model (Qwen3-VL + its mmproj, see the "+"
             # in MODELS) loses its slot as soon as another model needs one, so it
             # holds RAM only while someone looks at an image. llm/README.md.
-            - MODELS=${LLM_MODELS:-qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf,qwen3-1.7b=unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf,qwen3vl-4b=Qwen/Qwen3-VL-4B-Instruct-GGUF/Qwen3VL-4B-Instruct-Q4_K_M.gguf+Qwen/Qwen3-VL-4B-Instruct-GGUF/mmproj-Qwen3VL-4B-Instruct-F16.gguf}
-            # Models loaded at the same time (LRU eviction above that): 2 keeps
-            # chat + the small model warm and lets vision fall out of memory;
-            # set 3 to keep all of them resident (≈3.5 GB more RAM).
-            - MODELS_MAX=${LLM_MODELS_MAX:-2}
+            - MODELS=${LLM_MODELS:-qwen3-4b=unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf,qwen3-1.7b=unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf,qwen3vl-4b=Qwen/Qwen3-VL-4B-Instruct-GGUF/Qwen3VL-4B-Instruct-Q4_K_M.gguf+Qwen/Qwen3-VL-4B-Instruct-GGUF/mmproj-Qwen3VL-4B-Instruct-F16.gguf,smolvlm-500m=ggml-org/SmolVLM2-500M-Video-Instruct-GGUF/SmolVLM2-500M-Video-Instruct-Q8_0.gguf+ggml-org/SmolVLM2-500M-Video-Instruct-GGUF/mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf}
+            # Models loaded at the same time (LRU eviction above that): 3 keeps
+            # chat + the small model + the tiny fast-VLM (smolvlm) warm, and lets
+            # the heavy Qwen3-VL fall out of memory — the live pipeline escalates
+            # to the fast one first. Set 2 on a RAM-tight host.
+            - MODELS_MAX=${LLM_MODELS_MAX:-3}
             # Per-model tuning (ctx/batch/threads, vision kept on CPU) lives in
             # presets/charlie.ini, applied by default; the entrypoint ignores
             # the file if a key or section does not match. With MODELS_PRESET=""
@@ -102,6 +106,53 @@ services:
             retries: 3
             start_period: 30s
         restart: unless-stopped
+    vision-feed:
+        build: ./vision-feed
+        container_name: charlie-vision-feed
+        environment:
+            - BRAIN_URL=${BRAIN_URL:-http://api:9300}
+            # The brain mints this service token at boot; vision-feed reads it.
+            - BRAIN_TOKEN_FILE=/app/.private/vision-feed.token
+            # Frames/s the loop samples: the detector runs at its own cadence
+            # (VISION_FEED_DETECT_FPS, 5/s) inside a motion burst.
+            - VISION_FEED_FPS=${VISION_FEED_FPS:-5}
+            - VISION_FEED_THREADS=${VISION_FEED_THREADS:-2}
+            # How long a track survives a missed detection before it has left.
+            # Shared by the tracker and the policy (one knob), so the id is retired
+            # exactly when the `leave` is posted. 1 s was the churn: it equals the
+            # gap between two detections at 5/s, so one blink of the detector
+            # retired the track and the next detection minted a new id.
+            - VISION_MISS_TTL_S=${VISION_MISS_TTL_S:-2}
+            # The detector's cadence in a room the gate calls quiet (`loop.look_fps`):
+            # a watchdog, not a schedule, and never 0. A still person is absorbed into
+            # the gate's background, and gating this on "a track is already alive" left
+            # the camera blind exactly when it mattered — the track expired, the
+            # detector stopped looking altogether, and the person came back as a new id
+            # (the enter/leave churn). At least two looks per miss TTL, so someone
+            # standing still can never age out between two looks.
+            - VISION_QUIET_DETECT_FPS=${VISION_QUIET_DETECT_FPS:-1}
+            # Stream reopen backoff (seconds): doubles from MIN to MAX while the source
+            # refuses to open. A relayed MJPEG stream or a loopback webcam helper is
+            # back in milliseconds — the old ladder ran to 30 s, half a minute blind.
+            - VISION_REOPEN_MIN_S=${VISION_REOPEN_MIN_S:-0.2}
+            - VISION_REOPEN_MAX_S=${VISION_REOPEN_MAX_S:-2}
+        volumes:
+            - ./vision-feed:/app
+            - ./vision-feed/models:/app/models
+            - ./nodejs-apis/.private:/app/.private:ro
+        # Give the feed 1-2 cores of its own so it never competes with. Uncomment and pick cores for the host.
+        cpuset: '2,3'
+        # A local USB camera (webcam source) needs the device passed through:
+        # devices:
+        #     - /dev/video0:/dev/video0
+        ports:
+            - '9311:9311'
+            - '9313:9313'
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        restart: unless-stopped
+        networks:
+            - internal
     voiceprofiler:
         build: ./voiceprofiler
         container_name: charlie-voice-profiler

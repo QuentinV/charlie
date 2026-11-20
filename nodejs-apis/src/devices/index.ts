@@ -4,6 +4,7 @@ import {
     Device,
     DeviceCapabilities,
     DeviceState,
+    PropertyValue,
     Provider,
     ProviderApi,
     ProviderFunctionDef,
@@ -16,6 +17,12 @@ import { log } from '../manager/services/activities';
 import { createPlugin } from './providers/plugin';
 import defaultProviders from './providers';
 import { logDeviceState } from './history';
+import {
+    canonicalizeDeviceProperties,
+    cleanProperties,
+    withDeviceProperties,
+    writeDeviceProperties,
+} from './device-properties';
 import {
     getCachedCapabilities,
     setCachedCapabilities,
@@ -121,12 +128,18 @@ async function call(
     if (!provider) throw new NotFoundError(device.provider);
 
     const pa = await providersApis();
-    const api = pa[provider.codesource].api;
+    const api = pa[provider.codesource]?.api;
+    if (!api) {
+        log('devices', 'error', {
+            context: { deviceId, deviceName: device.name },
+            data: `unknown codesource "${provider.codesource}"`,
+        });
+    }
     try {
-        await api.init?.(provider);
+        await api?.init?.(provider);
 
-        if ((await api.isInitialized?.()) ?? true) {
-            return await fnt({ device, api, provider });
+        if ((await api?.isInitialized?.()) ?? true) {
+            return await fnt({ device, api: api ?? {}, provider });
         }
     } catch (e) {
         log('devices', 'error', {
@@ -148,10 +161,16 @@ export async function getDeviceCapabilities(
     const capabilities = await call(
         deviceId,
         async ({ device, api, provider }) => {
-            if (api.getCapabilities) {
-                return api.getCapabilities({ device, provider });
-            }
-            return undefined;
+            const declared = api.getCapabilities
+                ? await api.getCapabilities({ device, provider })
+                : undefined;
+
+            const state = withDeviceProperties(
+                declared?.state ?? declared?.stateSchema,
+                device.type
+            );
+            if (!declared && !state) return undefined;
+            return { ...(declared ?? {}), state };
         }
     );
 
@@ -218,6 +237,51 @@ export async function getDeviceState(
             return state;
         }
         return device.state;
+    });
+}
+
+/**
+ * The device's **durable properties** (`Device.properties`) — configuration
+ * that must survive a state write, never the telemetry in `state`. A provider
+ * that keeps them elsewhere implements `getDeviceProperties`; every other
+ * device reads the bag it owns.
+ */
+export async function getDeviceProperties(
+    deviceId: string
+): Promise<Record<string, PropertyValue>> {
+    return call(deviceId, async ({ device, api, provider }) => {
+        if (api.getDeviceProperties) {
+            return api.getDeviceProperties({ device, provider });
+        }
+        return { ...(device.properties ?? {}) };
+    });
+}
+
+/**
+ * Write durable device properties and answer the resulting bag.
+ *
+ * The device **type** canonicalizes the patch first (a camera re-serializes
+ * `visionModes` from the mode table, so an unknown id can never be stored),
+ * then the provider stores it — or the generic bag does, with a **dotted**
+ * `$set` per key so a sibling property is never dropped.
+ */
+export async function changeDeviceProperties(
+    deviceId: string,
+    patch?: Record<string, PropertyValue>
+): Promise<Record<string, PropertyValue>> {
+    return call(deviceId, async ({ device, api, provider }) => {
+        const canonical = canonicalizeDeviceProperties(
+            device.type,
+            cleanProperties(patch)
+        );
+        log('devices', 'changeDeviceProperties', {
+            context: { deviceId, deviceName: device.name, patch: canonical },
+        });
+
+        if (api.changeDeviceProperties) {
+            return api.changeDeviceProperties({ device, provider }, canonical);
+        }
+        return writeDeviceProperties(device, canonical);
     });
 }
 

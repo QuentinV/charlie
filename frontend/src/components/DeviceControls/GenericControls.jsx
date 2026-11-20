@@ -1,9 +1,12 @@
 import React from 'react';
 import {
     Box,
+    Checkbox,
     FormControl,
     FormControlLabel,
+    FormHelperText,
     InputLabel,
+    ListItemText,
     MenuItem,
     Select,
     Switch,
@@ -39,6 +42,55 @@ const TextControl = ({ field, value, onChange, disabled = false }) => {
             onBlur={commit}
             onKeyDown={(event) => event.key === 'Enter' && commit()}
         />
+    );
+};
+
+/**
+ * `multienum`: several `options` at once, carried as a CSV string (the flat
+ * property vocabulary has no arrays — a camera's vision modes are one). Each
+ * option's `description` is shown beside it, and the field's own `description`
+ * as helper text: a mode is a preset, so what it does must be readable.
+ */
+const MultiEnumControl = ({ field, value, onChange, disabled = false }) => {
+    const options = field.options ?? [];
+    const selected = String(value ?? '')
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean);
+
+    return (
+        <FormControl key={field.key} fullWidth sx={{ my: 0.5 }}>
+            <InputLabel>{field.label}</InputLabel>
+            <Select
+                multiple
+                value={selected}
+                label={field.label}
+                disabled={disabled}
+                onChange={(event) => onChange(event.target.value.join(','))}
+                renderValue={(ids) =>
+                    ids
+                        .map(
+                            (id) =>
+                                options.find((option) => option.value === id)
+                                    ?.label ?? id
+                        )
+                        .join(', ')
+                }
+            >
+                {options.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                        <Checkbox checked={selected.includes(option.value)} />
+                        <ListItemText
+                            primary={option.label}
+                            secondary={option.description}
+                        />
+                    </MenuItem>
+                ))}
+            </Select>
+            {field.description && (
+                <FormHelperText>{field.description}</FormHelperText>
+            )}
+        </FormControl>
     );
 };
 
@@ -100,7 +152,19 @@ export const SchemaField = ({ field, value, onChange, disabled = false }) => {
                             </MenuItem>
                         ))}
                     </Select>
+                    {field.description && (
+                        <FormHelperText>{field.description}</FormHelperText>
+                    )}
                 </FormControl>
+            );
+        case 'multienum':
+            return (
+                <MultiEnumControl
+                    field={field}
+                    value={value}
+                    onChange={onChange}
+                    disabled={disabled}
+                />
             );
         case 'range':
             return (

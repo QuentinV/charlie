@@ -187,6 +187,12 @@ export async function revokeToken(id: string): Promise<boolean> {
     return (result?.deletedCount ?? 0) > 0;
 }
 
+/** Delete every record with this name (used when re-minting a service token). */
+export async function revokeTokensByName(name: string): Promise<number> {
+    const result = await cs.apiTokens.deleteMany({ name });
+    return result?.deletedCount ?? 0;
+}
+
 export async function revokeOtherSessions(user: string, keepId?: string) {
     const query: any = { user, kind: 'session' };
     if (keepId) query._id = { $ne: keepId };

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<!--
+  The vision-feed debug UI (served by debug.py on 9313).
+
+  One page, no build step: the annotated MJPEG on the left, the numbers that decide
+  whether the cascade is sane on the right. The counters are the test — a person who
+  stands still for a minute must read `enters 1 / leaves 0 / tracks minted 1`, where the
+  live log showed 422 `enter`s for one person.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>vision-feed — live debug</title>
+<style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0; padding: 12px; background: #14161a; color: #dfe3e8;
+        font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    h1 { font-size: 15px; margin: 0 0 10px; font-weight: 600; }
+    h1 span { color: #8b93a1; font-weight: 400; }
+    .layout { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .left { flex: 1 1 620px; min-width: 320px; }
+    .right { flex: 1 1 380px; min-width: 320px; }
+    img.stream { width: 100%; border: 1px solid #2a2f38; border-radius: 6px; background: #000; }
+    .panel {
+        border: 1px solid #2a2f38; border-radius: 6px; padding: 10px; margin-bottom: 10px;
+        background: #191c22;
+    }
+    .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+        color: #8b93a1; margin: 0 0 8px; }
+    .counters { display: flex; flex-wrap: wrap; gap: 8px; }
+    .counter { flex: 1 1 88px; background: #11131a; border: 1px solid #2a2f38;
+        border-radius: 6px; padding: 8px; text-align: center; }
+    .counter b { display: block; font-size: 22px; line-height: 1.1; }
+    .counter small { color: #8b93a1; }
+    .counter.bad b { color: #ff6b6b; }
+    .counter.good b { color: #6bd67a; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { text-align: left; padding: 3px 5px; border-bottom: 1px solid #23272f; }
+    th { color: #8b93a1; font-weight: 500; }
+    .kind { padding: 0 5px; border-radius: 3px; color: #11131a; font-weight: 700; }
+    .kind.enter { background: #6bd67a; }
+    .kind.leave { background: #ff8f6b; }
+    .kind.dwell { background: #6bb8ff; }
+    .kind.gesture { background: #ffd76b; }
+    .scroll { max-height: 260px; overflow: auto; }
+    label { display: block; margin: 6px 0 2px; color: #8b93a1; }
+    input, select {
+        width: 100%; padding: 4px 6px; background: #11131a; color: #dfe3e8;
+        border: 1px solid #2a2f38; border-radius: 4px; font: inherit;
+    }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    .modes label { display: flex; gap: 6px; align-items: center; margin: 2px 0; color: #dfe3e8; }
+    .modes input { width: auto; }
+    button {
+        padding: 6px 12px; border-radius: 4px; border: 1px solid #3a4250; cursor: pointer;
+        background: #2b6cb0; color: #fff; font: inherit; margin-right: 6px;
+    }
+    button.ghost { background: #23272f; }
+    .kv { display: flex; justify-content: space-between; gap: 8px; }
+    .kv span:first-child { color: #8b93a1; }
+    .warn { color: #ffd76b; }
+    .ok { color: #6bd67a; }
+    .err { color: #ff6b6b; }
+    .steps li { margin: 2px 0; }
+</style>
+</head>
+<body>
+<h1>vision-feed — live debug <span id="hdr"></span></h1>
+
+<div class="layout">
+  <div class="left">
+    <img class="stream" src="/stream.mjpg" alt="live annotated stream" />
+    <div class="panel">
+      <h2>Le test (compteurs depuis le dernier « Reset »)</h2>
+      <div class="counters" id="counters"></div>
+      <p id="byclass" class="kv"></p>
+      <p id="verdict" class="warn"></p>
+    </div>
+    <div class="panel">
+      <h2>Ce que la boucle voit, trame par trame</h2>
+      <div class="scroll"><table id="trace"></table></div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="panel">
+      <h2>État</h2>
+      <div id="state"></div>
+    </div>
+    <div class="panel">
+      <h2>Événements reçus (mock brain)</h2>
+      <div class="scroll"><table id="events"></table></div>
+    </div>
+    <div class="panel">
+      <h2>Source, modes, seuils — brouillon (appliqué par un redémarrage du feed)</h2>
+      <label>Type de source</label>
+      <select id="sourceKind"></select>
+      <label>URL / index</label>
+      <input id="sourceUrl" />
+      <label>Modes</label>
+      <div class="modes" id="modes"></div>
+      <div class="row">
+        <div><label>fps boucle</label><input id="k_fps" type="number" step="0.5" /></div>
+        <div><label>fps détection</label><input id="k_detectFps" type="number" step="0.5" /></div>
+        <div><label>conf détection</label><input id="k_detectConf" type="number" step="0.05" /></div>
+      </div>
+      <div class="row">
+        <div><label>dwell (s)</label><input id="k_dwellS" type="number" step="1" /></div>
+        <div><label>TTL miss (s)</label><input id="k_missTtlS" type="number" step="0.5" /></div>
+        <div><label>grâce (s)</label><input id="k_graceS" type="number" step="0.5" /></div>
+      </div>
+      <div class="row">
+        <div><label>looks avant enter</label><input id="k_confirmLooks" type="number" step="1" /></div>
+        <div><label>score geste mini</label><input id="k_gestureMinScore" type="number" step="0.05" /></div>
+      </div>
+      <div class="row">
+        <div><label>vote: fenêtre</label><input id="k_voteWindow" type="number" step="1" /></div>
+        <div><label>vote: voix</label><input id="k_voteNeed" type="number" step="1" /></div>
+      </div>
+      <div class="row">
+        <div><label>règles géométriques (0/1)</label><input id="k_gestureRules" type="number" step="1" /></div>
+        <div><label>mouvement (0/1)</label><input id="k_gestureMotion" type="number" step="1" /></div>
+      </div>
+      <div class="row">
+        <div><label>mvt: fenêtre (s)</label><input id="k_motionWindowS" type="number" step="0.1" /></div>
+        <div><label>mvt: course (largeurs de paume)</label><input id="k_motionTravel" type="number" step="0.1" /></div>
+      </div>
+      <div class="row">
+        <div><label>mvt: échantillons</label><input id="k_motionSamples" type="number" step="1" /></div>
+        <div><label>mvt: amplitude vague</label><input id="k_motionWave" type="number" step="0.1" /></div>
+      </div>
+      <p>
+        <button id="apply">Appliquer (redémarre)</button>
+        <button id="reset" class="ghost">Reset compteurs</button>
+      </p>
+      <p id="dirty"></p>
+    </div>
+    <div class="panel">
+      <h2>Le scénario</h2>
+      <ol class="steps">
+        <li>Reset, puis <b>reste immobile ~40 s</b> dans le cadre.</li>
+        <li>Attendu : <code>enters 1</code>, <code>leaves 0</code>, un <code>dwell</code> à ~15 s — et un seul id <code>person</code> créé (la ligne « ids créés »).</li>
+        <li>Si la personne n'est pas détectée (le cadre gris « ~ » reste, <code>pending</code> ne monte pas) : baisse <b>conf détection</b> à 0.25 et applique.</li>
+        <li>Avec <b>commands</b> coché : tiens un signe ~1 s → un seul <code>gesture</code>.</li>
+        <li>Sors du cadre → <code>leave</code> ~6 s plus tard (la fenêtre de grâce).</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const KNOBS = ['fps', 'detectFps', 'detectConf', 'dwellS', 'missTtlS', 'graceS',
+               'confirmLooks', 'gestureMinScore', 'gestureRules', 'gestureMotion',
+               'motionWindowS', 'motionTravel', 'motionSamples', 'motionWave',
+               'voteWindow', 'voteNeed'];
+const COUNTERS = ['enters', 'leaves', 'dwells', 'tracksMinted', 'gestureFrames',
+                  'longestTrackS', 'frames'];
+const LABELS = {
+    enters: 'enters', leaves: 'leaves', dwells: 'dwells',
+    tracksMinted: 'tracks minted', gestureFrames: 'gesture frames',
+    longestTrackS: 'plus long track (s)', frames: 'frames',
+};
+const CHURN_KEYS = ['enters', 'leaves', 'tracksMinted'];
+
+function fmt(v) { return (v === null || v === undefined) ? '—' : v; }
+
+// What the source still held unread after the loop took its frame. The reader drains
+// its socket on every read, so 0 means "up to date": a climbing number is the loop's
+// tick running slower than the camera — the lag that used to be visible only as a
+// picture arriving seconds late.
+function srcLag(s) {
+    const parts = [];
+    if (s.sourceSkipped) parts.push(`${s.sourceSkipped} img. sautée(s)`);
+    if (s.sourceBacklog) parts.push(`${Math.round(s.sourceBacklog / 1024)} ko non lus`);
+    return parts.join(' · ') || '0 (à jour)';
+}
+
+function renderCounters(c) {
+    const churn = c.enters > 1 || c.leaves > 1;
+    $('counters').innerHTML = COUNTERS.map((key) => {
+        let cls = 'counter';
+        if (churn && CHURN_KEYS.includes(key)) cls = 'counter bad';
+        else if (key === 'dwells' && c.dwells > 0) cls = 'counter good';
+        return `<div class="${cls}"><b>${fmt(c[key])}</b><small>${LABELS[key]}</small></div>`;
+    }).join('');
+    // The watched classes are what the events are about; `tracks minted` counts every
+    // class (the furniture the detector flickers on mints ids too, and emits nothing).
+    const byClass = Object.entries(c.entersByClass || {})
+        .map(([cls, n]) => `${cls} ${n}/${(c.leavesByClass || {})[cls] || 0}`)
+        .join(' · ');
+    const minted = Object.entries(c.mintedByClass || {})
+        .map(([cls, n]) => `${cls} ${n}`)
+        .join(' · ');
+    $('byclass').textContent = (byClass ? `enters/leaves par classe : ${byClass}` : '')
+        + (minted ? `  |  ids créés : ${minted}` : '');
+    $('verdict').textContent = churn
+        ? 'CHURN : plusieurs enter/leave pour la classe surveillée — regarde les boîtes magenta (NEW) et grises (~).'
+        : 'OK : un seul enter pour la visite en cours.';
+    $('verdict').className = churn ? 'err' : 'ok';
+}
+
+// The raw answer, plus what the geometric/motion tiers spelled on the same frame: the
+// two together are what a sign the model does not know looks like when it works.
+function gesteText(g) {
+    const spelled = [...(g.rules || []), ...(g.motion || [])].join(',');
+    return `${g.top || '-'} ${g.score}${spelled ? ` [${spelled}]` : ''}`;
+}
+
+function renderState(cfg, stats) {
+    const h = cfg.health || {};
+    const p = cfg.policy || {};
+    const rows = [
+        ['caméra (mock)', cfg.cameraId],
+        ['source', `${cfg.source.kind} ${cfg.source.url || ''}`],
+        ['modes', (cfg.modes || []).join(' + ') || '(aucun : feed arrêté)'],
+        ['classes', (p.classes || []).join(', ') || '—'],
+        ['dwell/class', JSON.stringify(p.dwellByClass || {})],
+        ['escalade', (p.escalateClasses || []).join(', ') || '—'],
+        ['gestes', (p.gestureModes || []).join(', ') || '—'],
+        ['modèle YOLO', `${h.yoloFound ? 'ok' : 'MANQUANT'} ${h.yoloModel || ''}`],
+        ['modèle geste', `${h.gestureModelFound ? 'ok' : 'MANQUANT'} ${h.gestureModel || ''}`],
+        ['gestes dispo', h.gestures],
+        ['classifieur geste', h.gestureClassifierFound
+            ? (h.gestureClassifierUsed ? `ok ${h.gestureClassifier}`
+                : `ignoré ${h.gestureClassifier}`)
+            : (h.gestureClassifier === '—'
+                ? '— (aucun : catégories d\'origine)'
+                : `MANQUANT ${h.gestureClassifier}`)],
+        ['règles / mouvement', `${h.gestureRules ? 'règles' : '—'} / ${h.gestureMotion ? 'mouvement' : '—'}`],
+        ['fps mesuré', stats ? stats.fps : '—'],
+        ['retard source', stats ? srcLag(stats) : '—'],
+        ['gate', stats ? `${stats.motion ? 'motion' : 'quiet'} ${stats.gateScore}` : '—'],
+        ['det', stats ? (stats.detected ? 'oui' : 'non') : '—'],
+        ['geste (brut)', stats && stats.gesture ? gesteText(stats.gesture) : '—'],
+        ['conf détection', cfg.knobs.detectConf],
+        ['uptime', cfg.uptimeS + ' s'],
+    ];
+    $('state').innerHTML = rows.map(([k, v]) => {
+        const warn = String(v).includes('MANQUANT') ? 'warn' : '';
+        return `<div class="kv"><span>${k}</span><span class="${warn}">${fmt(v)}</span></div>`;
+    }).join('') + (cfg.notes || []).concat(h.gestureNote ? [h.gestureNote] : [])
+        .map((n) => `<div class="warn">${n}</div>`).join('');
+}
+
+function renderTrace(frames) {
+    if (!frames || !frames.length) { $('trace').innerHTML = '<tr><td>—</td></tr>'; return; }
+    const head = '<tr><th>f</th><th>gate</th><th>det</th><th>src</th><th>tracks</th>'
+        + '<th>pending</th><th>geste</th><th>events</th></tr>';
+    const body = frames.map((s) => {
+        const tracks = (s.tracks || []).map((t) => {
+            const mark = (s.born || []).includes(t.id) ? '*' : (t.matched ? '' : '~');
+            return `#${t.id} ${t.cls}${mark}`;
+        }).join(', ') || (s.detected ? 'aucun' : '');
+        const pending = Object.entries(s.pending || {}).map(([id, n]) => `#${id}:${n}`).join(', ');
+        const g = s.gesture ? gesteText(s.gesture) : '';
+        const ev = (s.events || []).map((e) => `${e.kind}#${e.trackId}`).join(', ');
+        // Blank when the loop kept up: only a backlog (or frames it passed over) is news.
+        const src = s.sourceBacklog ? `${Math.round(s.sourceBacklog / 1024)}k`
+            : (s.sourceSkipped ? `${s.sourceSkipped}*` : '');
+        return `<tr><td>${s.frame}</td><td>${s.motion ? 'motion' : 'quiet'}</td>`
+            + `<td>${s.detected ? 'oui' : 'non'}</td><td>${src}</td><td>${tracks}</td>`
+            + `<td>${pending}</td><td>${g}</td><td>${ev}</td></tr>`;
+    }).join('');
+    $('trace').innerHTML = head + body;
+}
+
+function renderEvents(events, counts) {
+    const head = '<tr><th>kind</th><th>classe</th><th>track</th><th>heure</th>'
+        + '<th>score/dwell</th></tr>';
+    const body = (events || []).map((e) => {
+        const t = e.at ? new Date(e.at).toLocaleTimeString() : '';
+        const extra = e.score ? e.score.toFixed(2)
+            : (e.dwellMs ? (e.dwellMs / 1000).toFixed(1) + ' s' : '');
+        const modes = (e.modes || []).join(',');
+        return `<tr><td><span class="kind ${e.kind}">${e.kind}</span></td>`
+            + `<td>${(e.classes || []).join(',')}</td><td>${fmt(e.trackId)}</td>`
+            + `<td>${t}</td><td>${extra} ${modes ? '<small>' + modes + '</small>' : ''}</td></tr>`;
+    }).join('');
+    $('events').innerHTML = head + (body || '<tr><td colspan="5">—</td></tr>');
+    $('hdr').textContent = `| ${counts.total} événement(s) | ${counts.requests} requêtes du feed`;
+}
+
+// The form is the **user's draft**: it is filled once from the running config and then
+// left alone. The poll (700 ms) used to rewrite every checkbox and every input, so a mode
+// could not be checked before the next refresh reverted it, and a number typed into a
+// knob was lost the moment the focus left the field to click "Appliquer" (the
+// `activeElement` guard only protects while the cursor is still *inside* the field).
+// What is actually running is always visible in the "État" panel, so nothing is hidden —
+// and `#dirty` names what is waiting to be applied.
+let formSynced = false;
+let lastCfg = null;
+
+function renderDirty() {
+    if (!lastCfg) return;
+    const changed = formDiffers(lastCfg);
+    $('dirty').textContent = changed.length
+        ? `Non appliqué : ${changed.join(', ')} — « Appliquer » redémarre le feed.`
+        : '';
+    $('dirty').className = changed.length ? 'warn' : '';
+}
+
+// What the form asks for against what the feed is running. A draft that looks applied
+// but is not is the other half of the same confusion.
+function formDiffers(cfg) {
+    const changed = [];
+    if ($('sourceKind').value !== cfg.source.kind) changed.push('type de source');
+    if (($('sourceUrl').value || '') !== (cfg.source.url || '')) changed.push('url');
+    const wanted = [...$('modes').querySelectorAll('input:checked')].map((b) => b.value).sort();
+    if (wanted.join() !== (cfg.modes || []).slice().sort().join()) changed.push('modes');
+    KNOBS.forEach((k) => {
+        const el = $('k_' + k);
+        if (el && String(el.value) !== String(cfg.knobs[k])) changed.push(k);
+    });
+    return changed;
+}
+
+function renderForm(cfg, force = false) {
+    lastCfg = cfg;
+    const sel = $('sourceKind');
+    if (!sel.options.length) {
+        sel.innerHTML = (cfg.sourceKinds || []).map((k) => `<option>${k}</option>`).join('');
+        $('modes').innerHTML = (cfg.modeOptions || []).map((m) =>
+            `<label><input type="checkbox" value="${m.value}"> ${m.value} `
+            + `<small>${m.label}</small></label>`
+        ).join('');
+    }
+    if (!formSynced || force) {
+        formSynced = true;
+        sel.value = cfg.source.kind;
+        $('sourceUrl').value = cfg.source.url || '';
+        [...$('modes').querySelectorAll('input')].forEach((box) => {
+            box.checked = (cfg.modes || []).includes(box.value);
+        });
+        KNOBS.forEach((k) => {
+            const el = $('k_' + k);
+            if (el) el.value = cfg.knobs[k];
+        });
+    }
+    renderDirty();
+}
+
+function formBody() {
+    const knobs = {};
+    KNOBS.forEach((k) => {
+        const el = $('k_' + k);
+        if (el) knobs[k] = el.value;
+    });
+    return {
+        sourceKind: $('sourceKind').value,
+        sourceUrl: $('sourceUrl').value,
+        modes: [...$('modes').querySelectorAll('input:checked')].map((b) => b.value),
+        knobs,
+    };
+}
+
+async function post(path, body) {
+    await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {}),
+    });
+}
+
+// A panel rebuilt on every poll throws away whatever is selected in it (the trace is a
+// table you *read*): draw only when its payload actually changed.
+const rendered = {};
+
+function renderOnce(key, payload, draw) {
+    const signature = JSON.stringify(payload);
+    if (rendered[key] === signature) return;
+    rendered[key] = signature;
+    draw();
+}
+
+async function refresh(forceForm = false) {
+    try {
+        const [stats, events, cfg] = await Promise.all([
+            fetch('/api/stats').then((r) => r.json()),
+            fetch('/api/events').then((r) => r.json()),
+            fetch('/api/config').then((r) => r.json()),
+        ]);
+        renderOnce('counters', stats.counters, () => renderCounters(stats.counters));
+        renderOnce('state', [cfg, stats.latest], () => renderState(cfg, stats.latest));
+        renderOnce('trace', stats.frames, () => renderTrace(stats.frames));
+        renderOnce('events', events, () => renderEvents(events.events, events.counts));
+        renderForm(cfg, forceForm);
+    } catch (e) {
+        $('hdr').textContent = '| UI injoignable : ' + e;
+    }
+}
+
+// The draft is the page's own state, so it is watched here rather than by the poll.
+KNOBS.forEach((k) => {
+    const el = $('k_' + k);
+    if (el) el.oninput = renderDirty;
+});
+$('sourceUrl').oninput = renderDirty;
+$('sourceKind').onchange = renderDirty;
+$('modes').onchange = renderDirty;
+
+$('apply').onclick = async () => {
+    await post('/api/apply', formBody());
+    // What the server accepted is what the form should now show (and `#dirty` clears).
+    await refresh(true);
+};
+$('reset').onclick = async () => {
+    await post('/api/reset');
+    await refresh();
+};
+refresh();
+setInterval(refresh, 700);
+</script>
+</body>
+</html>

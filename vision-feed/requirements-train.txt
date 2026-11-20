@@ -1,0 +1,16 @@
+# vision-feed — the gesture-classifier trainer (`train_gestures.py`). **Never a runtime
+# dependency**: the feed image ships mediapipe + opencv + onnxruntime only.
+#
+# `mediapipe-model-maker` pins `tensorflow<2.16`, which has no wheels for Python 3.12
+# (the feed image and most hosts are 3.12), and it pulls the abandoned
+# `tensorflow-addons`. So the trainer lives in its own venv, on Python 3.10/3.11:
+#
+#     python3.11 -m venv .venv-train
+#     .venv-train/bin/pip install -r requirements-train.txt
+#     .venv-train/bin/python train_gestures.py --dataset dataset --out models
+#
+# What ships is the **bundle** (`--export-bundle` → `models/gesture_recognizer.task`, read
+# as `VISION_GESTURE_MODEL`): the mediapipe the feed ships exposes no model path on
+# `ClassifierOptions`, so the lone `.tflite` cannot be merged in (`pipeline/gesture.py`
+# skips it with a named note and keeps serving the canned categories).
+mediapipe-model-maker==0.2.1.4

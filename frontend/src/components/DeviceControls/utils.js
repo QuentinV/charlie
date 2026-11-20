@@ -22,6 +22,36 @@ export const updateState = async (device, state, onStateChange) => {
 };
 
 /**
+ * Persist a **durable** property change (`Device.properties`) and propagate the
+ * resulting bag back to the caller.
+ *
+ * Durable configuration never goes through `devices/:id/state`: the state bag is
+ * overwritten wholesale by every gateway read-back (HA sync, MQTT…), so anything
+ * kept there is lost at the next event. The device type canonicalizes the patch
+ * server-side (a camera re-serializes its vision modes).
+ *
+ * @param {any} device The device being configured
+ * @param {Record<string, any>} properties The keys to write
+ * @param {(bag: Record<string, any>) => void} [onPropertiesChange]
+ * @returns {Promise<Record<string, any> | undefined>} The resulting bag
+ */
+export const updateProperties = async (
+    device,
+    properties,
+    onPropertiesChange
+) => {
+    const res = await api(`devices/${device?._id}/properties`, {
+        method: 'PUT',
+        body: JSON.stringify({ properties }),
+    });
+    if (res) {
+        onPropertiesChange?.(res?.properties);
+        return res?.properties;
+    }
+    return undefined;
+};
+
+/**
  * Call a device function advertised through `capabilities.functions`
  * (`POST devices/:id/functions/:name`).
  *

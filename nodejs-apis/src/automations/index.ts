@@ -11,7 +11,7 @@
  */
 import cron from 'node-cron';
 import { cs } from '../core/db';
-import { Automation, AutomationNode, AutomationTrigger } from '../types';
+import { Automation, AutomationNode, AutomationTrigger, VisionEvent, VisionTrigger } from '../types';
 import { log } from '../manager/services/activities';
 import {
     AutomationEvent,
@@ -61,6 +61,33 @@ function eventNameMatches(
     );
 }
 
+/**
+ * Does a live-camera event match a VISION trigger? Pure, so it is unit-tested
+ * without the bus: the automation layer then reuses the ordinary cooldown /
+ * running-lock / cascade-depth guards.
+ */
+export function matchesVisionTrigger(
+    trigger: VisionTrigger | undefined,
+    event: VisionEvent
+): boolean {
+    if (!trigger) return false;
+    if (trigger.cameraId && trigger.cameraId !== event.cameraId) return false;
+    if (trigger.modes?.length) {
+        const wanted = trigger.modes.map((mode) => mode.toLowerCase());
+        if (!event.modes.some((mode) => wanted.includes(mode.toLowerCase()))) {
+            return false;
+        }
+    }
+    if (trigger.kind && trigger.kind !== event.kind) return false;
+    if (trigger.classes?.length) {
+        const wanted = trigger.classes.map((c) => c.toLowerCase());
+        if (!event.classes.some((c) => wanted.includes(c.toLowerCase()))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /** Does this trigger node react to the bus event? */
 export function triggerMatches(
     automation: Automation,
@@ -74,6 +101,9 @@ export function triggerMatches(
             event.prev,
             event.next
         );
+    }
+    if (trigger.type === 'VISION' && event.topic === 'vision') {
+        return matchesVisionTrigger(trigger.vision, event.event);
     }
     if (trigger.type === 'EVENT' && event.topic === 'action-completed') {
         // An automation feeding itself without opting in is exactly the loop we

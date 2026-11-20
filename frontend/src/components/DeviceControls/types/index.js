@@ -6,6 +6,7 @@ import { TVDefaultControls } from './tv';
 import { SensorControls } from './sensor';
 import { ThermostatControls } from './thermostat';
 import { ButtonControls } from './button';
+import { CameraControls } from './camera';
 
 /**
  * Registry of default per-device-type control panels, keyed by `DeviceType`.
@@ -22,6 +23,7 @@ export const TYPE_CONTROLS = {
     sensor: SensorControls,
     thermostat: ThermostatControls,
     button: ButtonControls,
+    camera: CameraControls,
 };
 
 export default TYPE_CONTROLS;

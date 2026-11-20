@@ -1,0 +1,24 @@
+# vision-feed — runtime (ONNX Runtime, no torch).
+# The detector model is an exported YOLO26n ONNX (see export.py /
+# requirements-export.txt); the runtime only ever loads it via onnxruntime.
+#
+# Runtime
+numpy>=1.26
+# Headless on purpose: cv2 never needs libGL. The contrib build (not the plain
+# one) is mediapipe's superset, so a single cv2 serves both tiers.
+opencv-contrib-python-headless>=4.9
+onnxruntime>=1.17             # the detector runtime
+# Tracking is `pipeline/track.py` (a dependency-free IoU tracker). `supervision`
+# used to be pinned here for its ByteTrack, but 0.31.7 **removed the trackers**
+# (`sv.ByteTrack` is gone), so the IoU fallback had silently become the only
+# tracker while still dragging in matplotlib/scipy/av/pillow. Do not re-add it.
+
+# Tier 3: hand gestures (loaded per camera, only when a mode asks for them).
+# mediapipe depends on the NON-headless `opencv-contrib-python`, which ships the
+# same `cv2/` directory as ours; the Dockerfile re-installs the headless build
+# over it afterwards (see the Dockerfile), deterministically.
+mediapipe>=1.2,<2
+
+# Dev / test
+pytest>=8.0
+

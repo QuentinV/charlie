@@ -1,8 +1,10 @@
 import { cs } from '../core/db';
 import {
     callDeviceFunction,
+    changeDeviceProperties,
     changeDeviceState,
     getDeviceCapabilities,
+    getDeviceProperties,
     getDeviceState,
     getProviderFunctions,
     toggleDeviceState,
@@ -74,6 +76,25 @@ const routes: RestApis = {
             }),
             description:
                 'Change state of a device (Turn on/off lights, open blinds, play tv..)',
+        },
+    },
+    'devices/:id/properties': {
+        get: {
+            handler: async ({ params }) => ({
+                properties: await getDeviceProperties(params.id),
+            }),
+            description:
+                'Durable properties of a device (`Device.properties`), never its state',
+        },
+        put: {
+            handler: async ({ params, body }) => ({
+                properties: await changeDeviceProperties(
+                    params.id,
+                    body?.properties ?? body ?? {}
+                ),
+            }),
+            description:
+                'Write durable properties of a device (config that survives a state write)',
         },
     },
     'devices/:id/states': {

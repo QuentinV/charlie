@@ -7,5 +7,6 @@ export const DeviceType = {
     sensor: 'sensor',
     thermostat: 'thermostat',
     button: 'button',
+    camera: 'camera',
     unknown: 'unknown',
 };

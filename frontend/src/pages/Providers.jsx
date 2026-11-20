@@ -28,6 +28,7 @@ import {
 } from '@mui/material';
 import { api } from '../api/charlie';
 import { IntegrationManager } from '../components/IntegrationManager';
+import { ProviderSettings } from '../components/ProviderSettings';
 import { useTranslation } from 'react-i18next';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -62,6 +63,7 @@ export const ProvidersPage = () => {
     });
     const [codesources, setCodesources] = useState([]);
     const [haOpen, setHaOpen] = useState(false);
+    const [settingsProvider, setSettingsProvider] = useState(null);
 
     const fetchProviders = async () => {
         try {
@@ -181,7 +183,12 @@ export const ProvidersPage = () => {
 
     const fields = [
         { name: 'name', label: t('common.name'), required: true },
-        { name: 'host', label: t('providers.host'), required: true },
+        {
+            name: 'host',
+            label: t('providers.host'),
+            required: false,
+            helperText: t('providers.hostHint'),
+        },
         {
             name: 'type',
             label: t('common.type'),
@@ -280,6 +287,22 @@ export const ProvidersPage = () => {
                                                     : t('common.no')}
                                             </TableCell>
                                             <TableCell align="right">
+                                                {provider.hasSettings && (
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        title={t(
+                                                            'providers.settings'
+                                                        )}
+                                                        onClick={() =>
+                                                            setSettingsProvider(
+                                                                provider
+                                                            )
+                                                        }
+                                                    >
+                                                        <SettingsIcon />
+                                                    </IconButton>
+                                                )}
                                                 {provider.codesource ===
                                                     'homeassistant' && (
                                                     <IconButton
@@ -424,6 +447,15 @@ export const ProvidersPage = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <ProviderSettings
+                provider={settingsProvider}
+                onClose={() => setSettingsProvider(null)}
+                onSaved={() => {
+                    fetchProviders();
+                    showSnackbar(t('providers.settingsSaved'), 'success');
+                }}
+            />
 
             <Snackbar
                 open={snackbar.open}

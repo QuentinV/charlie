@@ -40,6 +40,32 @@ export function readBearerToken(headers: any): string | null {
     return match ? match[1].trim() : null;
 }
 
+/**
+ * The only routes that also accept `?token=`. A `<img>` (or `<video>`) cannot
+ * send a header, and the live camera view *is* an `<img>` pointing at a stream —
+ * the same convention the browser chat socket uses. The second one is
+ * `vision-feed`'s relay: cv2 opens the URL and cannot send a header either.
+ * Deliberately narrow: a token in a URL ends up in access logs, so nothing else
+ * accepts one.
+ */
+const TOKEN_IN_QUERY_ROUTES: RegExp[] = [
+    /^\/api\/devices\/[^/]+\/stream$/,
+    /^\/api\/vision\/feeds\/[^/]+\/stream$/,
+];
+
+export function acceptsTokenInQuery(method: string, path: string): boolean {
+    if ((method ?? 'GET').toUpperCase() !== 'GET') return false;
+    const p = (path ?? '').replace(/\/+$/, '') || '/';
+    return TOKEN_IN_QUERY_ROUTES.some((route) => route.test(p));
+}
+
+/** `?token=…` (a string, or the first of an array); null when absent. */
+export function readQueryToken(query: any): string | null {
+    const raw = query?.token;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 export async function authenticateToken(
     raw: string
 ): Promise<AuthPrincipal | null> {
@@ -65,7 +91,11 @@ export async function authGate(req: any, res: any, next: any) {
     const path = req.path ?? (req.url ?? '').split('?')[0];
     if (isPublicRoute(req.method, path)) return next();
 
-    const raw = readBearerToken(req.headers);
+    const raw =
+        readBearerToken(req.headers) ??
+        (acceptsTokenInQuery(req.method, path)
+            ? readQueryToken(req.query)
+            : null);
     const principal = await authenticateToken(raw ?? '');
     if (!principal) {
         return res.status(401).json({ message: 'Authentication required' });

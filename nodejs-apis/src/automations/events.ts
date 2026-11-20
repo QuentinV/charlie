@@ -7,7 +7,7 @@
  * `devices/history.ts`). Deliberately a leaf module: nothing it imports may in
  * turn import a publisher, or the graph would never load.
  */
-import type { DeviceState, Automation } from '../types';
+import type { DeviceState, Automation, VisionEvent } from '../types';
 
 /**
  * Where a cascade came from, used to bound cross-automation chains: a run
@@ -38,6 +38,12 @@ export type AutomationEvent =
           nodeId: string;
           text?: string;
           result?: unknown;
+          taint?: RunTaint;
+      }
+    | {
+          topic: 'vision';
+          at: number;
+          event: VisionEvent;
           taint?: RunTaint;
       };
 
@@ -83,6 +89,11 @@ export function emitDeviceStateChange(
         prev,
         next,
     });
+}
+
+/** Publish a live vision event (one per semantic observation). */
+export function emitVisionEvent(event: VisionEvent): void {
+    emitAutomationEvent({ topic: 'vision', at: event.at, event });
 }
 
 /** True when an automation has an EVENT trigger listening to this completion. */

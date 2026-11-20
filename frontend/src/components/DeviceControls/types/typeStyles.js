@@ -28,6 +28,7 @@ export const TYPE_COLORS = {
     sensor: '#FF8F00',
     thermostat: '#FF6F00',
     button: '#B388FF',
+    camera: '#38BDF8',
 };
 
 // Uppercase micro-label used above sections inside the panels

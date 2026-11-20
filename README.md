@@ -2,7 +2,7 @@
 
 A self-hosted, privacy-first home assistant with full offline capability through local NLU, ASR, and TTS models.
 
-More advanced SMART features are available through possibility for MCP with Mistral AI support.
+More advanced SMART features are available through possibility with MCP.
 
 ---
 
@@ -12,6 +12,7 @@ More advanced SMART features are available through possibility for MCP with Mist
 - 🌍 **Multilingual** — NLU is configured for French by default; other languages are supported via a `.yml` config file. ASR (Qwen) also supports multiple languages, configurable in `docker-compose.yml`
 - 🔊 **Voice synthesis** — TTS via Piper (French voices included); alternative voices can be sourced from the piper online voices
 - 📡 **Echo device support** — Any device capable of streaming PCM16 audio over WebSocket is compatible
+- 📷 **Live cameras** — a cheap motion → detector → tracker cascade with rare VLM escalation; cameras are added in the UI (webcam / RTSP / MJPEG / HA) as devices
 
 ---
 
@@ -80,12 +81,11 @@ A Python/FastAPI service responsible for running AI models and acting as an MCP 
 ### 🤖 AI Agent
 
 The `llm` service starts a `llama.cpp` server in **router mode**: it serves
-several `qwen` models from one container, loading each one **on demand** (the
-request names it) and keeping it warm — chat and tools (`Qwen3-4B`), background
-jobs such as the shopping list (`Qwen3-1.7B`) and image description
-(`Qwen3-VL-4B` + its `mmproj`). With `MODELS_MAX=2` the vision model loses its
-slot as soon as another model needs one, so it costs RAM only while somebody
-looks at an image. See [`llm/README.md`](llm/README.md).
+several models from one container, loading each one **on demand** (the request
+names it) and keeping it warm — chat and tools (`Qwen3-4B`), background jobs
+such as the shopping list (`Qwen3-1.7B`), image description (`Qwen3-VL-4B` + its
+`mmproj`) and the fast first-look for live cameras (`SmolVLM2-500M-Video`, small
+enough to stay GPU-offloaded even on an old GPU). See [`llm/README.md`](llm/README.md).
 
 The setting `flow.agentic.enabled` needs to be turned on for the flow to be enhanced with agentic fallback in case NLU doesn't get it.
 
@@ -143,6 +143,7 @@ LLM_HOST=localhost:9308                 # router serving every model
 LLM_MODEL=qwen3-4b                      # optional: chat + tools (router id)
 LLM_SMALL_TASK_MODEL=qwen3-1.7b         # optional: background jobs
 VISION_MODEL=qwen3vl-4b                 # optional: image descriptions
+VISION_FAST_MODEL=smolvlm-500m          # optional: fast camera-event VLM (live vision)
 
 SUBNET_IP=192.168.1                     # optional
 
@@ -195,6 +196,11 @@ How it works:
 - every `/api/*` request requires `Authorization: Bearer chk_…`, except:
   `auth/status`, `auth/login`, `auth/setup`, the Swagger page (`/api-docs`) and
   the echo firmware download.
+- internal services (e.g. `vision-feed`) authenticate with a **service token**
+  the brain mints at boot and writes to `nodejs-apis/.private/vision-feed.token`
+  (mode 0600, gitignored); the service reads that file — no token to create by
+  hand. Only the token's hash is stored, and it appears in Settings → Security as
+  `vision-feed`.
 - the browser chat socket `/ws/chat` authenticates with `?token=chk_…`
   (browsers cannot set headers on a WebSocket).
 - `POST /api/auth/password` changes the password and signs out every other
@@ -231,6 +237,46 @@ docker compose up tts --build
 ```
 
 Available endpoint: `POST http://localhost:9301/tts { "text": "Salut !" }`
+
+## 📷 Live Cameras (vision-feed)
+
+A second, **live** vision path (alongside the document scanner): a cascade that
+watches cameras cheaply and only escalates when something worth paying for
+happens.
+
+```
+frame ─▶ motion gate ─▶ YOLO26n ─▶ IoU tracker ─▶ per-class policy ─▶ VLM (rare)
+```
+
+- **`vision-feed/`** (Python) polls the brain (`GET /api/vision/feeds`) for the
+  cameras that **selected vision modes** and posts the events it detects
+  (`POST /api/vision/events`); it holds no home policy — the brain does.
+- A camera picks its **modes** (Presence, Pet, Entrance, Grocery, Hand gestures)
+  in the device panel — a mode is a preset (classes, dwell, escalation, gestures)
+  and a camera may run several at once. No mode selected = not analysed. The
+  selection resolves to **one per-class policy**, so a camera watching both people
+  and the cat never pays a VLM call for the cat. The selection is a durable device
+  property (`Device.properties.visionModes`, `PUT /api/devices/:id/properties`),
+  never state, and its rows are advertised for **every** camera — an HA one
+  included, whose provider row is shared with all the other HA devices.
+- Cameras are **not tied to Home Assistant**: create a `camera` provider row (one
+  row per camera, in the Providers page) — its `host` is the stream (a URL, or the
+  webcam index) and its settings dialog holds the kind (`webcam`, `rtsp`, `mjpeg`,
+  `ha` — derived for an HA camera — or `echo`) — then add the `camera` device
+  under it. The panel reads the resolved source back
+  (`GET /api/devices/:id/source`) and, when it resolves to nothing, names what is
+  missing (no source type, no stream URL, no entity…) instead of showing dashes.
+- Events fire the ordinary **automations** (a `VISION` trigger, matchable by
+  camera, mode, kind or class); an escalated
+  event stores one keyframe (rotated, no video) and is described by the fast
+  `smolvlm-500m` first, the heavy Qwen3-VL only on a weak answer.
+- The agent can look on demand through the `camera` MCP tools
+  (`describe-camera`, `add-camera-items-to-shopping`).
+- Off by default: select a camera's modes. There is **no global switch** — a
+  camera with no mode selected is simply not analysed, so a house with no
+  configured camera has nothing to stop.
+
+The cascade's numbers, and how to debug a feed: [`vision-feed/README.md`](vision-feed/README.md).
 
 ## 🖥️ Frontend
 

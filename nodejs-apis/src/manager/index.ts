@@ -10,6 +10,7 @@ import notifications from './notifications';
 import memory from './memory';
 import shopping from './shopping';
 import vision from '../vision/api';
+import cameras from '../cameras/api';
 import auth from '../auth/api';
 
 export default {
@@ -25,5 +26,6 @@ export default {
     ...memory,
     ...shopping,
     ...vision,
+    ...cameras,
     ...notifications,
 };

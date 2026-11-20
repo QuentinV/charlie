@@ -10,6 +10,13 @@ One `llama-server` container serves **several models** thanks to llama.cpp's
 | `qwen3-4b` (Qwen3-4B)     | conversation, agentic fallback, memory summary |
 | `qwen3-1.7b` (Qwen3)      | background jobs — the shopping list restructurer |
 | `qwen3vl-4b` (Qwen3-VL-4B)| image description (multimodal, `mmproj`)     |
+| `smolvlm-500m` (SmolVLM2-500M-Video) | fast camera-event description (live vision, GPU-offloaded) |
+
+`smolvlm-500m` is the fast tier of the live camera pipeline (`nodejs-apis/src/cameras`):
+a tiny multimodal model that, unlike the heavy Qwen3-VL, is **GPU-offloaded**
+even on an old GPU (it fits in the VRAM the chat model leaves — see
+`presets/charlie.ini`). The pipeline asks it first and only falls back to
+`qwen3vl-4b` when it has nothing useful to say.
 
 They are declared in `MODELS` (`<id>=<hf-repo>/<file.gguf>`, space/comma
 separated) and downloaded into `$MODEL_DIR/<id>/<file>`. A multimodal model adds

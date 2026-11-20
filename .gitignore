@@ -149,9 +149,13 @@ logs.txt
 TODO.md
 demo
 nodejs-apis/recordings
-nodejs-apis/vision/scans
+nodejs-apis/vision
 python-apis/qwen_models
 llm/models
 asr/models
 .clinerules
 IDEA_NLU.md
+
+# Service tokens the brain mints for co-located services (secrets on disk).
+nodejs-apis/.private
+camera_plan.md

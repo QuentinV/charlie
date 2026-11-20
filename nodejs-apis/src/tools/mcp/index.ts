@@ -11,6 +11,7 @@ import music from './impl/music';
 import memory from './impl/memory';
 import shopping from './impl/shopping';
 import vision from './impl/vision';
+import cameras from './impl/cameras';
 
 let CACHE_SCHEMAS: ToolsSchema | null = null;
 let CACHE_TOOLS_EXEC: ToolsExecutors | null = null;
@@ -48,6 +49,7 @@ export async function toolsSchemas(): Promise<ToolsSchema> {
             ...memory,
             ...shopping,
             ...vision,
+            ...cameras,
             ...(await devices()),
             ...(await getProvidersTools()),
         };

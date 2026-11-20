@@ -9,6 +9,7 @@ import DoorbellIcon from '@mui/icons-material/Doorbell';
 import SmartButtonIcon from '@mui/icons-material/SmartButton';
 import SensorsIcon from '@mui/icons-material/Sensors';
 import BlindsIcon from '@mui/icons-material/Blinds';
+import VideocamIcon from '@mui/icons-material/Videocam';
 
 const iconMap = {
     light: LightbulbIcon,
@@ -20,6 +21,7 @@ const iconMap = {
     button: SmartButtonIcon,
     thermostat: DeviceThermostatIcon,
     doorbell: DoorbellIcon,
+    camera: VideocamIcon,
 };
 
 export const DeviceIcon = ({ type, color }) => {

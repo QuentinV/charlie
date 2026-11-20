@@ -31,6 +31,14 @@ const SMALL_TASK_MODEL = process.env.LLM_SMALL_TASK_MODEL ?? 'qwen3-1.7b';
  * deliberately absent from `warmUp()`.
  */
 const VISION_MODEL = process.env.VISION_MODEL ?? 'qwen3vl-4b';
+/**
+ * Fast "first-look" vision model id (`VISION_FAST_MODEL`): a tiny multimodal
+ * model (SmolVLM2-500M-Video by default) served by the same router and, unlike
+ * the heavy one, GPU-offloaded (see `llm/presets/charlie.ini`). The live camera
+ * pipeline escalates an interesting event to it first and only falls back to
+ * `VISION_MODEL` when it has nothing useful to say.
+ */
+const VISION_FAST_MODEL = process.env.VISION_FAST_MODEL ?? 'smolvlm-500m';
 const LIMIT_TURN = 10;
 const LLM_LANG_OUTPUT = process.env.LLM_LANGUAGE?.toUpperCase() ?? 'FRENCH';
 
@@ -52,6 +60,11 @@ export function shoppingHost(): string {
 /** Model id image descriptions use (served by the same router). */
 export function visionModel(): string | undefined {
     return VISION_MODEL;
+}
+
+/** Fast first-look vision model id (tiny, GPU-offloaded), or undefined. */
+export function fastVisionModel(): string | undefined {
+    return VISION_FAST_MODEL;
 }
 
 /** Host serving the vision model (same router unless overridden). */
@@ -299,8 +312,19 @@ const VISION_PROMPT = 'Décris cette image en une ou deux phrases.';
 export async function describeImage(
     image: string,
     prompt?: string,
-    hostOverride?: string
+    hostOverride?: string,
+    modelOverride?: string,
+    /**
+     * Upper bound on the answer. A description is one or two sentences, and an
+     * unbounded answer is expensive: on CPU the heavy model generates at ~6.5 s
+     * per 48 tokens, so a model that rambles holds the router for minutes (it is
+     * also the shape a runaway repetition takes).
+     */
+    maxTokens = 120
 ): Promise<string> {
+    // A fast (tiny) model may be requested for a first look; the heavy one is
+    // the default (see `fastVisionModel()`).
+    const model = modelOverride ?? VISION_MODEL;
     try {
         const res = await req(
             {
@@ -318,16 +342,17 @@ export async function describeImage(
                 ],
                 tools: [],
                 // Name the model so the router loads/keeps it warm.
-                model: VISION_MODEL,
+                model,
                 // Describing is an observation, not a creative task.
                 temperature: 0,
+                max_tokens: maxTokens,
             },
             hostOverride ?? visionHost()
         );
 
         const answer = res.choices?.[0]?.message?.content;
         if (!answer) {
-            log('vision: empty answer', { data: { model: VISION_MODEL } });
+            log('vision: empty answer', { data: { model } });
             return '';
         }
         return answer.trim();
