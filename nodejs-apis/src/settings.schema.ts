@@ -35,11 +35,6 @@ const schema: JSONSchema7 = {
             title: 'Enable devices provider ip rotation',
             tags: ['Devices', 'restart'],
         },
-        'experimental.devices.add.enabled': {
-            type: 'boolean',
-            title: 'Enable add devices',
-            tags: ['Devices', 'Experimental'],
-        },
         'experimental.devices.discovery.enabled': {
             type: 'boolean',
             title: 'Enable discovery of devices',

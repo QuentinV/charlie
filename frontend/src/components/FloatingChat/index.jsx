@@ -55,7 +55,7 @@ export const FloatingChat = () => {
                             '0 0 0 1px rgba(255,215,0,.08), 0 24px 80px -16px rgba(0,0,0,.8)',
                         overflow: 'hidden',
                         zIndex: 1300,
-                        flexGrow: 1,
+                        flexGrow: { xs: 1, md: 0 },
                     }}
                 >
                     <Box
@@ -227,28 +227,23 @@ export const FloatingChat = () => {
                     </Box>
                 </Paper>
             )}
-            <Box sx={{ flex: 1, display: 'flex', position: 'relative' }}>
-                {!isVisible && (
-                    <IconButton
-                        aria-label={t('chat.open')}
-                        onClick={() => setIsVisible(true)}
-                        sx={{
-                            position: 'absolute',
-                            bottom: 8,
-                            right: 0,
-                            bgcolor: 'primary.main',
-                            color: '#111',
-                            boxShadow:
-                                '0 0 0 1px rgba(255,215,0,.3), 0 4px 20px -4px rgba(255,215,0,.5)',
-                            '&:hover': {
-                                bgcolor: 'secondary.main',
-                            },
-                        }}
-                    >
-                        <SmartToyIcon />
-                    </IconButton>
-                )}
-            </Box>
+            {!isVisible && (
+                <IconButton
+                    aria-label={t('chat.open')}
+                    onClick={() => setIsVisible(true)}
+                    sx={{
+                        bgcolor: 'primary.main',
+                        color: '#111',
+                        boxShadow:
+                            '0 0 0 1px rgba(255,215,0,.3), 0 4px 20px -4px rgba(255,215,0,.5)',
+                        '&:hover': {
+                            bgcolor: 'secondary.main',
+                        },
+                    }}
+                >
+                    <SmartToyIcon />
+                </IconButton>
+            )}
         </>
     );
 };

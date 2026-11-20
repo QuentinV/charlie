@@ -8,13 +8,14 @@ import {
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import SettingsIcon from '@mui/icons-material/Settings';
-import AddIcon from '@mui/icons-material/Add';
-import ExploreIcon from '@mui/icons-material/Explore';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import AppsIcon from '@mui/icons-material/Apps';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import DocumentScannerIcon from '@mui/icons-material/DocumentScanner';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useUnit } from 'effector-react';
 import { useTranslation } from 'react-i18next';
-import { $addActions } from '../../state/addActions';
+import { useSetting } from '../../state/settingsHooks';
 
 const CORE_ITEMS = [
     { labelKey: 'nav.home', icon: <HomeIcon />, route: '/' },
@@ -22,14 +23,20 @@ const CORE_ITEMS = [
 ];
 
 const TAIL_ITEMS = [
-    { labelKey: 'nav.settings', icon: <SettingsIcon />, route: '/settings' },
+    {
+        labelKey: 'nav.automations',
+        icon: <AccountTreeIcon />,
+        route: '/automations',
+    },
 ];
 
 export const BottomNav = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    const addActions = useUnit($addActions);
+    const musicsEnabled = useSetting('musics.show');
+    const shoppingEnabled = useSetting('shopping.enabled', true);
+    const visionEnabled = useSetting('vision.enabled', true);
     const [fabOpen, setFabOpen] = React.useState(false);
 
     /**
@@ -39,15 +46,30 @@ export const BottomNav = () => {
         location.pathname === route ||
         (route !== '/' && location.pathname.startsWith(route));
 
-    const fallbackActions = [
-        {
-            icon: <ExploreIcon />,
-            name: t('nav.discover'),
-            click: () => navigate('/discovery'),
-        },
-    ];
-
-    const menuActions = addActions.length > 0 ? addActions : fallbackActions;
+    // Skills shortcuts — gated by the same feature flags as their menu entries.
+    const skills = React.useMemo(() => {
+        /** @type {Array<{labelKey: string; route: string; icon: React.ReactNode}>} */
+        const items = [];
+        if (musicsEnabled)
+            items.push({
+                labelKey: 'nav.musics',
+                route: '/musics',
+                icon: <MusicNoteIcon />,
+            });
+        if (shoppingEnabled)
+            items.push({
+                labelKey: 'nav.shopping',
+                route: '/shopping',
+                icon: <ShoppingCartIcon />,
+            });
+        if (visionEnabled)
+            items.push({
+                labelKey: 'nav.vision',
+                route: '/vision',
+                icon: <DocumentScannerIcon />,
+            });
+        return items;
+    }, [musicsEnabled, shoppingEnabled, visionEnabled]);
 
     return (
         <Paper
@@ -92,53 +114,68 @@ export const BottomNav = () => {
                     />
                 ))}
 
-                {/* Central FAB — opens quick-add menu */}
-                <Box
-                    sx={{
-                        flex: 1,
-                        minWidth: 0,
-                        position: 'relative',
-                    }}
-                >
-                    <SpeedDial
-                        ariaLabel={t('nav.quickAdd')}
-                        open={fabOpen}
-                        onOpen={() => setFabOpen(true)}
-                        onClose={() => setFabOpen(false)}
-                        icon={<AddIcon />}
-                        direction="up"
+                {/* Central FAB — skills shortcuts (music, shopping, scan) */}
+                {skills.length > 0 && (
+                    <Box
                         sx={{
-                            position: 'absolute',
-                            bottom: 4,
-                            left: '50%',
-                            right: 'auto',
-                            transform: 'translateX(-50%)',
-                            '& .MuiSpeedDial-fab': {
-                                bgcolor: 'primary.main',
-                                color: '#111',
-                                width: 56,
-                                height: 56,
-                                boxShadow:
-                                    '0 0 0 1px rgba(255,215,0,.25), 0 4px 20px -4px rgba(255,215,0,.5), 0 12px 48px -12px rgba(255,215,0,.4)',
-                                '&:hover': {
-                                    bgcolor: 'secondary.main',
-                                },
-                            },
+                            flex: 1,
+                            minWidth: 0,
+                            position: 'relative',
                         }}
                     >
-                        {menuActions.map((action) => (
-                            <SpeedDialAction
-                                key={action.name}
-                                icon={action.icon}
-                                tooltipTitle={action.name}
-                                onClick={() => {
-                                    setFabOpen(false);
-                                    action.click?.();
-                                }}
-                            />
-                        ))}
-                    </SpeedDial>
-                </Box>
+                        <SpeedDial
+                            ariaLabel={t('nav.skills')}
+                            open={fabOpen}
+                            onOpen={() => setFabOpen(true)}
+                            onClose={() => setFabOpen(false)}
+                            icon={<AppsIcon />}
+                            direction="up"
+                            sx={{
+                                position: 'absolute',
+                                bottom: 4,
+                                left: '50%',
+                                right: 'auto',
+                                transform: 'translateX(-50%)',
+                                '& .MuiSpeedDial-fab': {
+                                    bgcolor: 'primary.main',
+                                    color: '#111',
+                                    width: 56,
+                                    height: 56,
+                                    boxShadow:
+                                        '0 0 0 1px rgba(255,215,0,.25), 0 4px 20px -4px rgba(255,215,0,.5), 0 12px 48px -12px rgba(255,215,0,.4)',
+                                    '&:hover': {
+                                        bgcolor: 'secondary.main',
+                                    },
+                                },
+                                // Skill actions share the gold surface, so their
+                                // icons are black like the main FAB's.
+                                '& .MuiSpeedDialAction-fab': {
+                                    bgcolor: 'primary.main',
+                                    color: '#111',
+                                    '&:hover': {
+                                        bgcolor: 'secondary.main',
+                                    },
+                                },
+                            }}
+                        >
+                            {skills.map((skill) => (
+                                <SpeedDialAction
+                                    key={skill.route}
+                                    icon={skill.icon}
+                                    slotProps={{
+                                        tooltip: {
+                                            title: t(skill.labelKey),
+                                        },
+                                    }}
+                                    onClick={() => {
+                                        setFabOpen(false);
+                                        navigate(skill.route);
+                                    }}
+                                />
+                            ))}
+                        </SpeedDial>
+                    </Box>
+                )}
 
                 {TAIL_ITEMS.map((item) => (
                     <BottomNavigationAction

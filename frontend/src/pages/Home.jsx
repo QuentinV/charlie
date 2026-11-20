@@ -1,24 +1,14 @@
 import React from 'react';
-import { SpeedDialAdd } from '../components/SpeedDialAdd';
-import DevicesIcon from '@mui/icons-material/Devices';
-import RoomPreferencesIcon from '@mui/icons-material/RoomPreferences';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { RoomsList } from '../components/Rooms';
 import { FavoritesSection } from '../components/Favorites';
 import { api } from '../api/charlie';
-import { useSetting } from '../state/settingsHooks';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
-import { setAddActions } from '../state/addActions';
 import { $favoriteDeviceIds, toggleFavorite } from '../state/favorites';
 import { useUnit } from 'effector-react';
 
 export const HomePage = () => {
-    const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const navigate = useNavigate();
-    const enableAddDevice = useSetting('experimental.devices.add.enabled');
     const favoriteDeviceIds = useUnit($favoriteDeviceIds);
     const [allDevices, setAllDevices] = React.useState(
         /** @type {any[]} */ ([])
@@ -36,44 +26,6 @@ export const HomePage = () => {
         })();
     }, []);
 
-    /** @type {Array<{icon: React.ReactNode; name: string; click: () => void}>} */
-    const actions = React.useMemo(() => {
-        /** @type {Array<{icon: React.ReactNode; name: string; click: () => void}>} */
-        const a = [];
-        if (enableAddDevice)
-            a.push({
-                icon: <DevicesIcon />,
-                name: t('home.devices'),
-                click: () => navigate('/discovery'),
-            });
-
-        a.push({
-            icon: <RoomPreferencesIcon />,
-            name: t('home.rooms'),
-            click: async () => {
-                const { uuid } = await api('rooms', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name: t('rooms.untitled'),
-                    }),
-                });
-                navigate(`/room/${uuid}`);
-            },
-        });
-
-        return a;
-    }, [navigate, enableAddDevice, t]);
-
-    // Register shared quick-add actions for the mobile bottom FAB
-    React.useEffect(() => {
-        setAddActions(actions);
-        return () => {
-            setAddActions(
-                /** @type {Array<{icon: React.ReactNode; name: string; click: () => void}>} */ ([])
-            );
-        };
-    }, [actions]);
-
     /**
      * @param {any} device
      */
@@ -89,8 +41,6 @@ export const HomePage = () => {
                 gap: isMobile ? 1.25 : 2,
             }}
         >
-            {!isMobile && <SpeedDialAdd actions={actions} />}
-
             <FavoritesSection
                 devices={allDevices}
                 favoriteDeviceIds={favoriteDeviceIds}

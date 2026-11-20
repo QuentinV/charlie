@@ -58,7 +58,7 @@
     "nav.signOut": "Se déconnecter",
     "nav.signOutUser": "Se déconnecter ({{user}})",
     "nav.menuAria": "Menu",
-    "nav.quickAdd": "Ajout rapide",
+    "nav.skills": "Compétences",
     "nav.shopping": "Courses",
     "nav.vision": "Scan",
     "nav.homeAssistant": "Assistant domotique",
@@ -256,6 +256,7 @@
     "rooms.house": "Maison",
     "rooms.editRoom": "Modifier la pièce",
     "rooms.name": "Nom de la pièce",
+    "rooms.add": "Ajouter une pièce",
     "rooms.deleteConfirm": "Supprimer la pièce « {{name}} » ?",
     "rooms.devicesCount_one": "{{count}} appareil",
     "rooms.devicesCount_other": "{{count}} appareils",
@@ -331,8 +332,6 @@
     "nfc.completed": "Requête terminée",
     "nfc.failed": "Échec de la requête : {{message}}",
     "nfc.scanFailed": "Échec de la lecture NFC : {{message}}",
-
-    "common.quickActions": "Actions rapides",
 
     "echo.flashHint": "Pour flasher votre appareil Echo, rendez-vous sur :",
     "echo.webflasher": "Webflasher Charlie Echo",
@@ -526,7 +525,6 @@
     "settings.echos.listen.title": "Activer le serveur d'écoute des appareils Echo",
     "settings.mqtt.enabled.title": "Activer le serveur mqtt",
     "settings.devices.providers.rotateIp.enabled.title": "Activer la rotation d'IP des fournisseurs d'appareils",
-    "settings.experimental.devices.add.enabled.title": "Activer l'ajout d'appareils",
     "settings.experimental.devices.discovery.enabled.title": "Activer la découverte des appareils",
     "settings.devices.providers.homeassistant.enabled.title": "Activer le fournisseur Home Assistant (couche d'appareils en arrière-plan)",
     "settings.devices.providers.homeassistant.history.title": "Journaliser l'historique des états des appareils Home Assistant",

@@ -58,7 +58,7 @@
     "nav.signOut": "Sign out",
     "nav.signOutUser": "Sign out ({{user}})",
     "nav.menuAria": "Menu",
-    "nav.quickAdd": "Quick add",
+    "nav.skills": "Skills",
     "nav.shopping": "Shopping",
     "nav.vision": "Scan",
     "nav.homeAssistant": "Home Assistant",
@@ -256,6 +256,7 @@
     "rooms.house": "Home",
     "rooms.editRoom": "Edit room",
     "rooms.name": "Room name",
+    "rooms.add": "Add a room",
     "rooms.deleteConfirm": "Delete room \"{{name}}\"?",
     "rooms.devicesCount_one": "{{count}} device",
     "rooms.devicesCount_other": "{{count}} devices",
@@ -331,8 +332,6 @@
     "nfc.completed": "Request completed",
     "nfc.failed": "Request failed: {{message}}",
     "nfc.scanFailed": "NFC scan failed: {{message}}",
-
-    "common.quickActions": "Quick actions",
 
     "echo.flashHint": "To flash your echo device, please visit:",
     "echo.webflasher": "Charlie echo webflasher",
@@ -526,7 +525,6 @@
     "settings.echos.listen.title": "Turn on server to listen for echo device",
     "settings.mqtt.enabled.title": "Turn on mqtt server",
     "settings.devices.providers.rotateIp.enabled.title": "Enable devices provider ip rotation",
-    "settings.experimental.devices.add.enabled.title": "Enable add devices",
     "settings.experimental.devices.discovery.enabled.title": "Enable discovery of devices",
     "settings.devices.providers.homeassistant.enabled.title": "Enable Home Assistant provider (background device layer)",
     "settings.devices.providers.homeassistant.history.title": "Log Home Assistant device state history",
