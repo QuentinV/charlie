@@ -7,7 +7,7 @@
  * checkbox (`items/:id/status`), the archive (`finish`) and the retry
  * (`requests/apply`, `restructure`).
  */
-import { RestApis, ShoppingList } from '../types';
+import { RestApis, ShoppingList } from '../../types';
 import {
     addItems,
     addRequests,
@@ -20,14 +20,14 @@ import {
     removeItem,
     setItemStatus,
     uncheckAll,
-} from '../skills/shopping/list';
+} from './list';
 import {
     applyFallback,
     restructure,
     scheduleRestructure,
     shoppingEnabled,
-} from '../skills/shopping/restructure';
-import { isGroceryCategory, parseQuantity } from '../skills/shopping/items.logic';
+} from './restructure';
+import { isGroceryCategory, parseQuantity } from './items.logic';
 
 /** Payload sent to the UI: pending requests stay visible while being handled. */
 function publicList(list: ShoppingList) {

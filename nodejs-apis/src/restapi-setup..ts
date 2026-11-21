@@ -3,6 +3,7 @@ import fs from 'fs';
 import https from 'https';
 import cors from 'cors';
 import managerApis from './manager';
+import { apis as skillsApis } from './skills';
 import { getProvidersRestApis } from './devices';
 import { HttpError } from './errors';
 import swaggerUi from 'swagger-ui-express';
@@ -39,7 +40,7 @@ export async function setupRestApi() {
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
     // init endpoints
-    const apis = { ...managerApis, ...(await getProvidersRestApis()) };
+    const apis = { ...managerApis, ...skillsApis, ...(await getProvidersRestApis()) };
     Object.entries(apis).forEach(([path, fullapi]) => {
         const builtPath = `${defaultApiPath}${path}`;
         Object.entries(fullapi).forEach(([methodName, endpoint]) => {
