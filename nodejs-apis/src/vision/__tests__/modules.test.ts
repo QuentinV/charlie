@@ -1,7 +1,8 @@
 /**
  * The vision registry: the invariants every module must respect, and the one
- * cross-module behaviour shipped in v1 — a recipe's ingredients reaching the
- * household shopping list through the deterministic merge.
+ * cross-module behaviour shipped in v1 — a scanned recipe reaching the
+ * household's recipe library (from where its ingredients can reach the shopping
+ * list, see `skills/recipes/`).
  */
 
 // `uuid` v13 is ESM-only and Jest does not transform node_modules.
@@ -10,30 +11,21 @@ jest.mock('uuid', () => ({
     v7: () => '00000000-0000-7000-8000-000000000000',
 }));
 
-// The shopping list writes to Mongo: the module only has to call it.
-jest.mock('../../skills/shopping/list', () => ({
-    getActiveList: jest.fn(async () => ({
-        items: [
-            {
-                id: 'farine',
-                name: 'farine',
-                quantity: 250,
-                unit: 'g',
-                status: 'todo',
-                addedAt: 1,
-            },
-        ],
-    })),
-    replaceItems: jest.fn(async () => {}),
-    newItem: jest.fn((item: any) => ({
-        ...item,
-        id: `${item.name}-new`,
-        status: 'todo',
-        addedAt: 10,
+// The library writes to Mongo: the module only has to call it.
+jest.mock('../../skills/recipes', () => ({
+    saveScannedRecipe: jest.fn(async (recipe: any, options: any) => ({
+        _id: 'recipe-1',
+        sourceKey: `scan:${options?.scanId ?? 'x'}`,
+        source: 'scan',
+        recipe,
+        summary: `Recette « ${recipe.title} »`,
+        scanId: options?.scanId,
+        createdAt: 1,
+        updatedAt: 1,
     })),
 }));
 
-import { getActiveList, newItem, replaceItems } from '../../skills/shopping/list';
+import { saveScannedRecipe } from '../../skills/recipes';
 import {
     VISION_MODULES,
     classifierModules,
@@ -75,7 +67,7 @@ describe('vision registry', () => {
         const entry = visionModuleCatalogue().find((m) => m.id === 'recipe')!;
         expect(entry.label).toBe('Recette');
         expect(entry.actions).toEqual([
-            { id: 'add-to-shopping', label: 'Ajouter aux courses' },
+            { id: 'save-to-recipes', label: 'Ajouter aux recettes' },
         ]);
         expect(getVisionModule('recipe')).toBe(recipe);
         expect(getVisionModule('nope')).toBeUndefined();
@@ -92,54 +84,37 @@ describe('vision registry', () => {
     });
 });
 
-describe('recipe → shopping list', () => {
-    const action = recipe.actions!.find((a) => a.id === 'add-to-shopping')!;
+describe('recipe → the household library', () => {
+    const action = recipe.actions!.find((a) => a.id === 'save-to-recipes')!;
 
     beforeEach(() => {
-        (getActiveList as jest.Mock).mockClear();
-        (replaceItems as jest.Mock).mockClear();
-        (newItem as jest.Mock).mockClear();
+        (saveScannedRecipe as jest.Mock).mockClear();
     });
 
-    test('merges the ingredients into the active list and reports it', async () => {
-        const message = await action.run(
-            {
-                title: 'Crêpes',
-                prepTimeS: 0,
-                cookTimeS: 0,
-                steps: [],
-                ingredients: [
-                    { name: 'farine', quantity: 500, unit: 'g' },
-                    { name: 'lait', quantity: 1, unit: 'L' },
-                ],
-            },
-            { user: 'marie' }
-        );
+    test('files the scanned recipe and reports it', async () => {
+        const data = {
+            title: 'Crêpes',
+            prepTimeS: 0,
+            cookTimeS: 0,
+            steps: [],
+            ingredients: [
+                { name: 'farine', quantity: 500, unit: 'g' },
+                { name: 'lait', quantity: 1, unit: 'L' },
+            ],
+        };
 
-        expect(message).toBe(
-            'Added 2 ingredient(s) from "Crêpes" to the shopping list.'
-        );
-
-        // The household merge (foldName + unit → quantities summed): the row
-        // already on the list is completed, not duplicated.
-        const merged = (replaceItems as jest.Mock).mock.calls[0][0];
-        expect(merged).toHaveLength(2);
-        expect(merged.find((i: any) => i.name === 'farine')).toMatchObject({
-            quantity: 750,
-            unit: 'g',
-        });
-        expect(merged.find((i: any) => i.name === 'lait')).toMatchObject({
-            quantity: 1,
-            unit: 'L',
-        });
-
-        // The recognized speaker travels with the items, and only the recipe's
-        // ingredients are created (never the existing row).
-        expect((newItem as jest.Mock).mock.calls).toHaveLength(2);
-        expect((newItem as jest.Mock).mock.calls[0][0]).toMatchObject({
-            name: 'farine',
+        const message = await action.run(data, {
+            scanId: 'scan-7',
             user: 'marie',
         });
+
+        expect(message).toBe('Saved "Crêpes" in the household recipes.');
+        // The recipe goes in as it was read, and the scan id travels with it:
+        // it is both the record's identity and the link back to the document.
+        expect((saveScannedRecipe as jest.Mock).mock.calls[0]).toEqual([
+            data,
+            { scanId: 'scan-7', user: 'marie' },
+        ]);
     });
 });
 

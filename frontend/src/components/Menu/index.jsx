@@ -25,6 +25,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import DocumentScannerIcon from '@mui/icons-material/DocumentScanner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUnit } from 'effector-react';
@@ -118,6 +119,13 @@ export const Menu = () => {
             route: '/shopping',
             icon: <ShoppingCartIcon fontSize="small" />,
         });
+
+    // Recettes: always available (no setting), like the memory browser.
+    navItems.push({
+        labelKey: 'nav.recipes',
+        route: '/recipes',
+        icon: <MenuBookIcon fontSize="small" />,
+    });
 
     useSetting('vision.enabled', true) &&
         navItems.push({

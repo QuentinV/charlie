@@ -306,16 +306,47 @@ intents:
             - document que j ai scanne
             - montre moi le dernier document
 
-    # "ajoute les ingrédients à ma liste de courses"
-    addScanToShopping:
+    # "ajoute la recette à mes recettes" — the ingredients reach the shopping list
+    # from the recipe itself (see skills/recipes/).
+    saveScanToRecipes:
         starts:
-            - ajoute les ingredients
-            - mets les ingredients
-            - ajoute la recette
-            - mets la recette
-            - ingredients a la liste
-            - ingredients dans la liste
-            - ingredients sur la liste
+            - ajoute la recette a mes recettes
+            - ajoute la recette dans mes recettes
+            - mets la recette dans mes recettes
+            - enregistre la recette
+            - enregistre la derniere recette
+            - sauvegarde la recette
+            - garde la recette
+            - ajoute le document a mes recettes
+
+    # --- Recipes (a household library, filled from Marmiton or the Scan tab) ---
+    # "cherche une recette de poulet basquaise" — never saves anything by voice.
+    searchRecipe:
+        starts:
+            - cherche une recette
+            - cherche moi une recette
+            - cherche des recettes
+            - cherche moi des recettes
+            - trouve une recette
+            - trouve moi une recette
+            - trouve des recettes
+            - trouve moi des recettes
+            - je veux une recette
+            - une recette de
+        slots:
+            - text
+
+    # "ajoute les ingrédients de la recette au poulet basquaise"
+    addRecipeIngredients:
+        starts:
+            - ajoute les ingredients de la recette
+            - mets les ingredients de la recette
+            - ajoute les ingredients de
+            - mets les ingredients de
+            - ajoute les ingredients du
+            - mets les ingredients du
+        slots:
+            - text
 
     thanks:
         starts:

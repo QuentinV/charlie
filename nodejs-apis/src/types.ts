@@ -586,6 +586,95 @@ export interface ShoppingList {
     processing?: ShoppingProcessing;
 }
 
+// --- Recipes (cooking)
+
+/**
+ * Yield of a recipe: how many people it serves, and what it produces.
+ *
+ * `0` is the "the source does not say" marker — the same convention the scanned
+ * recipe has always used — so a photo and an imported web page fill the same
+ * three fields and nothing downstream has to know where the recipe came from.
+ */
+export interface RecipeEstimatedFor {
+    /** 0 when the source does not say. */
+    persons: number;
+    /** What it yields ("crêpes"), when the source names it. */
+    name?: string;
+    /** How many items it yields; 0 when the source does not say. */
+    quantity: number;
+}
+
+export interface RecipeIngredient {
+    name: string;
+    /** Absent when the source gives no amount. */
+    quantity?: number;
+    /** Displayed unit ("g", "c. à soupe"), only ever with a quantity. */
+    unit?: string;
+    /** A precision written next to the ingredient ("pour la cuisson"). */
+    note?: string;
+}
+
+/** A cooking recipe — the payload of a scan and of an imported page alike. */
+export interface Recipe {
+    title: string;
+    /** Absent when the source gives neither a number of people nor a yield. */
+    estimatedFor?: RecipeEstimatedFor;
+    /** Seconds, 0 when the source does not say. */
+    prepTimeS: number;
+    cookTimeS: number;
+    ingredients: RecipeIngredient[];
+    steps: string[];
+}
+
+/** Where a stored recipe came from. */
+export type RecipeSource = 'scan' | 'marmiton' | 'manual';
+
+/**
+ * Rating of the source (`4.7`, 692 reviews). Kept because it is how the
+ * household picks *the best* recipe: the search ranks on it, the tab shows it
+ * and the voice says it.
+ */
+export interface RecipeRating {
+    value: number;
+    count: number;
+}
+
+/**
+ * Document of the `recipes` collection: the household's cooking library.
+ *
+ * `recipe` is nested and identical to what a scanned recipe produces; what
+ * surrounds it is provenance. `sourceKey` is the dedupe key (`marmiton:16969`),
+ * so importing the same page twice updates the record instead of adding a
+ * second one.
+ */
+export interface RecipeRecord {
+    _id: string;
+    sourceKey: string;
+    source: RecipeSource;
+    recipe: Recipe;
+    /** French one-liner computed at write time (list rows, voice). */
+    summary: string;
+    /** Folded title, written at save time so the library searches cheaply. */
+    titleFold: string;
+    /** Folded ingredient names, same reason. */
+    ingredientsFold?: string;
+    /** Web sources only. */
+    sourceUrl?: string;
+    imageUrl?: string;
+    description?: string;
+    category?: string;
+    author?: string;
+    keywords?: string[];
+    rating?: RecipeRating;
+    /** Web sources only: the page's own total time. */
+    totalTimeS?: number;
+    /** Vision provenance: the scan the recipe was read from, if any. */
+    scanId?: string;
+    user?: string;
+    createdAt: number;
+    updatedAt: number;
+}
+
 // --- Vision (scanned documents)
 
 /** `pending` while the model works, then `done` or `failed` (retryable). */

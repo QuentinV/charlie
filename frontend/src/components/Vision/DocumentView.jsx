@@ -10,112 +10,13 @@ import {
     Typography,
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useTranslation } from 'react-i18next';
+import { Link as RouterLink } from 'react-router-dom';
 import { TypePicker } from './TypePicker';
-import { formatDuration, formatWhen, typeLabel, useScanImage } from './utils';
-
-/** Ingredients and steps of a recipe (shape: `vision/modules/recipe.ts`). */
-const RecipeBody = ({ recipe }) => {
-    const { t } = useTranslation();
-    const yields = recipe.estimatedFor;
-
-    return (
-        <Stack spacing={2}>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {yields?.persons > 0 && (
-                    <Chip
-                        size="small"
-                        variant="outlined"
-                        label={t('vision.serves', { people: yields.persons })}
-                    />
-                )}
-                {yields?.quantity > 0 && yields?.name && (
-                    <Chip
-                        size="small"
-                        variant="outlined"
-                        label={t('vision.yields', {
-                            amount: yields.quantity,
-                            name: yields.name,
-                        })}
-                    />
-                )}
-                {recipe.prepTimeS > 0 && (
-                    <Chip
-                        size="small"
-                        variant="outlined"
-                        label={t('vision.prepTime', {
-                            time: formatDuration(recipe.prepTimeS),
-                        })}
-                    />
-                )}
-                {recipe.cookTimeS > 0 && (
-                    <Chip
-                        size="small"
-                        variant="outlined"
-                        label={t('vision.cookTime', {
-                            time: formatDuration(recipe.cookTimeS),
-                        })}
-                    />
-                )}
-            </Stack>
-
-            <Box>
-                <Typography variant="subtitle2" gutterBottom>
-                    {t('vision.ingredients')}
-                </Typography>
-                <Stack spacing={0.5}>
-                    {(recipe.ingredients ?? []).map((ingredient, i) => (
-                        <Stack
-                            key={`${ingredient.name}-${i}`}
-                            direction="row"
-                            spacing={1}
-                        >
-                            <Typography
-                                variant="body2"
-                                sx={{ minWidth: 72, fontWeight: 600 }}
-                            >
-                                {ingredient.quantity
-                                    ? `${ingredient.quantity}${
-                                          ingredient.unit
-                                              ? ` ${ingredient.unit}`
-                                              : ''
-                                      }`
-                                    : ''}
-                            </Typography>
-                            <Typography variant="body2">
-                                {ingredient.name}
-                                {ingredient.note ? ` (${ingredient.note})` : ''}
-                            </Typography>
-                        </Stack>
-                    ))}
-                </Stack>
-            </Box>
-
-            {!!recipe.steps?.length && (
-                <Box>
-                    <Typography variant="subtitle2" gutterBottom>
-                        {t('vision.steps')}
-                    </Typography>
-                    <Stack spacing={1}>
-                        {recipe.steps.map((step, i) => (
-                            <Stack key={i} direction="row" spacing={1}>
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{ minWidth: 18 }}
-                                >
-                                    {i + 1}.
-                                </Typography>
-                                <Typography variant="body2">{step}</Typography>
-                            </Stack>
-                        ))}
-                    </Stack>
-                </Box>
-            )}
-        </Stack>
-    );
-};
+import { RecipeBody } from '../RecipeBody';
+import { formatWhen, typeLabel, useScanImage } from './utils';
 
 /**
  * Detail of one scan: the image, its state, the data read from it and what can
@@ -123,10 +24,13 @@ const RecipeBody = ({ recipe }) => {
  *
  * Nothing here knows a document type beyond rendering `data`: the action buttons
  * come from the module catalogue the API returns, so a new type shows up here
- * without touching this file.
+ * without touching this file. The one exception is deliberate and visible: a
+ * recipe the household already filed in its library (`savedRecipe`) is offered
+ * as a link to it rather than as a button that would file it again.
  */
 export const DocumentView = ({
     scan,
+    savedRecipe,
     modules,
     lang,
     busy,
@@ -237,17 +141,35 @@ export const DocumentView = ({
             </Box>
 
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {(module?.actions ?? []).map((action) => (
+                {savedRecipe ? (
+                    /**
+                     * Already in the household library: the button that filed it
+                     * becomes a link to the recipe itself — which is where its
+                     * ingredients go to the shopping list, one place for that
+                     * gesture whatever the source of the recipe.
+                     */
                     <Button
-                        key={action.id}
                         variant="contained"
                         size="small"
-                        disabled={busy || scan.status !== 'done'}
-                        onClick={() => onAction(action.id)}
+                        component={RouterLink}
+                        to={`/recipes?recipe=${savedRecipe.id}`}
+                        startIcon={<MenuBookIcon />}
                     >
-                        {action.label}
+                        {t('vision.seeRecipe')}
                     </Button>
-                ))}
+                ) : (
+                    (module?.actions ?? []).map((action) => (
+                        <Button
+                            key={action.id}
+                            variant="contained"
+                            size="small"
+                            disabled={busy || scan.status !== 'done'}
+                            onClick={() => onAction(action.id)}
+                        >
+                            {action.label}
+                        </Button>
+                    ))
+                )}
                 <Button
                     size="small"
                     startIcon={<RefreshIcon />}

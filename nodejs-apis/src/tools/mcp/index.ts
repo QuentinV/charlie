@@ -10,6 +10,7 @@ import notifications from './impl/notifications';
 import music from './impl/music';
 import memory from './impl/memory';
 import shopping from './impl/shopping';
+import recipes from './impl/recipes';
 import vision from './impl/vision';
 import cameras from './impl/cameras';
 
@@ -48,6 +49,7 @@ export async function toolsSchemas(): Promise<ToolsSchema> {
             ...(process.env.TOOL_MUSIC === 'true' ? music : {}),
             ...memory,
             ...shopping,
+            ...recipes,
             ...vision,
             ...cameras,
             ...(await devices()),

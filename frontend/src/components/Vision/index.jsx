@@ -45,6 +45,13 @@ export const Vision = () => {
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState(null);
+    /**
+     * Library record of the selected recipe scan, when the household kept it:
+     * the detail view then links to the recipe instead of offering to file it.
+     */
+    const [savedRecipe, setSavedRecipe] = useState(null);
+    /** Bumped after an action, so that link is read again. */
+    const [savedVersion, setSavedVersion] = useState(0);
     const pollRef = useRef(null);
 
     const load = useCallback(async (silent = false) => {
@@ -74,6 +81,30 @@ export const Vision = () => {
     }, [pending, load]);
 
     const selected = scans.find((scan) => scan.id === selectedId) ?? null;
+    const selectedType = selected?.type;
+    const selectedStatus = selected?.status;
+
+    // A recipe scan already filed in the household library links to its recipe;
+    // the library stays the source of truth, so deleting the recipe removes the
+    // link on its own.
+    useEffect(() => {
+        if (
+            !selectedId ||
+            selectedType !== 'recipe' ||
+            selectedStatus !== 'done'
+        ) {
+            setSavedRecipe(null);
+            return undefined;
+        }
+
+        let cancelled = false;
+        api(`recipes?scanId=${selectedId}`).then((res) => {
+            if (!cancelled) setSavedRecipe(res?.recipes?.[0] ?? null);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedId, selectedType, selectedStatus, savedVersion]);
 
     /** Put a fresh scan at the top of the history and select it. */
     const upsert = useCallback((scan) => {
@@ -126,6 +157,8 @@ export const Vision = () => {
                           message: res?.error ?? t('vision.actionFailed'),
                       }
             );
+            // Filing a recipe turns the button into a link to it: re-read it.
+            if (res?.ok) setSavedVersion((version) => version + 1);
         });
 
     const remove = () =>
@@ -210,6 +243,7 @@ export const Vision = () => {
                         <Paper variant="outlined" sx={{ p: 2 }}>
                             <DocumentView
                                 scan={selected}
+                                savedRecipe={savedRecipe}
                                 modules={status?.modules}
                                 lang={lang}
                                 busy={busy}

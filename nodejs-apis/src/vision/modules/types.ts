@@ -53,7 +53,7 @@ export interface VisionModule<T = any> {
     parse: (raw: unknown) => T | null;
     /** French one-liner describing a result (TTS, list rows). */
     summarize?: (data: T) => string;
-    /** Optional follow-ups (the recipe → shopping list is the first one). */
+    /** Optional follow-ups (a scanned recipe → the household recipe library). */
     actions?: VisionAction<T>[];
     /** Upper bound on the answer (a recipe is longer than a business card). */
     maxTokens?: number;

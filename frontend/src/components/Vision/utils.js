@@ -52,17 +52,6 @@ export const formatWhen = (at, lang = 'fr') => {
     });
 };
 
-/** Seconds → "45 s" / "12 min" / "1 h 30". */
-export const formatDuration = (seconds) => {
-    if (!seconds) return '';
-    if (seconds < 60) return `${seconds} s`;
-    const minutes = Math.round(seconds / 60);
-    if (minutes < 60) return `${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    const rest = minutes % 60;
-    return rest ? `${hours} h ${rest}` : `${hours} h`;
-};
-
 /** French label of a document type ("recipe" → "Recette"). */
 export const typeLabel = (modules, type) =>
     modules?.find((m) => m.id === type)?.label ?? type ?? '';

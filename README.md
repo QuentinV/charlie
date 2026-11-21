@@ -89,7 +89,9 @@ enough to stay GPU-offloaded even on an old GPU). See [`llm/README.md`](llm/READ
 
 The setting `flow.agentic.enabled` needs to be turned on for the flow to be enhanced with agentic fallback in case NLU doesn't get it.
 
-The setting `vision.enabled` (on by default) turns on the **Scan** tab and the document pipeline: photograph a document and Charlie identifies its type (a recipe today, a description for anything else) and extracts a structured result — a recipe's ingredients can be pushed to the shopping list with one tap, by voice (*« ajoute les ingrédients à ma liste de courses »*) or by the agent. Adding a document type is one file in `nodejs-apis/src/vision/modules/`. See [`nodejs-apis/src/vision/README.md`](nodejs-apis/src/vision/README.md).
+The setting `vision.enabled` (on by default) turns on the **Scan** tab and the document pipeline: photograph a document and Charlie identifies its type (a recipe today, a description for anything else) and extracts a structured result — a scanned recipe is filed in the household library with one tap (or by voice, *« enregistre la recette »*), the tab then links straight to it, and its ingredients reach the shopping list from the recipe itself. Adding a document type is one file in `nodejs-apis/src/vision/modules/`. See [`nodejs-apis/src/vision/README.md`](nodejs-apis/src/vision/README.md).
+
+The **Recettes** tab keeps the household's cooking library: search a recipe by name or ingredient — best-rated first, and a rating needs a few reviews to count — or paste a Marmiton link, and Charlie stores its ingredients, steps, times, servings and stars in the `recipes` collection. *Ajouter aux courses* merges the ingredients with the same fold a spoken request gets, and an imported recipe has exactly the shape of a scanned one, so both tabs draw it with the same component. By voice, *« cherche une recette de poulet basquaise »* announces the best-rated candidates without saving anything, and *« ajoute les ingrédients de la recette au poulet basquaise »* fills the list.
 
 ▶️ Running
 

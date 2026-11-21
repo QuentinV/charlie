@@ -1,6 +1,14 @@
 /**
  * Recipe module: a handwritten or printed cooking recipe → title, yield, times,
- * ingredients and steps, with the units of the household shopping list.
+ * ingredients and steps.
+ *
+ * The recipe **shape and vocabulary** belong to the cooking skill
+ * (`skills/recipes/recipe.ts`): a photographed recipe and a page imported from
+ * Marmiton must produce the same record, render in the same panel and merge into
+ * the shopping list the same way, so sharing them here would be the one thing
+ * that lets the two drift apart. This module keeps only what is vision-specific:
+ * the JSON schema handed to the grammar, the extraction prompt and its tolerance
+ * rules (`parse`).
  *
  * Captured on the shipped model (Qwen3-VL-4B Q4_K_M, CPU) against a real
  * handwritten `recette-de-crepe` photo: 6 ingredients, closed-enum units, steps
@@ -13,41 +21,29 @@
  *   vocabulary is dropped rather than stored as junk.
  */
 import { z } from 'zod';
+import { saveScannedRecipe } from '../../skills/recipes';
 import {
-    UNIT_ENUM,
-    foldName,
-    mergeItems,
-    normalizeUnit,
-    unitAliases,
-} from '../../skills/shopping/items.logic';
-import { getActiveList, newItem, replaceItems } from '../../skills/shopping/list';
+    RECIPE_UNITS,
+    recipeUnitLabel,
+    summarizeRecipe,
+} from '../../skills/recipes/recipe';
+import { Recipe, RecipeIngredient } from '../../types';
 import { asString, durationSeconds, positiveNumber } from '../logic';
 import { VisionModule } from './types';
 
-/**
- * Units a recipe uses that a grocery list never sees. ASCII tokens like
- * `UNIT_ENUM` (safe for the JSON-schema grammar), rendered by
- * `RECIPE_UNIT_LABELS`.
- */
-export const RECIPE_EXTRA_UNITS = [
-    'cuillere_a_soupe',
-    'cuillere_a_cafe',
-    'pincee',
-    'gousse',
-    'verre',
-];
-
-/** Units the recipe model is allowed to emit (closed enum). */
-export const RECIPE_UNITS = [...UNIT_ENUM, ...RECIPE_EXTRA_UNITS];
-
-/** Displayed form of the recipe-only tokens. */
-export const RECIPE_UNIT_LABELS: { [token: string]: string } = {
-    cuillere_a_soupe: 'c. à soupe',
-    cuillere_a_cafe: 'c. à café',
-    pincee: 'pincée',
-    gousse: 'gousse',
-    verre: 'verre',
-};
+// The vocabulary is this document type's public surface (the schema below is
+// built from it, and the tests read it here) — it just lives with the skill.
+export {
+    RECIPE_EXTRA_UNITS,
+    RECIPE_UNIT_LABELS,
+    RECIPE_UNITS,
+    recipeUnitLabel,
+} from '../../skills/recipes/recipe';
+export type {
+    Recipe,
+    RecipeEstimatedFor,
+    RecipeIngredient,
+} from '../../types';
 
 export const RECIPE_SCHEMA = {
     type: 'object',
@@ -133,52 +129,6 @@ const RecipeAnswer = z.object({
     steps: z.array(z.string()).nullable().optional(),
 });
 
-export interface RecipeIngredient {
-    name: string;
-    /** Absent when the image does not give an amount. */
-    quantity?: number;
-    /** Displayed unit ("g", "c. à soupe"), only with a quantity. */
-    unit?: string;
-    note?: string;
-}
-
-export interface RecipeEstimatedFor {
-    /** 0 when the image does not say. */
-    persons: number;
-    name?: string;
-    /** 0 when the image does not say. */
-    quantity: number;
-}
-
-export interface Recipe {
-    title: string;
-    /** Absent when the image gives neither a number of people nor a yield. */
-    estimatedFor?: RecipeEstimatedFor;
-    /** Seconds, 0 when the image does not say. */
-    prepTimeS: number;
-    cookTimeS: number;
-    ingredients: RecipeIngredient[];
-    steps: string[];
-}
-
-/**
- * Canonical, displayed form of a unit: a recipe token ("cuillere_a_soupe" → "c.
- * à soupe"), or a form the household vocabulary recognizes ("gr" → "g",
- * "litre" → "L" — what a free-text answer produces). Anything else is dropped:
- * a unit nobody knows is worse than no unit at all.
- */
-export function recipeUnitLabel(unit?: unknown): string | undefined {
-    const raw = asString(unit);
-    if (!raw) return undefined;
-
-    const folded = foldName(raw);
-    const token = RECIPE_UNITS.find((u) => u === raw || foldName(u) === folded);
-    if (token) return RECIPE_UNIT_LABELS[token] ?? normalizeUnit(token);
-
-    const canonical = normalizeUnit(raw);
-    return canonical && unitAliases(canonical).length ? canonical : undefined;
-}
-
 /** The recipe data of a parsed answer, or null when it is unusable. */
 function toRecipe(answer: z.infer<typeof RecipeAnswer>): Recipe | null {
     const title = asString(answer.title);
@@ -208,7 +158,7 @@ function toRecipe(answer: z.infer<typeof RecipeAnswer>): Recipe | null {
     const persons = positiveNumber(answer.estimatedFor?.persons) ?? 0;
     const yieldQuantity = positiveNumber(answer.estimatedFor?.quantity) ?? 0;
     const yieldName = asString(answer.estimatedFor?.name);
-    const estimatedFor: RecipeEstimatedFor | undefined =
+    const estimatedFor =
         persons || yieldQuantity
             ? {
                   persons,
@@ -229,16 +179,6 @@ function toRecipe(answer: z.infer<typeof RecipeAnswer>): Recipe | null {
     };
 }
 
-/** "12 min" / "1 h 30" — spoken by TTS and shown in the list rows. */
-function humanDuration(seconds: number): string {
-    if (seconds < 60) return `${seconds} s`;
-    const minutes = Math.round(seconds / 60);
-    if (minutes < 60) return `${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    const rest = minutes % 60;
-    return rest ? `${hours} h ${rest}` : `${hours} h`;
-}
-
 const recipe: VisionModule<Recipe> = {
     id: 'recipe',
     label: 'Recette',
@@ -252,42 +192,27 @@ const recipe: VisionModule<Recipe> = {
         const answer = RecipeAnswer.safeParse(raw);
         return answer.success ? toRecipe(answer.data) : null;
     },
+    // Shared with the imported web recipes: one French sentence, one shape.
     summarize(data) {
-        const parts = [
-            data.estimatedFor?.persons
-                ? `Recette « ${data.title} » pour ${data.estimatedFor.persons} personnes`
-                : `Recette « ${data.title} »`,
-            `${data.ingredients.length} ingrédients`,
-        ];
-        if (data.steps.length) parts.push(`${data.steps.length} étapes`);
-        if (data.prepTimeS) {
-            parts.push(`${humanDuration(data.prepTimeS)} de préparation`);
-        }
-        return parts.join(', ') + '.';
+        return summarizeRecipe(data);
     },
     actions: [
         {
-            id: 'add-to-shopping',
-            label: 'Ajouter aux courses',
+            id: 'save-to-recipes',
+            label: 'Ajouter aux recettes',
             /**
-             * The household merge (`foldName` + unit equality → quantities
-             * summed, a line asked again goes back to "to buy") so an ingredient
-             * already on the list is completed instead of duplicated — the same
-             * deterministic folding the restructurer applies to spoken requests.
+             * A scanned document is filed in the household's recipe library —
+             * the same collection an imported page lands in, so its ingredients
+             * reach the shopping list from the recipe (one place for that
+             * gesture, whatever the source of the recipe). `ctx.scanId` is the
+             * identity: running the action again updates the same record.
              */
             async run(data, ctx) {
-                const items = data.ingredients.map((i) =>
-                    newItem({
-                        name: i.name,
-                        quantity: i.quantity,
-                        unit: i.unit,
-                        note: i.note,
-                        user: ctx?.user,
-                    })
-                );
-                const list = await getActiveList();
-                await replaceItems(mergeItems(list.items ?? [], items));
-                return `Added ${items.length} ingredient(s) from "${data.title}" to the shopping list.`;
+                const record = await saveScannedRecipe(data, {
+                    scanId: ctx?.scanId,
+                    user: ctx?.user,
+                });
+                return `Saved "${record.recipe.title}" in the household recipes.`;
             },
         },
     ],

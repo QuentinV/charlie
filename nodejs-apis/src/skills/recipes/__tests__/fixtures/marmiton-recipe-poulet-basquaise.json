@@ -1,0 +1,89 @@
+{
+    "@type":  "Recipe",
+    "@id":  "https://www.marmiton.org/recettes/recette_poulet-basquaise_16969.aspx#recipe",
+    "mainEntityOfPage":  {
+                             "@id":  "https://www.marmiton.org/recettes/recette_poulet-basquaise_16969.aspx"
+                         },
+    "name":  "Poulet basquaise : la meilleure recette",
+    "recipeCategory":  "Plat principal",
+    "image":  [
+                  "https://assets.afcdn.com/recipe/20161116/7224_w1024h1024c1cx1972cy3850cxt0cyt0cxb3840cyb5760.jpg",
+                  "https://assets.afcdn.com/recipe/20161116/7224_w1024h1024c1cx1972cy3850cxt0cyt0cxb3840cyb5760.webp",
+                  "https://assets.afcdn.com/recipe/20161116/7224_w1024h768c1cx1972cy3850cxt0cyt0cxb3840cyb5760.jpg",
+                  "https://assets.afcdn.com/recipe/20161116/7224_w1024h768c1cx1972cy3850cxt0cyt0cxb3840cyb5760.webp",
+                  "https://assets.afcdn.com/recipe/20161116/7224_w1024h576c1cx1972cy3850cxt0cyt0cxb3840cyb5760.jpg",
+                  "https://assets.afcdn.com/recipe/20161116/7224_w1024h576c1cx1972cy3850cxt0cyt0cxb3840cyb5760.webp"
+              ],
+    "datePublished":  "2002-05-11T06:24:00+02:00",
+    "dateModified":  "2026-10-05T05:01:50+02:00",
+    "prepTime":  "PT20M",
+    "cookTime":  "PT1H",
+    "totalTime":  "PT1H20M",
+    "recipeYield":  "6 personnes",
+    "recipeIngredient":  [
+                             "1 poulet coupé en 6 morceaux",
+                             "1 kg de tomate",
+                             "700 g de poivrons (verts et rouges)",
+                             "3 oignons émincés",
+                             "3 gousses d\u0027ail",
+                             "20 cl de vin blanc",
+                             "1 bouquet garni",
+                             "6 cuillères à soupe d\u0027huile d\u0027olive",
+                             "sel",
+                             "poivre"
+                         ],
+    "recipeInstructions":  [
+                               {
+                                   "@type":  "HowToStep",
+                                   "text":  "Hacher l\u0027oignon et l\u0027ail. Couper les tomates en morceaux et détailler les poivrons en lanières."
+                               },
+                               {
+                                   "@type":  "HowToStep",
+                                   "text":  "Faire chauffer 4 cuillères à soupe d\u0027huile dans une cocotte. Y faire dorer les oignons, l\u0027ail et les poivron. Laisser cuire 5 min."
+                               },
+                               {
+                                   "@type":  "HowToStep",
+                                   "text":  "Ajouter les tomates à la cocotte, saler, poivrer. Couvrir et laisser mijoter 20 min."
+                               },
+                               {
+                                   "@type":  "HowToStep",
+                                   "text":  "Dans une sauteuse, faire dorer dans l\u0027huile d\u0027olive les morceaux de poulet salés et poivrés. "
+                               },
+                               {
+                                   "@type":  "HowToStep",
+                                   "text":  "Lorsqu\u0027ils sont dorés, les ajouter aux légumes, couvrir, ajouter le bouquet garni et le vin blanc et c\u0027est parti pour 35 min de cuisson."
+                               }
+                           ],
+    "author":  {
+                   "@type":  "Person",
+                   "name":  "Anonyme"
+               },
+    "description":  "Recette Poulet basquaise : la meilleure recette rapide et facile : 6 personnes, 80 min de préparation. Notée 4.7/5 par 692 membres Marmiton.",
+    "keywords":  "Poulet basquaise, poulet basquaise, poulet, tomate, poivron, oignon, ail, vin blanc, bouquet garni, huile d\u0027olive, sel, poivre, Facile, Moyen",
+    "aggregateRating":  {
+                            "@type":  "AggregateRating",
+                            "reviewCount":  692,
+                            "ratingValue":  4.7,
+                            "worstRating":  1,
+                            "bestRating":  5
+                        },
+    "video":  {
+                  "@id":  "https://www.marmiton.org/recettes/recette_poulet-basquaise_16969.aspx#video"
+              },
+    "nutrition":  {
+                      "@type":  "NutritionInformation",
+                      "calories":  "302 calories",
+                      "servingSize":  "416.8 grams",
+                      "carbohydrateContent":  "13.7 g",
+                      "fatContent":  "18.7 g",
+                      "fiberContent":  "5.5 g",
+                      "proteinContent":  "12 g",
+                      "saturatedFatContent":  "2.5 g",
+                      "sodiumContent":  "0.9 g",
+                      "sugarContent":  "11.1 g"
+                  },
+    "suitableForDiet":  [
+                            "https://schema.org/GlutenFreeDiet",
+                            "https://schema.org/LowLactoseDiet"
+                        ]
+}

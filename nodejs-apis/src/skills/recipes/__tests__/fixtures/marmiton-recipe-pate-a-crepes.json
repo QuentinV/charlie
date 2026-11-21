@@ -1,0 +1,75 @@
+{
+    "@type":  "Recipe",
+    "@id":  "https://www.marmiton.org/recettes/recette_pate-a-crepes-simple_27121.aspx#recipe",
+    "mainEntityOfPage":  {
+                             "@id":  "https://www.marmiton.org/recettes/recette_pate-a-crepes-simple_27121.aspx"
+                         },
+    "name":  "Pâte à crêpes simple : la meilleure recette",
+    "recipeCategory":  "Dessert",
+    "image":  [
+                  "https://assets.afcdn.com/recipe/20250131/157847_w1024h1024c1cx3345cy1709cxt0cyt0cxb6240cyb4160.jpeg",
+                  "https://assets.afcdn.com/recipe/20250131/157847_w1024h1024c1cx3345cy1709cxt0cyt0cxb6240cyb4160.webp",
+                  "https://assets.afcdn.com/recipe/20250131/157847_w1024h768c1cx3345cy1709cxt0cyt0cxb6240cyb4160.jpeg",
+                  "https://assets.afcdn.com/recipe/20250131/157847_w1024h768c1cx3345cy1709cxt0cyt0cxb6240cyb4160.webp",
+                  "https://assets.afcdn.com/recipe/20250131/157847_w1024h576c1cx3345cy1709cxt0cyt0cxb6240cyb4160.jpeg",
+                  "https://assets.afcdn.com/recipe/20250131/157847_w1024h576c1cx3345cy1709cxt0cyt0cxb6240cyb4160.webp"
+              ],
+    "datePublished":  "2006-10-23T11:43:00+02:00",
+    "dateModified":  "2025-01-31T17:26:39+01:00",
+    "prepTime":  "PT15M",
+    "cookTime":  "PT30M",
+    "totalTime":  "PT45M",
+    "recipeYield":  "20 crêpes",
+    "recipeIngredient":  [
+                             "5 oeufs",
+                             "500 g de farine",
+                             "1 l de lait demi-écrémé",
+                             "3 cuillères à soupe d\u0027huile",
+                             "0.5 verre de bière"
+                         ],
+    "recipeInstructions":  [
+                               {
+                                   "@type":  "HowToStep",
+                                   "text":  "Dans un saladier verser la moitié de la farine, puis rajouter les oeufs un à un, rajouter ensuite un peu de lait puis de la farine puis à nouveau du lait et ainsi de suite. "
+                               },
+                               {
+                                   "@type":  "HowToStep",
+                                   "text":  "Enfin rajouter l\u0027huile et la bière. "
+                               },
+                               {
+                                   "@type":  "HowToStep",
+                                   "text":  "Laisser reposer 1 heure, votre pâte est prête."
+                               }
+                           ],
+    "author":  {
+                   "@type":  "Person",
+                   "name":  "Anonyme"
+               },
+    "description":  "Recette Pâte à crêpes simple : la meilleure recette rapide et facile : 20 crêpes, 45 min de préparation. Notée 4.6/5 par 1143 membres Marmiton.",
+    "keywords":  "Pâte à crêpes simple, pâte à crêpes, oeuf, farine, lait demi-écrémé, huile, bière, Très facile, Bon marché",
+    "aggregateRating":  {
+                            "@type":  "AggregateRating",
+                            "reviewCount":  1143,
+                            "ratingValue":  4.6,
+                            "worstRating":  1,
+                            "bestRating":  5
+                        },
+    "video":  {
+                  "@id":  "https://www.marmiton.org/recettes/recette_pate-a-crepes-simple_27121.aspx#video"
+              },
+    "nutrition":  {
+                      "@type":  "NutritionInformation",
+                      "calories":  "154 calories",
+                      "servingSize":  "95.6 grams",
+                      "carbohydrateContent":  "19.7 g",
+                      "fatContent":  "4.9 g",
+                      "fiberContent":  "1 g",
+                      "proteinContent":  "7 g",
+                      "saturatedFatContent":  "1.1 g",
+                      "sodiumContent":  "0.1 g",
+                      "sugarContent":  "2.9 g"
+                  },
+    "suitableForDiet":  [
+                            "https://schema.org/VegetarianDiet"
+                        ]
+}

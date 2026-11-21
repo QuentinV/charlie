@@ -14,7 +14,7 @@ POST image bytes ──▶ vision_scans{pending}          (image saved on disk)
                                      module.parse() (Zod + evidence)   modules/*.ts
                                                              ▼
                                  done ──┬─ module.summarize() → TTS/UI
-                                        └─ module.actions   → e.g. shopping list
+                                        └─ module.actions   → e.g. the recipe library
                                  failed ──▶ image + resolved type kept, retryable
 ```
 
@@ -97,7 +97,7 @@ curl -X POST "$CHARLIE/api/vision/scans?type=recipe&source=api" \
 | `POST /api/vision/scans/:id/rescan` | re-read the stored image, `{type}` to correct the type (background again) |
 | `GET /api/vision/scans/:id/image` | the stored bytes (the UI fetches it with the token: `apiBlob`) |
 | `DELETE /api/vision/scans/:id` | record + image |
-| `POST /api/vision/scans/:id/actions/:action` | a module action (`recipe` → `add-to-shopping`) |
+| `POST /api/vision/scans/:id/actions/:action` | a module action (`recipe` → `save-to-recipes`, which files it in the `recipes` collection) |
 | `GET /api/vision` | status, settings and the module catalogue (ids, labels, actions) |
 
 A scan is a private document: nothing here is in the auth allowlist, and the

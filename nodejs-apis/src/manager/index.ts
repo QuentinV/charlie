@@ -9,6 +9,7 @@ import settings from './settings';
 import notifications from './notifications';
 import memory from './memory';
 import shopping from './shopping';
+import recipes from '../skills/recipes/api';
 import vision from '../vision/api';
 import cameras from '../cameras/api';
 import auth from '../auth/api';
@@ -25,6 +26,7 @@ export default {
     ...settings,
     ...memory,
     ...shopping,
+    ...recipes,
     ...vision,
     ...cameras,
     ...notifications,

@@ -12,6 +12,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AppsIcon from '@mui/icons-material/Apps';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import DocumentScannerIcon from '@mui/icons-material/DocumentScanner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -68,6 +69,12 @@ export const BottomNav = () => {
                 route: '/vision',
                 icon: <DocumentScannerIcon />,
             });
+        // Recettes has no feature flag: it is part of the home, not a module.
+        items.push({
+            labelKey: 'nav.recipes',
+            route: '/recipes',
+            icon: <MenuBookIcon />,
+        });
         return items;
     }, [musicsEnabled, shoppingEnabled, visionEnabled]);
 

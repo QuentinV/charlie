@@ -70,7 +70,7 @@ const tools: Tools = {
     },
     'use-scanned-document': {
         description:
-            'Run one of a scanned document’s actions (`actions` of list-scanned-documents): for a recipe, `add-to-shopping` puts its ingredients on the household shopping list.',
+            'Run one of a scanned document’s actions (`actions` of list-scanned-documents): for a recipe, `save-to-recipes` files it in the household recipe library, where its ingredients reach the shopping list from.',
         inputSchema: { id: z.string(), action: z.string() },
         exec: async ({ id, action }, ctx) => {
             if (!visionEnabled()) return DISABLED;

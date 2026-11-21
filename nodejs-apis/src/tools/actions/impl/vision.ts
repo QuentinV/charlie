@@ -1,6 +1,7 @@
 /**
- * Tier-1 vision actions (no LLM): say the last document read, and push a scan to
- * the shopping list.
+ * Tier-1 vision actions (no LLM): say the last document read, and file a scanned
+ * recipe in the household recipe library — its ingredients then reach the
+ * shopping list from the recipe itself (see `skills/recipes/`).
  *
  * A photo always comes from the Scan tab (or an API client) — the voice acts on
  * what is already there, which is why these actions read the scan history rather
@@ -39,17 +40,17 @@ export const tools: Tools = {
             return last.summary ?? t('vision.read', { label: labelOf(last.type) });
         },
     },
-    addScanToShopping: {
+    saveScanToRecipes: {
         exec: async (req: { user?: string }) => {
             if (!visionEnabled()) return false;
 
-            const scan = await lastScanWithAction('add-to-shopping');
-            if (!scan) return t('vision.nothingToAdd');
+            const scan = await lastScanWithAction('save-to-recipes');
+            if (!scan) return t('vision.nothingToSave');
 
-            const result = await runScanAction(scan._id, 'add-to-shopping', {
+            const result = await runScanAction(scan._id, 'save-to-recipes', {
                 user: req?.user,
             });
-            return result.ok ? t('vision.shoppingAdded') : t('vision.actionFailed');
+            return result.ok ? t('vision.savedToRecipes') : t('vision.saveFailed');
         },
     },
 };

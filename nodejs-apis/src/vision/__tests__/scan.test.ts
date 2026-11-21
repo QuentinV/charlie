@@ -15,11 +15,19 @@ jest.mock('uuid', () => ({
     v7: () => `scan-${++uuidCounter}`,
 }));
 
-// The shopping list writes to Mongo; the merge itself is tested elsewhere.
-jest.mock('../../skills/shopping/list', () => ({
-    getActiveList: jest.fn(async () => ({ items: [] })),
-    replaceItems: jest.fn(async () => {}),
-    newItem: jest.fn((item: any) => ({ ...item, id: 'new', status: 'todo', addedAt: 0 })),
+// The recipe library writes to Mongo; the filing itself is tested in
+// `skills/recipes/__tests__/`.
+jest.mock('../../skills/recipes', () => ({
+    saveScannedRecipe: jest.fn(async (recipe: any, options: any) => ({
+        _id: 'recipe-1',
+        sourceKey: `scan:${options?.scanId ?? 'x'}`,
+        source: 'scan',
+        recipe,
+        summary: `Recette « ${recipe.title} »`,
+        scanId: options?.scanId,
+        createdAt: 1,
+        updatedAt: 1,
+    })),
 }));
 
 jest.mock('../../manager/services/settings', () => ({
@@ -93,7 +101,7 @@ import os from 'os';
 import path from 'path';
 import * as db from '../../core/db';
 import { settings } from '../../manager/services/settings';
-import { replaceItems } from '../../skills/shopping/list';
+import { saveScannedRecipe } from '../../skills/recipes';
 import { imagePath } from '../images';
 import {
     maxImageMb,
@@ -334,22 +342,27 @@ describe('deletion and actions', () => {
         answers = [JSON.stringify(recipeExtract)];
         const scan = await scanImage(JPEG, 'image/jpeg', { type: 'recipe' });
 
-        const result = await runScanAction(scan._id, 'add-to-shopping', {
+        const result = await runScanAction(scan._id, 'save-to-recipes', {
             user: 'marie',
         });
 
         expect(result).toEqual({
             ok: true,
             message:
-                'Added 6 ingredient(s) from "La recette de la pâte à crêpes" to the shopping list.',
+                'Saved "La recette de la pâte à crêpes" in the household recipes.',
         });
-        expect(replaceItems).toHaveBeenCalled();
+        // The document is the identity: the library record points back at the
+        // scan, which is what lets the tab link to the recipe afterwards.
+        expect(saveScannedRecipe).toHaveBeenCalledWith(
+            expect.objectContaining({ title: 'La recette de la pâte à crêpes' }),
+            { scanId: scan._id, user: 'marie' }
+        );
 
         expect(await runScanAction(scan._id, 'nope')).toEqual({
             ok: false,
             error: 'unknown action nope',
         });
-        expect(await runScanAction('missing', 'add-to-shopping')).toEqual({
+        expect(await runScanAction('missing', 'save-to-recipes')).toEqual({
             ok: false,
             error: 'scan not found',
         });
@@ -359,7 +372,7 @@ describe('deletion and actions', () => {
         answers = [JSON.stringify(detectRecipe), 'pas du json'];
         const failed = await scanImage(JPEG, 'image/jpeg');
 
-        expect(await runScanAction(failed._id, 'add-to-shopping')).toEqual({
+        expect(await runScanAction(failed._id, 'save-to-recipes')).toEqual({
             ok: false,
             error: 'this scan has no result to act on',
         });
