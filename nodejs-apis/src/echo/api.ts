@@ -1,5 +1,6 @@
 import { RestApis } from '../types';
 import fs from 'fs';
+import path from 'path';
 import { connectedEchos, getEchoMacByIp, resolveConnectedIp } from './listen';
 import {
     askVersions,
@@ -15,7 +16,12 @@ import {
     normalizeIp,
     saveEchoSettings,
 } from './identity';
-import { checkFirmware, loadFirmwareManifest } from './firmware';
+import {
+    checkFirmware,
+    echoDevicesDir,
+    loadFirmwareManifest,
+    resolveFirmwareBinary,
+} from './firmware';
 import {
     getUiBundle,
     getUiRevision,
@@ -25,8 +31,6 @@ import {
 import { resolveVars } from './ui/vars';
 import { runUiAction } from './ui/actions';
 import { compileHtmlResult } from './ui/render';
-
-const DIR = '../echo-devices';
 
 /**
  * Address to send a live command to, from a settings id: the ip of the
@@ -63,9 +67,14 @@ const routes: RestApis = {
     'echo/:echoType/latest/firmware.bin': {
         get: {
             fullHandler: async ({ params }, res) => {
-                const filePath = `${DIR}/.pio/build/${params.echoType}/firmware.bin`;
+                // The manifest publishes the binary of each device type: the
+                // firmware repository is split per variant (`esp32s3/`,
+                // `esp32p4/`) and their build directories differ, so there is
+                // no path to derive from the type alone.
+                const firmware = resolveFirmwareBinary(params.echoType);
+                if (!firmware) return res.sendStatus(404);
 
-                fs.stat(filePath, (err, stats) => {
+                fs.stat(firmware.file, (err, stats) => {
                     if (err) {
                         console.error(err);
                         return res.sendStatus(404);
@@ -78,7 +87,7 @@ const routes: RestApis = {
                     );
                     res.setHeader('Content-Length', stats.size);
 
-                    const stream = fs.createReadStream(filePath);
+                    const stream = fs.createReadStream(firmware.file);
                     stream.pipe(res);
                 });
             },
@@ -177,7 +186,7 @@ const routes: RestApis = {
     'echo/changelogs': {
         get: {
             fullHandler: async (_, res) => {
-                const filePath = `${DIR}/changelog.json`;
+                const filePath = path.join(echoDevicesDir(), 'changelog.json');
                 fs.stat(filePath, (err, stats) => {
                     if (err) {
                         console.error(err);

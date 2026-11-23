@@ -5,8 +5,12 @@ import {
     FirmwareManifest,
     checkFirmware,
     compareVersions,
+    echoDevicesDir,
+    firmwareBinaryPath,
+    firmwareManifestPath,
     loadFirmwareManifest,
     resetFirmwareCache,
+    resolveFirmwareBinary,
 } from '../firmware';
 
 /** Manifest used by the checks below. */
@@ -151,5 +155,105 @@ describe('loadFirmwareManifest', () => {
         expect(loadFirmwareManifest()?.devices['echo-zero'].version).toBe(
             '1.1.0'
         );
+    });
+});
+
+describe('firmware binaries', () => {
+    let dir: string;
+
+    beforeEach(() => {
+        dir = fs.mkdtempSync(path.join(os.tmpdir(), 'echo-devices-'));
+        process.env.ECHO_DEVICES_DIR = dir;
+        resetFirmwareCache();
+    });
+
+    afterEach(() => {
+        delete process.env.ECHO_DEVICES_DIR;
+        delete process.env.ECHO_FIRMWARE_MANIFEST;
+        resetFirmwareCache();
+        fs.rmSync(dir, { recursive: true, force: true });
+    });
+
+    /** Publish a manifest in the temporary `echo-devices` directory. */
+    function publish(content: FirmwareManifest): void {
+        fs.writeFileSync(
+            path.join(dir, 'firmware.json'),
+            JSON.stringify(content)
+        );
+    }
+
+    it('reads the manifest from ECHO_DEVICES_DIR', () => {
+        publish(manifest);
+        expect(echoDevicesDir()).toBe(dir);
+        expect(firmwareManifestPath()).toBe(path.join(dir, 'firmware.json'));
+        expect(loadFirmwareManifest()?.devices['echo-zero'].version).toBe(
+            '1.0.0'
+        );
+    });
+
+    it('resolves a published binary inside the echo-devices directory', () => {
+        expect(
+            firmwareBinaryPath({
+                version: '1.0.0',
+                path: 'esp32s3/.pio/build/echo-zero/firmware.bin',
+            })
+        ).toBe(
+            path.join(
+                path.resolve(dir),
+                'esp32s3/.pio/build/echo-zero/firmware.bin'
+            )
+        );
+    });
+
+    it('refuses a path that leaves the echo-devices directory', () => {
+        expect(
+            firmwareBinaryPath({ version: '1.0.0', path: '../secret.bin' })
+        ).toBeNull();
+        expect(
+            firmwareBinaryPath({
+                version: '1.0.0',
+                path: path.resolve(dir, '..', 'secret.bin'),
+            })
+        ).toBeNull();
+        expect(firmwareBinaryPath({ version: '1.0.0' })).toBeNull();
+        expect(firmwareBinaryPath(null)).toBeNull();
+    });
+
+    it('serves the binary the manifest publishes for a type', () => {
+        publish({
+            devices: {
+                'echo-zero': {
+                    version: '1.0.0',
+                    path: 'esp32s3/.pio/build/echo-zero/firmware.bin',
+                },
+                'echo-dashboard': {
+                    version: '2.1.3',
+                    path: 'esp32s3/.pio/build/echo-dashboard/firmware.bin',
+                },
+            },
+        });
+
+        const binary = resolveFirmwareBinary('echo-dashboard');
+        expect(binary?.entry.version).toBe('2.1.3');
+        expect(binary?.file).toBe(
+            path.join(
+                path.resolve(dir),
+                'esp32s3/.pio/build/echo-dashboard/firmware.bin'
+            )
+        );
+    });
+
+    it('serves nothing for an unknown or unpublished type', () => {
+        publish({ devices: { 'echo-zero': { version: '1.0.0' } } });
+
+        // Not in the manifest at all (e.g. a variant with no OTA build).
+        expect(resolveFirmwareBinary('echo-cook')).toBeNull();
+        // A version without a binary has nothing to download.
+        expect(resolveFirmwareBinary('echo-zero')).toBeNull();
+        expect(resolveFirmwareBinary('')).toBeNull();
+    });
+
+    it('serves nothing without a manifest', () => {
+        expect(resolveFirmwareBinary('echo-zero')).toBeNull();
     });
 });

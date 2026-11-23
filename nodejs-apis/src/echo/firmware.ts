@@ -2,22 +2,40 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * Firmware versions published for the echo devices.
+ * Firmware published for the echo devices.
  *
  * The binaries served to the devices (`/api/echo/:type/latest/firmware.bin`)
  * embed their own version, so the server cannot read it back from the file.
- * The `firmware.json` manifest, committed next to the sources in `echo-devices`,
- * is the source of truth used to decide whether a device is up to date.
+ * The `firmware.json` manifest, committed at the root of `echo-devices`, is the
+ * source of truth for both: the version used to decide whether a device is up
+ * to date, and the `path` of the binary to serve for its type. The firmware
+ * repository holds one project per variant (`esp32s3/`, `esp32p4/`), whose
+ * build directories differ, so the path is what tells them apart — there is no
+ * layout to guess from the device type alone.
  */
 
-/** Directory of the `echo-devices` repository (same mount as `api.ts`). */
-const DIR = '../echo-devices';
+/**
+ * Directory of the `echo-devices` repository (same mount as `api.ts`).
+ * Overridable with `ECHO_DEVICES_DIR` so the tests can point it at a fixture.
+ */
+export function echoDevicesDir(): string {
+    return (
+        process.env.ECHO_DEVICES_DIR ??
+        path.join(process.cwd(), '..', 'echo-devices')
+    );
+}
 
 /** Version published for a device type. */
 export interface FirmwareEntry {
     version: string;
     /** ESP32HomeAssistant library version shipped with that firmware. */
     lib?: string;
+    /**
+     * Binary served for this device type, relative to the `echo-devices`
+     * directory (e.g. `esp32s3/.pio/build/echo-zero/firmware.bin`). A type
+     * without one has a version but nothing to download.
+     */
+    path?: string;
 }
 
 /** Content of `echo-devices/firmware.json`. */
@@ -89,7 +107,8 @@ export function compareVersions(
 /** Path of the manifest, overridable for tests. */
 export function firmwareManifestPath(): string {
     return (
-        process.env.ECHO_FIRMWARE_MANIFEST ?? path.join(DIR, 'firmware.json')
+        process.env.ECHO_FIRMWARE_MANIFEST ??
+        path.join(echoDevicesDir(), 'firmware.json')
     );
 }
 
@@ -125,6 +144,69 @@ export function loadFirmwareManifest(): FirmwareManifest | null {
 /** Drop the cached manifest (used by the tests). */
 export function resetFirmwareCache(): void {
     cache = null;
+}
+
+/**
+ * Absolute path of the binary published for a device type.
+ *
+ * `entry.path` comes from a committed file, so it is resolved against the
+ * `echo-devices` directory and refused when it leaves it: a typo — or a
+ * tampered manifest — must never turn the OTA route into a file server.
+ * Returns `null` for a missing path or one pointing outside the repository.
+ */
+export function firmwareBinaryPath(
+    entry?: FirmwareEntry | null
+): string | null {
+    const relative = String(entry?.path ?? '').trim();
+    if (!relative) return null;
+
+    const base = path.resolve(echoDevicesDir());
+    const resolved = path.resolve(base, relative);
+    if (resolved !== base && !resolved.startsWith(base + path.sep)) {
+        console.log(
+            `[firmware] Refusing binary path "${relative}": outside ${base}`
+        );
+        return null;
+    }
+    return resolved;
+}
+
+/** Binary published for a device type, with the manifest entry it came from. */
+export interface FirmwareBinary {
+    file: string;
+    entry: FirmwareEntry;
+}
+
+/**
+ * Resolve the binary to serve for a device type from the manifest.
+ *
+ * Only a type the manifest publishes is served: there is no naming convention
+ * to fall back on, because each variant keeps its own build directory
+ * (`esp32s3/.pio/build/<env>/`, `esp32p4/.pio/build/<board>/`). `null`
+ * therefore means "nothing downloadable" — the reason is logged here and the
+ * route answers 404.
+ */
+export function resolveFirmwareBinary(
+    deviceType?: string | null
+): FirmwareBinary | null {
+    const type = String(deviceType ?? '').trim();
+    if (!type) return null;
+
+    const manifest = loadFirmwareManifest();
+    if (!manifest) return null;
+
+    const entry = manifest.devices[type];
+    if (!entry?.version) {
+        console.log(`[firmware] no firmware published for "${type}"`);
+        return null;
+    }
+
+    const file = firmwareBinaryPath(entry);
+    if (!file) {
+        console.log(`[firmware] "${type}" has no binary path in the manifest`);
+        return null;
+    }
+    return { file, entry };
 }
 
 /**

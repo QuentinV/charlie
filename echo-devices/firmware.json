@@ -1,0 +1,25 @@
+{
+    "generatedAt": "2026-10-27T00:00:00.000Z",
+    "devices": {
+        "echo-zero": {
+            "version": "1.0.1",
+            "lib": "1.2.1",
+            "path": "esp32s3/.pio/build/echo-zero/firmware.bin"
+        },
+        "echo-zero-screen": {
+            "version": "1.0.1",
+            "lib": "1.2.1",
+            "path": "esp32s3/.pio/build/echo-zero-screen/firmware.bin"
+        },
+        "echo-dashboard": {
+            "version": "1.0.1",
+            "lib": "1.2.1",
+            "path": "esp32s3/.pio/build/echo-dashboard/firmware.bin"
+        },
+        "echo-dashboard-weather": {
+            "version": "1.0.1",
+            "lib": "1.2.1",
+            "path": "esp32s3/.pio/build/echo-dashboard-weather/firmware.bin"
+        }
+    }
+}
