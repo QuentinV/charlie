@@ -1,5 +1,5 @@
-echo-devices/libs/charlie_inferencing/** linguist-vendored
-echo-devices/libs/charlie-2_inferencing/** linguist-vendored
+echo-devices/esp32s3/libs/charlie_inferencing/** linguist-vendored
+echo-devices/esp32s3/libs/charlie-2_inferencing/** linguist-vendored
 
 # Shell scripts must keep LF endings: a CRLF checkout (core.autocrlf=true on
 # Windows) makes `sh` abort with "Syntax error: word unexpected" and breaks the

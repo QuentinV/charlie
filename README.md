@@ -310,6 +310,43 @@ Charlie supports custom-built echo devices similar to Amazon Alexa or Google Hom
 
 See the [ESP32-S3 documentation](echo-devices/README.md) for build and setup instructions.
 
+### 🖥️ ESP32-P4 — pull-based screen bundles (`ui.bundle/1`)
+
+The ESP32-P4 drives its two displays (800×1280 DSI main + 480×320 SPI aux) from a
+versioned JSON document, not from pushed pixels. Charlie owns the document; the
+device polls for it, caches it in SPIFFS and renders it with LVGL. Actions run
+on-device; only `call` actions travel back to Charlie.
+
+The device identifies itself with `X-Echo-Mac: <mac>` on every request. `:id` in
+the routes below is the device id (the MAC without separators).
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/echo/:id/ui/rev` | Cheap poll: `{ rev, hash, pages }`. |
+| `GET` | `/echo/:id/ui` | The bundle. `ETag` = bundle hash; `304` when unchanged. |
+| `GET` | `/echo/:id/ui/vars?p=…` | Batch-resolve `external.*` variables. |
+| `POST` | `/echo/:id/ui/actions` | A `call` action: `{ action, params }`. |
+| `PUT` | `/echo/:id/ui` | Publish a bundle (JSON). |
+| `PUT` | `/echo/:id/ui/html` | Publish from HTML (compiled with cheerio on Charlie). |
+
+The contract lives in `nodejs-apis/src/echo/ui/schema.ts` (Zod, source of truth).
+`ui-bundle.schema.json` and `ui-bundle.example.json` are generated from it and
+committed; the firmware repo mirrors the enums and limits in
+`components/echo_screen/include/echo_screen_schema.h`, and a drift test in
+`schema.test.ts` fails when the committed JSON Schema differs from the generated
+one. The full device-side behaviour, limits and authoring rules are documented in
+the firmware repo's `docs/P1_SCREEN_DOCS.md`.
+
+HTML is the authoring format — the brain writes markup and Charlie compiles it:
+
+```html
+<section data-page="home" data-targets="main,aux" data-title="Cuisine">
+  <h1>Bonsoir</h1>
+  <p>Chambre {{external.devices.Chambre.temperature}} C</p>
+  <button data-on-tap="navigate:recipes">Recettes</button>
+</section>
+```
+
 ---
 
 ## 🔌 Device Provider APIs

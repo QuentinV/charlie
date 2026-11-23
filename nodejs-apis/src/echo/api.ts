@@ -24,6 +24,7 @@ import {
 } from './ui/store';
 import { resolveVars } from './ui/vars';
 import { runUiAction } from './ui/actions';
+import { compileHtmlResult } from './ui/render';
 
 const DIR = '../echo-devices';
 
@@ -277,6 +278,32 @@ const routes: RestApis = {
         put: {
             handler: async ({ params, body }) =>
                 publishUiBundle(deviceMac(params.id), body),
+        },
+    },
+    // Publish from HTML instead of JSON. The brain authors markup; this compiles
+    // it with the same compiler the firmware docs describe, then stores the
+    // sealed bundle. Body: the HTML string, or
+    // `{html, rev?, theme?, vars?, defaults?, generatedAt?}`.
+    'echo/:id/ui/html': {
+        put: {
+            handler: async ({ params, body }) => {
+                const payload = typeof body === 'string' ? { html: body } : (body ?? {});
+                const html = payload.html;
+                if (typeof html !== 'string' || html.trim() === '') {
+                    return { ok: false, issues: [{ path: 'html', message: 'missing html' }] };
+                }
+                const compiled = compileHtmlResult(html, {
+                    rev: payload.rev,
+                    theme: payload.theme,
+                    vars: payload.vars,
+                    defaults: payload.defaults,
+                    generatedAt: payload.generatedAt,
+                });
+                if (!compiled.ok || !compiled.bundle) {
+                    return { ok: false, issues: compiled.issues };
+                }
+                return publishUiBundle(deviceMac(params.id), compiled.bundle);
+            },
         },
     },
     'echo/:id/ui/rollback': {
