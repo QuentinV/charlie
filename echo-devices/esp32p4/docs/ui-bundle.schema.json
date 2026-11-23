@@ -1,0 +1,711 @@
+{
+  "$ref": "#/definitions/UiBundle",
+  "definitions": {
+    "UiBundle": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "type": "number",
+          "const": 1
+        },
+        "rev": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "defaults": {
+          "type": "object",
+          "properties": {
+            "main": {
+              "type": "string",
+              "pattern": "^[a-z0-9_-]{1,32}$"
+            },
+            "aux": {
+              "$ref": "#/definitions/UiBundle/properties/defaults/properties/main"
+            }
+          },
+          "additionalProperties": false
+        },
+        "theme": {
+          "type": "object",
+          "properties": {
+            "bg": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^theme\\.[A-Za-z0-9_]+$"
+                }
+              ]
+            },
+            "surface": {
+              "$ref": "#/definitions/UiBundle/properties/theme/properties/bg"
+            },
+            "text": {
+              "$ref": "#/definitions/UiBundle/properties/theme/properties/bg"
+            },
+            "muted": {
+              "$ref": "#/definitions/UiBundle/properties/theme/properties/bg"
+            },
+            "accent": {
+              "$ref": "#/definitions/UiBundle/properties/theme/properties/bg"
+            },
+            "radius": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 200
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": [
+            "bg",
+            "surface",
+            "text",
+            "muted",
+            "accent"
+          ],
+          "additionalProperties": true
+        },
+        "vars": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "local",
+                  "remote"
+                ]
+              },
+              "ttl": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 600000
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "string",
+                  "int",
+                  "float",
+                  "bool"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          "propertyNames": {
+            "pattern": "^(core|external)(\\.[A-Za-z0-9_-]+)+$"
+          }
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/definitions/UiBundle/properties/defaults/properties/main"
+              },
+              "targets": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "main",
+                    "aux"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 2
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "on": {
+                "type": "object",
+                "properties": {
+                  "tap": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "navigate"
+                            },
+                            "page": {
+                              "$ref": "#/definitions/UiBundle/properties/defaults/properties/main"
+                            }
+                          },
+                          "required": [
+                            "do",
+                            "page"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "back"
+                            }
+                          },
+                          "required": [
+                            "do"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "setVar"
+                            },
+                            "path": {
+                              "type": "string",
+                              "pattern": "^(core|external)(\\.[A-Za-z0-9_-]+)+$"
+                            },
+                            "value": {
+                              "type": [
+                                "string",
+                                "number",
+                                "boolean"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "do",
+                            "path",
+                            "value"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "toggleVar"
+                            },
+                            "path": {
+                              "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items/anyOf/2/properties/path"
+                            }
+                          },
+                          "required": [
+                            "do",
+                            "path"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "show"
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_.:-]{1,48}$"
+                            }
+                          },
+                          "required": [
+                            "do",
+                            "id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "hide"
+                            },
+                            "id": {
+                              "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items/anyOf/4/properties/id"
+                            }
+                          },
+                          "required": [
+                            "do",
+                            "id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "enable"
+                            },
+                            "id": {
+                              "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items/anyOf/4/properties/id"
+                            }
+                          },
+                          "required": [
+                            "do",
+                            "id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "disable"
+                            },
+                            "id": {
+                              "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items/anyOf/4/properties/id"
+                            }
+                          },
+                          "required": [
+                            "do",
+                            "id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "wait"
+                            },
+                            "ms": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 60000
+                            }
+                          },
+                          "required": [
+                            "do",
+                            "ms"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "if"
+                            },
+                            "cond": {
+                              "type": "object",
+                              "properties": {
+                                "path": {
+                                  "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items/anyOf/2/properties/path"
+                                },
+                                "op": {
+                                  "type": "string",
+                                  "enum": [
+                                    "==",
+                                    "!=",
+                                    ">",
+                                    "<",
+                                    ">=",
+                                    "<=",
+                                    "contains",
+                                    "exists"
+                                  ]
+                                },
+                                "value": {
+                                  "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items/anyOf/2/properties/value"
+                                }
+                              },
+                              "required": [
+                                "path",
+                                "op"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "then": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items"
+                              }
+                            },
+                            "else": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items"
+                              }
+                            }
+                          },
+                          "required": [
+                            "do",
+                            "cond",
+                            "then"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "call"
+                            },
+                            "action": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            },
+                            "params": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "do",
+                            "action"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "do": {
+                              "type": "string",
+                              "const": "reload"
+                            }
+                          },
+                          "required": [
+                            "do"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "longPress": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items"
+                    }
+                  },
+                  "enter": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items"
+                    }
+                  },
+                  "leave": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items"
+                    }
+                  },
+                  "interval": {
+                    "type": "object",
+                    "properties": {
+                      "ms": {
+                        "type": "integer",
+                        "minimum": 100,
+                        "maximum": 600000
+                      },
+                      "actions": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items"
+                        }
+                      }
+                    },
+                    "required": [
+                      "ms",
+                      "actions"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "var": {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items/anyOf/2/properties/path"
+                      },
+                      "when": {
+                        "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items/anyOf/9/properties/cond"
+                      },
+                      "actions": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items"
+                        }
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "actions"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "gesture": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items"
+                      }
+                    },
+                    "propertyNames": {
+                      "enum": [
+                        "swipeLeft",
+                        "swipeRight",
+                        "swipeUp",
+                        "swipeDown",
+                        "forward",
+                        "backward"
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": true
+              },
+              "root": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "screen",
+                      "row",
+                      "col",
+                      "scroll",
+                      "text",
+                      "button",
+                      "image",
+                      "divider",
+                      "bar",
+                      "toggle",
+                      "list"
+                    ]
+                  },
+                  "id": {
+                    "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items/anyOf/4/properties/id"
+                  },
+                  "style": {
+                    "type": "object",
+                    "properties": {
+                      "flex": {
+                        "type": "string",
+                        "enum": [
+                          "row",
+                          "column"
+                        ]
+                      },
+                      "gap": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 200
+                      },
+                      "pad": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 200
+                      },
+                      "padX": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 200
+                      },
+                      "padY": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 200
+                      },
+                      "grow": {
+                        "type": "number",
+                        "enum": [
+                          0,
+                          1
+                        ]
+                      },
+                      "w": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 4096
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^(\\d{1,3}%|content)$"
+                          }
+                        ]
+                      },
+                      "h": {
+                        "$ref": "#/definitions/UiBundle/properties/pages/items/properties/root/properties/style/properties/w"
+                      },
+                      "bg": {
+                        "$ref": "#/definitions/UiBundle/properties/theme/properties/bg"
+                      },
+                      "color": {
+                        "$ref": "#/definitions/UiBundle/properties/theme/properties/bg"
+                      },
+                      "radius": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 200
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "size": {
+                        "type": "number",
+                        "enum": [
+                          12,
+                          16,
+                          20,
+                          28,
+                          40,
+                          56
+                        ]
+                      },
+                      "align": {
+                        "type": "string",
+                        "enum": [
+                          "left",
+                          "center",
+                          "right"
+                        ]
+                      },
+                      "valign": {
+                        "type": "string",
+                        "enum": [
+                          "top",
+                          "middle",
+                          "bottom"
+                        ]
+                      },
+                      "border": {
+                        "type": "object",
+                        "properties": {
+                          "w": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 20
+                          },
+                          "color": {
+                            "$ref": "#/definitions/UiBundle/properties/theme/properties/bg"
+                          }
+                        },
+                        "required": [
+                          "w",
+                          "color"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "opacity": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 255
+                      },
+                      "scrollDir": {
+                        "type": "string",
+                        "enum": [
+                          "v",
+                          "h",
+                          "none"
+                        ]
+                      },
+                      "precision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4
+                      }
+                    },
+                    "additionalProperties": true
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 512
+                  },
+                  "value": {
+                    "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on/properties/tap/items/anyOf/2/properties/value"
+                  },
+                  "src": {
+                    "type": "string",
+                    "maxLength": 512
+                  },
+                  "hidden": {
+                    "type": "boolean"
+                  },
+                  "disabled": {
+                    "type": "boolean"
+                  },
+                  "on": {
+                    "$ref": "#/definitions/UiBundle/properties/pages/items/properties/on"
+                  },
+                  "children": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/UiBundle/properties/pages/items/properties/root"
+                    },
+                    "maxItems": 256
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "id",
+              "targets",
+              "root"
+            ],
+            "additionalProperties": true
+          },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "schema",
+        "rev",
+        "hash",
+        "theme",
+        "vars",
+        "pages"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

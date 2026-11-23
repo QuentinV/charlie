@@ -1,0 +1,141 @@
+CONFIG_ESP32_DEFAULT_CPU_FREQ_360=y
+CONFIG_ESP32P4_REV_MIN_0=y
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_200M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
+
+# --- Echo-Cook P0 infrastructure ---------------------------------------------
+# Custom table: nvs + model (TFLite wake word) + storage (SPIFFS, UTF-8 recipes).
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# Display bring-up (DSI panel + SPI ILI9488 + SPIFFS + NVS) runs from app_main().
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# PSRAM is used for DPI frame buffers and LVGL draw buffers.
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y
+
+# NVS / SPIFFS are used by echo_core (settings) and echo_display (recipe text).
+CONFIG_NVS_ASSERT_ERROR_CHECK=y
+
+# The Waveshare JD9365 driver installs I2C_NUM_1 through espressif/i2c_bus and
+# never releases it; echo_display_touch then shares that port using the legacy
+# driver API. Without this flag i2c_bus uses the new i2c_master driver above IDF
+# 5.3 and the legacy calls in the touch driver would fail at runtime.
+CONFIG_I2C_BUS_BACKWARD_CONFIG=y
+
+# --- LVGL 9 -------------------------------------------------------------------
+# RGB565 everywhere: echo_display accepts RGB565 blits and converts to the
+# panel-native formats (BGR888 for the DSI framebuffer, RGB666 for the ILI9488;
+# the ST7796 takes RGB565 unchanged).
+# OS integration is left to echo_ui's own mutex and task (LV_OS_NONE), so LVGL
+# never calls into FreeRTOS directly.
+CONFIG_LV_COLOR_FORMAT_RGB565=y
+# Screen bundles build a widget tree per page and keep the parsed cJSON alive in
+# PSRAM, so LVGL must allocate through the C library instead of its fixed 128 KB
+# built-in pool. CLIB routes lv_malloc() to malloc(), which ESP-IDF serves from
+# PSRAM (CONFIG_SPIRAM_USE_MALLOC). LV_MEM_SIZE stays as the fallback pool size
+# used by the few allocations that request internal memory.
+CONFIG_LV_USE_STDLIB_MALLOC=1
+CONFIG_LV_USE_CLIB_MALLOC=y
+CONFIG_LV_MEM_SIZE=131072
+# The UI lives in echo_ui; LVGL's bundled examples only add flash and build time.
+CONFIG_LV_BUILD_EXAMPLES=n
+# Fonts are generated in components/echo_ui/fonts (Latin-1 for French accents);
+# montserrat_14 stays as the widget default used by themes.
+# The echo_font_* glyph bitmaps are lv_font_conv "compressed" (bitmap_format = 1),
+# so LVGL's decompressor MUST be enabled or every glyph returns a NULL bitmap and
+# the UI draws no text at all (only backgrounds/panels show).
+CONFIG_LV_USE_FONT_COMPRESSED=y
+
+# --- Board wiring: display + sensors ------------------------------------------
+# Pinned so a fresh sdkconfig (or a component update) cannot silently move a pin.
+# The 3.5" module on this build is an ST7796; switch the controller choice to
+# ECHO_DISPLAY_SPI_CTRL_ILI9488 for an ILI9488 panel (RGB666, 3 bytes/pixel).
+CONFIG_ECHO_DISPLAY_SPI_CTRL_ST7796=y
+CONFIG_ECHO_DISPLAY_SPI_CS_GPIO=20
+CONFIG_ECHO_DISPLAY_SPI_RST_GPIO=21
+CONFIG_ECHO_DISPLAY_SPI_DC_GPIO=22
+CONFIG_ECHO_DISPLAY_SPI_MOSI_GPIO=23
+CONFIG_ECHO_DISPLAY_SPI_SCLK_GPIO=26
+# The DSI panel's reset and backlight sit behind the I2C controller at 0x45, and
+# GPIO26 (an earlier hard-coded backlight) belongs to the SPI panel's SCLK.
+CONFIG_ECHO_DISPLAY_DSI_RESET_GPIO=-1
+CONFIG_ECHO_DISPLAY_DSI_BL_GPIO=-1
+CONFIG_ECHO_SENSORS_DHT22_ENABLED=y
+CONFIG_ECHO_SENSORS_DHT22_GPIO=5
+CONFIG_ECHO_SENSORS_PAJ7620_ENABLED=y
+CONFIG_ECHO_SENSORS_PAJ7620_INT_GPIO=4
+CONFIG_ECHO_SENSORS_PAJ7620_I2C_ADDR=0x73
+CONFIG_ECHO_SENSORS_I2C_PORT=1
+
+# --- Hosted Wi-Fi (ESP32-C6 co-processor over SDIO) ---------------------------
+# The P4 has no radio. esp_wifi_remote re-implements the esp_wifi API on top of
+# esp_hosted, which drives the on-board C6 over SDIO. The values below are
+# esp_hosted's defaults for a P4 host with a C6 slave and they match the
+# Waveshare carrier (SDIO CLK/CMD/D0..D3 = GPIO18/19/14/15/16/17, C6 reset on
+# GPIO54); they are pinned here so a component update cannot silently move the
+# wiring. Anything not listed keeps the component default.
+CONFIG_ESP_WIFI_REMOTE_LIBRARY_HOSTED=y
+CONFIG_SLAVE_IDF_TARGET_ESP32C6=y
+CONFIG_ESP_HOSTED_SDIO_HOST_INTERFACE=y
+CONFIG_ESP_HOSTED_SDIO_4_BIT_BUS=y
+CONFIG_ESP_HOSTED_SDIO_PIN_CLK=18
+CONFIG_ESP_HOSTED_SDIO_PIN_CMD=19
+CONFIG_ESP_HOSTED_SDIO_PIN_D0=14
+CONFIG_ESP_HOSTED_SDIO_PRIV_PIN_D1_4BIT_BUS=15
+CONFIG_ESP_HOSTED_SDIO_PIN_D2=16
+CONFIG_ESP_HOSTED_SDIO_PIN_D3=17
+CONFIG_ESP_HOSTED_SDIO_GPIO_RESET_SLAVE=54
+
+# --- Network provisioning (echo_wifi / echo_ha) --------------------------------
+# These are Kconfig options, not defaults: set them in menuconfig, or uncomment
+# and fill in the values here before a build that must reach the Charlie server.
+# Leaving them empty is a valid offline build (the station refuses to scan and
+# echo_ha logs "no server configured").
+# CONFIG_ECHO_WIFI_SSID="my-ssid"
+# CONFIG_ECHO_WIFI_PASSWORD="my-password"
+# CONFIG_ECHO_HA_SERVER_IP="192.168.1.10"
+# CONFIG_ECHO_HA_PORT=9303
+
+# --- Audio: ES8311 codec + NS4150B PA (echo_audio / echo_voice) ----------------
+# The onboard microphone (ES8311 ADC) and the speaker (ES8311 DAC -> NS4150B) share
+# I2S0 (MCLK=GPIO13, BCLK=GPIO12, WS=GPIO10, DSDIN=GPIO9, ASDOUT=GPIO11) and the
+# display's I2C port (port 1, codec at 0x18); the amplifier enable is GPIO53.
+# echo_audio reuses the I2C port the JD9365 driver installs, so it must be brought
+# up after echo_display_init() (the boot order in src/main.cpp already does).
+CONFIG_ECHO_AUDIO_ENABLED=y
+CONFIG_ECHO_AUDIO_I2S_PORT=0
+CONFIG_ECHO_AUDIO_MCLK_GPIO=13
+CONFIG_ECHO_AUDIO_BCLK_GPIO=12
+CONFIG_ECHO_AUDIO_WS_GPIO=10
+CONFIG_ECHO_AUDIO_DOUT_GPIO=9
+CONFIG_ECHO_AUDIO_DIN_GPIO=11
+CONFIG_ECHO_AUDIO_PA_GPIO=53
+CONFIG_ECHO_AUDIO_I2C_PORT=1
+CONFIG_ECHO_AUDIO_I2C_ADDR=0x18
+CONFIG_ECHO_AUDIO_SAMPLE_RATE_HZ=16000
+CONFIG_ECHO_AUDIO_MIC_GAIN_DB=30
+CONFIG_ECHO_AUDIO_SPEAKER_VOLUME=70
+CONFIG_ECHO_VOICE_ENABLED=y
+
+# --- Boot status screen (echo_status) -----------------------------------------
+# Paints a diagnostic page (RAM/PSRAM, Wi-Fi, time, sensors, panels, audio) on
+# the 10.1" panel and a "Welcome to EchoCook" message on the 3.5" panel a few
+# seconds after boot, then hands the screen back to the bundle renderer.
+CONFIG_ECHO_STATUS_ENABLED=y
+CONFIG_ECHO_STATUS_DELAY_MS=5000
+CONFIG_ECHO_STATUS_WINDOW_MS=15000
+CONFIG_ECHO_STATUS_SHOW_AUX=y
+CONFIG_ECHO_STATUS_PLAY_SOUND=y
+
+# --- SNTP (echo_wifi) ---------------------------------------------------------
+# Started once the station gets an IP address. Without it time() stays at the
+# 1970 epoch and both the core.time.* bundle variables and the boot status
+# screen show "not synced".
+CONFIG_ECHO_WIFI_NTP_ENABLED=y
+CONFIG_ECHO_WIFI_NTP_SERVER="pool.ntp.org"
+CONFIG_ECHO_WIFI_TZ="CET-1CEST,M3.5.0,M10.5.0/3"

@@ -1,0 +1,295 @@
+{
+  "schema": 1,
+  "rev": 1,
+  "generatedAt": "2026-11-22T09:14:00.000Z",
+  "defaults": {
+    "main": "home",
+    "aux": "status"
+  },
+  "theme": {
+    "bg": "#0E1216",
+    "surface": "#1A212A",
+    "text": "#F3F5F8",
+    "muted": "#93A0B0",
+    "accent": "#E6A94D",
+    "radius": 12
+  },
+  "vars": {
+    "core.time.hhmm": {
+      "kind": "local",
+      "type": "string"
+    },
+    "core.sensors.temperature": {
+      "kind": "local",
+      "type": "float"
+    },
+    "core.net.online": {
+      "kind": "local",
+      "type": "bool"
+    },
+    "external.devices.Chambre.state": {
+      "kind": "remote",
+      "ttl": 5000,
+      "type": "string"
+    }
+  },
+  "pages": [
+    {
+      "id": "home",
+      "targets": [
+        "main"
+      ],
+      "title": "Cuisine",
+      "on": {
+        "enter": [
+          {
+            "do": "call",
+            "action": "ui.enter",
+            "params": {
+              "page": "home"
+            }
+          }
+        ]
+      },
+      "root": {
+        "type": "screen",
+        "style": {
+          "flex": "column",
+          "pad": 24,
+          "gap": 16,
+          "bg": "theme.bg"
+        },
+        "children": [
+          {
+            "type": "text",
+            "id": "clock",
+            "style": {
+              "size": 56,
+              "color": "theme.text",
+              "align": "center"
+            },
+            "text": "{{core.time.hhmm}}"
+          },
+          {
+            "type": "text",
+            "id": "summary",
+            "style": {
+              "size": 20,
+              "color": "theme.muted"
+            },
+            "text": "Chambre {{external.devices.Chambre.state}} - {{core.sensors.temperature}} C"
+          },
+          {
+            "type": "row",
+            "style": {
+              "gap": 12
+            },
+            "children": [
+              {
+                "type": "button",
+                "id": "lights",
+                "label": "Lumieres",
+                "style": {
+                  "bg": "theme.surface",
+                  "radius": "theme.radius",
+                  "pad": 20
+                },
+                "on": {
+                  "tap": [
+                    {
+                      "do": "call",
+                      "action": "devices.toggle",
+                      "params": {
+                        "name": "Chambre"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "button",
+                "id": "recipes",
+                "label": "Recettes",
+                "style": {
+                  "bg": "theme.surface",
+                  "radius": "theme.radius",
+                  "pad": 20
+                },
+                "on": {
+                  "tap": [
+                    {
+                      "do": "navigate",
+                      "page": "recipes"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "recipes",
+      "targets": [
+        "main"
+      ],
+      "title": "Recettes",
+      "root": {
+        "type": "screen",
+        "style": {
+          "flex": "column",
+          "pad": 24,
+          "gap": 12,
+          "bg": "theme.bg"
+        },
+        "children": [
+          {
+            "type": "text",
+            "style": {
+              "size": 40,
+              "color": "theme.text"
+            },
+            "text": "Recettes"
+          },
+          {
+            "type": "scroll",
+            "id": "list",
+            "style": {
+              "flex": "column",
+              "gap": 12,
+              "grow": 1,
+              "scrollDir": "v"
+            },
+            "children": [
+              {
+                "type": "button",
+                "id": "recipe:1",
+                "label": "Gratin dauphinois",
+                "style": {
+                  "bg": "theme.surface",
+                  "radius": "theme.radius",
+                  "pad": 20
+                },
+                "on": {
+                  "tap": [
+                    {
+                      "do": "call",
+                      "action": "recipe.open",
+                      "params": {
+                        "id": "gratin"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "button",
+                "id": "recipe:2",
+                "label": "Soupe a l'oignon",
+                "style": {
+                  "bg": "theme.surface",
+                  "radius": "theme.radius",
+                  "pad": 20
+                },
+                "on": {
+                  "tap": [
+                    {
+                      "do": "call",
+                      "action": "recipe.open",
+                      "params": {
+                        "id": "soupe"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "type": "row",
+            "style": {
+              "gap": 12
+            },
+            "children": [
+              {
+                "type": "button",
+                "id": "back",
+                "label": "<",
+                "style": {
+                  "bg": "theme.surface",
+                  "radius": "theme.radius",
+                  "pad": 20
+                },
+                "on": {
+                  "tap": [
+                    {
+                      "do": "back"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "status",
+      "targets": [
+        "aux"
+      ],
+      "title": "Statut",
+      "root": {
+        "type": "screen",
+        "style": {
+          "flex": "column",
+          "pad": 16,
+          "gap": 8,
+          "bg": "theme.bg"
+        },
+        "children": [
+          {
+            "type": "text",
+            "style": {
+              "size": 20,
+              "color": "theme.text"
+            },
+            "text": "Echo-Cook"
+          },
+          {
+            "type": "text",
+            "style": {
+              "size": 16,
+              "color": "theme.muted"
+            },
+            "text": "{{core.time.hhmm}}"
+          },
+          {
+            "type": "text",
+            "style": {
+              "size": 16,
+              "color": "theme.muted"
+            },
+            "text": "{{core.sensors.temperature}} C"
+          },
+          {
+            "type": "divider",
+            "style": {
+              "bg": "theme.surface"
+            }
+          },
+          {
+            "type": "text",
+            "style": {
+              "size": 16,
+              "color": "theme.muted"
+            },
+            "text": "Chambre : {{external.devices.Chambre.state}}"
+          }
+        ]
+      }
+    }
+  ],
+  "hash": "76623c20b85982fd8990d2ff7da0f7633c1e2de074ad0a3b74ff9f8e9e77f158"
+}

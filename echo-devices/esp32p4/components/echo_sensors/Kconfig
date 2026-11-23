@@ -1,0 +1,77 @@
+menu "echo_sensors"
+
+    config ECHO_SENSORS_DHT22_ENABLED
+        bool "DHT22 temperature / humidity probe"
+        default y
+        help
+            Bit-bangs the DHT22 single-wire protocol on the GPIO below and
+            publishes ECHO_EVT_TEMPERATURE once per period. Bit timings are
+            measured with esp_timer_get_time() and the read runs with interrupts
+            enabled, so the ~5 ms transaction does not stall the SDIO link to the
+            C6; a frame corrupted by preemption fails its checksum and is
+            retried. Do not poll faster than the sensor allows.
+
+    config ECHO_SENSORS_DHT22_GPIO
+        int "DHT22 data GPIO"
+        default 5
+        depends on ECHO_SENSORS_DHT22_ENABLED
+        help
+            Data line with a 4.7k-10k pull-up to 3V3. GPIO5 is free on the
+            ESP32-P4-WIFI6 (the header's reserved pins are 7/8 for I2C, 9-13
+            for I2S, 14-19 for SDIO, 37-45 for UART0/TF and 53/54).
+
+    config ECHO_SENSORS_DHT22_PERIOD_MS
+        int "DHT22 poll period (ms)"
+        range 2000 60000
+        default 5000
+        depends on ECHO_SENSORS_DHT22_ENABLED
+        help
+            The DHT22 needs at least 2 s between reads; slower is better for
+            accuracy. 5000 ms is a good compromise for a room display.
+
+    config ECHO_SENSORS_PAJ7620_ENABLED
+        bool "PAJ7620U2 air gesture sensor"
+        default y
+        help
+            Publishes ECHO_EVT_AIR_GESTURE for up/down/left/right, forward,
+            backward, clockwise, counter-clockwise and wave. The sensor hangs on
+            the display's I2C bus, so echo_sensors_init() must be called after
+            echo_display_init().
+
+    config ECHO_SENSORS_PAJ7620_INT_GPIO
+        int "PAJ7620U2 INT GPIO (-1 = poll only)"
+        default 4
+        depends on ECHO_SENSORS_PAJ7620_ENABLED
+        help
+            The INT output is active low and is used as a gate: the task only
+            reads the gesture registers when the line is asserted. -1 makes the
+            task read the registers unconditionally every poll period, which
+            works but costs more I2C traffic.
+
+    config ECHO_SENSORS_PAJ7620_I2C_ADDR
+        hex "PAJ7620U2 7-bit I2C address"
+        default 0x73
+        range 0x08 0x77
+        depends on ECHO_SENSORS_PAJ7620_ENABLED
+
+    config ECHO_SENSORS_PAJ7620_POLL_MS
+        int "PAJ7620U2 poll period (ms)"
+        range 10 500
+        default 30
+        depends on ECHO_SENSORS_PAJ7620_ENABLED
+        help
+            A gesture lasts ~200 ms, so 30 ms never misses one and keeps the
+            shared I2C bus (touch controller included) mostly idle.
+
+    config ECHO_SENSORS_I2C_PORT
+        int "I2C port shared with the display driver"
+        range 0 1
+        default 1
+        depends on ECHO_SENSORS_PAJ7620_ENABLED
+        help
+            Port 1 is the bus the Waveshare JD9365 driver installs on
+            SDA=GPIO7 / SCL=GPIO8 and never releases. echo_sensors reuses it
+            instead of installing its own, so this must match
+            CONFIG_ECHO_DISPLAY_* — 1 on the ESP32-P4-WIFI6.
+
+endmenu

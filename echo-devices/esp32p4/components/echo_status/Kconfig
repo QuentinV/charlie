@@ -1,0 +1,44 @@
+menu "echo_status"
+
+    config ECHO_STATUS_ENABLED
+        bool "Show a boot status screen"
+        default y
+        help
+            Schedules a task that, once the boot has settled, paints a one-page
+            diagnostic on the 10.1" panel (free RAM/PSRAM, Wi-Fi, time, sensors,
+            panels, microphone and speaker) and a "Welcome to EchoCook" message
+            on the 3.5" panel. Both are held for ECHO_STATUS_WINDOW_MS and then
+            swapped back to whatever was on screen (the Charlie UI when a bundle
+            is loaded). Requires echo_ui to be up.
+
+    config ECHO_STATUS_DELAY_MS
+        int "Delay after boot before showing the status (ms)"
+        range 0 60000
+        default 5000
+        depends on ECHO_STATUS_ENABLED
+        help
+            Lets the panels, network and sensors finish coming up so the page
+            shows final states instead of "down".
+
+    config ECHO_STATUS_WINDOW_MS
+        int "How long the status stays on screen (ms)"
+        range 1000 120000
+        default 15000
+        depends on ECHO_STATUS_ENABLED
+        help
+            Values are refreshed about once per second while the page is up.
+
+    config ECHO_STATUS_SHOW_AUX
+        bool "Show the welcome message on the 3.5\" panel too"
+        default y
+        depends on ECHO_STATUS_ENABLED
+
+    config ECHO_STATUS_PLAY_SOUND
+        bool "Play a short chime while the status is shown"
+        default y
+        depends on ECHO_STATUS_ENABLED
+        help
+            Plays a two-note tone through echo_audio to prove the speaker is
+            wired up. Ignored when CONFIG_ECHO_AUDIO_ENABLED is off.
+
+endmenu

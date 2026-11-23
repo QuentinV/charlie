@@ -1,0 +1,135 @@
+menu "echo_display"
+
+    config ECHO_DISPLAY_DSI_ENABLED
+        bool "Bring up the 10.1\" DSI panel (JD9365, 800x1280)"
+        default y
+        help
+            Creates the MIPI-DSI bus, the DPI panel and the framebuffer. The
+            Waveshare driver performs the I2C power-on sequence internally
+            (I2C_NUM_1, SDA=GPIO7, SCL=GPIO8, address 0x45) — do not initialise
+            I2C for the panel yourself.
+
+    config ECHO_DISPLAY_DSI_RESET_GPIO
+        int "DSI panel RESET GPIO (-1 if not wired)"
+        default -1
+        help
+            The ESP32-P4-WIFI6 wires neither LCD_RST nor TP_RST to a P4 GPIO:
+            reset and backlight live behind the I2C backlight/reset controller
+            at 0x45, which the Waveshare driver drives itself. Leave at -1 on
+            that board. Set a real pin only for a panel that has a discrete
+            reset line, and make sure the pin is not used by another peripheral.
+
+    config ECHO_DISPLAY_DSI_BL_GPIO
+        int "DSI backlight GPIO (-1 if controlled over I2C)"
+        default -1
+        help
+            -1 means "no backlight GPIO": brightness is the controller register
+            0x96 at I2C address 0x45, which the JD9365 driver already writes
+            during its init sequence. This is the correct setting for the
+            ESP32-P4-WIFI6, whose LCD_BL is not a GPIO. Never point this at a
+            pin that another peripheral uses (an earlier revision of this
+            driver forced GPIO26 high here at boot and collided with the SPI
+            panel's SCLK).
+
+    config ECHO_DISPLAY_SPI_ENABLED
+        bool "Bring up the 3.5\" SPI TFT (480x320)"
+        default y
+        help
+            Self-contained esp_lcd_panel_t implementation on SPI2_HOST; see the
+            controller choice below for the pixel format. Set the GPIO numbers
+            to match the actual wiring of your board.
+
+    choice ECHO_DISPLAY_SPI_CONTROLLER
+        prompt "3.5\" SPI controller"
+        default ECHO_DISPLAY_SPI_CTRL_ST7796
+        help
+            Both controllers accept the same MIPI-DCS commands, but they differ
+            in pixel format and power-on sequence.
+
+        config ECHO_DISPLAY_SPI_CTRL_ST7796
+            bool "ST7796 / ST7796S (RGB565, 2 bytes per pixel)"
+            help
+                Common on 3.5\" 320x480 modules sold as \"ST7796\". RGB565 is
+                the native SPI format, so no pixel expansion is needed and the
+                bus carries a third less data than RGB666.
+
+        config ECHO_DISPLAY_SPI_CTRL_ILI9488
+            bool "ILI9488 (RGB666, 3 bytes per pixel)"
+            help
+                The ILI9488 does not reliably accept RGB565 over SPI, so every
+                pixel is expanded to 18-bit RGB666 before transmission.
+    endchoice
+
+    config ECHO_DISPLAY_SPI_SCLK_GPIO
+        int "SPI SCLK GPIO"
+        default 26
+
+    config ECHO_DISPLAY_SPI_MOSI_GPIO
+        int "SPI MOSI GPIO"
+        default 23
+
+    config ECHO_DISPLAY_SPI_CS_GPIO
+        int "SPI CS GPIO"
+        default 20
+
+    config ECHO_DISPLAY_SPI_DC_GPIO
+        int "SPI D/C GPIO"
+        default 22
+
+    config ECHO_DISPLAY_SPI_RST_GPIO
+        int "SPI RESET GPIO (-1 if tied to 3V3)"
+        default 21
+
+    config ECHO_DISPLAY_SPI_BL_GPIO
+        int "SPI backlight GPIO (-1 if tied to 3V3)"
+        default -1
+
+    config ECHO_DISPLAY_TOUCH_ENABLED
+        bool "Enable touch input on the 10.1\" DSI panel"
+        default y
+        help
+            Polls the GT911/GT9271 capacitive controller on the I2C bus the
+            Waveshare driver installs (I2C_NUM_1, SDA=GPIO7, SCL=GPIO8, 100 kHz)
+            and publishes ECHO_EVT_GESTURE events. The 3.5" SPI panel has no
+            touch controller. Leave disabled to skip touch entirely.
+
+    config ECHO_DISPLAY_TOUCH_SWAP_XY
+        bool "Swap touch X/Y axes"
+        default n
+        depends on ECHO_DISPLAY_TOUCH_ENABLED
+        help
+            Some panel batches mount the controller rotated by 90 degrees
+            relative to the display. Enable together with the matching mirror
+            option if taps land on the wrong axis.
+
+    config ECHO_DISPLAY_TOUCH_MIRROR_X
+        bool "Mirror touch X axis"
+        default n
+        depends on ECHO_DISPLAY_TOUCH_ENABLED
+
+    config ECHO_DISPLAY_TOUCH_MIRROR_Y
+        bool "Mirror touch Y axis"
+        default n
+        depends on ECHO_DISPLAY_TOUCH_ENABLED
+
+    config ECHO_DISPLAY_TOUCH_I2C_ADDR
+        hex "Touch controller 7-bit I2C address"
+        default 0x5D
+        range 0x08 0x77
+        depends on ECHO_DISPLAY_TOUCH_ENABLED
+        help
+            GT911/GT9271 strap their address to 0x5D or 0x14 depending on the
+            INT/RST sequence at power-on. The other address is probed as a
+            fallback, so either value works; set the one that stops the warning.
+
+    config ECHO_DISPLAY_SPI_PCLK_HZ
+        int "SPI pixel clock in Hz"
+        range 1000000 80000000
+        default 40000000
+        help
+            ST7796 and ILI9488 modules typically accept 40 MHz; long jumper wires
+            may need 20 MHz for a stable image. The ST7796 moves 2 bytes per
+            pixel against 3 for the ILI9488, so it refreshes noticeably faster at
+            the same clock.
+
+endmenu

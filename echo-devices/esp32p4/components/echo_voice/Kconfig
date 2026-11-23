@@ -1,0 +1,46 @@
+menu "echo_voice"
+
+    config ECHO_VOICE_ENABLED
+        bool "Wire the wake word, microphone and Charlie upload"
+        default y
+        help
+            Calls echo_voice_init() from app_main(). It registers the echo_audio
+            monitor tap with echo_wakeword, uploads an utterance to echo_ha after
+            a detection and plays the server's TTS reply. Requires echo_audio and
+            echo_wakeword to be up.
+
+    config ECHO_VOICE_UTTERANCE_MAX_MS
+        int "Maximum utterance length (ms)"
+        range 1000 30000
+        default 8000
+        help
+            Hard cap on one recording so a stuck session always ends. The turn
+            normally closes earlier on silence (ECHO_VOICE_SILENCE_MS).
+
+    config ECHO_VOICE_SILENCE_MS
+        int "Trailing silence that ends an utterance (ms)"
+        range 300 5000
+        default 900
+        help
+            Once the microphone has been quiet for this long the recording stops
+            and "end" is sent, so the server can answer without waiting for the
+            full ECHO_VOICE_UTTERANCE_MAX_MS.
+
+    config ECHO_VOICE_SILENCE_RMS
+        int "Silence RMS threshold (16-bit full scale)"
+        range 1 4000
+        default 250
+        help
+            Frames whose RMS is below this count towards the trailing silence.
+            Raise it in a noisy kitchen so the room hum is treated as silence,
+            lower it if quiet speech is being cut off.
+
+    config ECHO_VOICE_TTS_RATE_HZ
+        int "Server TTS sample rate (Hz)"
+        default 22050
+        help
+            The Charlie server streams 16-bit mono PCM at 22050 Hz. echo_audio
+            reconfigures the codec around the reply and restores the capture rate
+            afterwards.
+
+endmenu

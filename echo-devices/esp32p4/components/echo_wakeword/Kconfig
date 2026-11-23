@@ -1,0 +1,29 @@
+menu "echo_wakeword"
+
+    config ECHO_WAKEWORD_ENGINE_ENABLED
+        bool "Link the TFLite 'Hey Charlie' engine"
+        default y
+        help
+            Builds engines/tflite_engine.cpp and registers it as the scoring engine.
+            Requires espressif/esp-tflite-micro in src/idf_component.yml and the trained
+            hey_charlie.tflite model (flash partition "model" or embedded blob).
+            When disabled the component still buffers audio and exposes statistics, but
+            never reports a detection.
+
+    config ECHO_WAKEWORD_DEFAULT_THRESHOLD_PERMILLE
+        int "Default detection threshold (per mille, 0-1000)"
+        range 0 1000
+        default 900
+        help
+            Detection confidence required to report a wake word, expressed as per mille so
+            it fits in a Kconfig int. 900 = 0.90. The server's setWakeUpWordAccuracy
+            command overrides this at runtime.
+
+    config ECHO_WAKEWORD_VERBOSE_SCORES
+        bool "Log every window score"
+        default n
+        help
+            Extremely noisy: one log line per 10 ms hop. Enable only while tuning the
+            threshold on real kitchen audio.
+
+endmenu

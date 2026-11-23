@@ -24,7 +24,7 @@ const intervalHandles: { [ip: string]: ReturnType<typeof setInterval> } = {};
  */
 const SCREEN_STATE_TTL_MS = 1000;
 
-interface CachedDevice {
+export interface CachedDevice {
     at: number;
     /** The document as stored when the state was refreshed. */
     device: any;
@@ -50,7 +50,9 @@ export function resetScreenDeviceCache(): void {
  * Find a device by name and refresh its state at most once per wave.
  * Returns `null` when no device matches (a miss is never cached).
  */
-async function loadDevice(deviceName: string): Promise<CachedDevice | null> {
+export async function loadDevice(
+    deviceName: string
+): Promise<CachedDevice | null> {
     const key = cacheKey(deviceName);
 
     const cached = deviceCache.get(key);
@@ -98,7 +100,7 @@ async function loadDevice(deviceName: string): Promise<CachedDevice | null> {
  * `{{device:Salon:power}}` keeps working: a bare name that is not a field of
  * the device is looked up in its state, exactly where a reading lives.
  */
-function resolveDeviceProperty(entry: CachedDevice, path: string): any {
+export function resolveDeviceProperty(entry: CachedDevice, path: string): any {
     const value = resolvePropertyPath(
         { ...entry.device, state: entry.state },
         path

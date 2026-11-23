@@ -1,0 +1,46 @@
+menu "echo_ha (Charlie server)"
+
+    config ECHO_HA_ENABLED
+        bool "Connect to the Charlie server at boot"
+        default y
+        help
+            Calls echo_ha_init() + echo_ha_start() from app_main(). The client
+            keeps its own WebSocket (ws://<server>:9303/ws/echo) and retries in
+            the background, so a boot without Wi-Fi is not fatal.
+
+    config ECHO_HA_SERVER_IP
+        string "Charlie server address"
+        default ""
+        help
+            IPv4 address (or hostname) of the machine running the Charlie
+            server. Empty means "not provisioned": echo_ha_start() logs a
+            warning and the app can still set it at runtime with
+            echo_ha_set_server() or the server's setServerIp command.
+
+    config ECHO_HA_PORT
+        int "Charlie server WebSocket port"
+        range 1 65535
+        default 9303
+        help
+            9303 is what the Arduino library and the Charlie server use. Only
+            change it when the server is reconfigured to match.
+
+    config ECHO_HA_WAKE_ACCURACY_PERMILLE
+        int "Initial wake word accuracy (per mille)"
+        range 0 1000
+        default 900
+        help
+            Reported to the app and overridden by the server's
+            setWakeUpWordAccuracy command (which is persisted in NVS). Kept as
+            per mille so it fits a Kconfig int: 900 = 0.90.
+
+    config ECHO_HA_TTS_END_TIMEOUT_MS
+        int "Silence that ends an assistant reply (ms)"
+        range 200 10000
+        default 1200
+        help
+            The protocol has no end-of-reply marker, so a gap in the binary
+            audio frames closes the turn (ECHO_EVT_HA_TTS_END). Tune it against
+            the server's chunk pacing: too small cuts long replies into several
+            turns, too large delays the follow-up microphone.
+endmenu

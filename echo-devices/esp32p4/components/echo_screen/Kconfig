@@ -1,0 +1,49 @@
+menu "Echo screen bundles"
+
+    config ECHO_SCREEN_ENABLED
+        bool "Pull and render UI bundles from Charlie"
+        default y
+        help
+            Enable the screen bundle renderer. The device polls Charlie for a
+            revision, downloads the bundle over HTTP when the hash changed,
+            caches it in SPIFFS and renders it with LVGL. Until a bundle is
+            available the panels keep the "Waiting for UI from Charlie" message.
+
+    config ECHO_SCREEN_HTTP_PORT
+        int "Charlie HTTP API port"
+        default 9300
+        depends on ECHO_SCREEN_ENABLED
+        help
+            Port of the Charlie HTTP API (the WebSocket bridge uses 9303). The
+            host is taken from the Charlie server address configured for the
+            echo_ha component.
+
+    config ECHO_SCREEN_POLL_INTERVAL_S
+        int "Revision poll interval (seconds)"
+        default 30
+        range 5 3600
+        depends on ECHO_SCREEN_ENABLED
+        help
+            How often the device asks Charlie for its current bundle revision.
+            The request is a tiny JSON document; 30 s is a good default.
+
+    config ECHO_SCREEN_REMOTE_VAR_REFRESH_MS
+        int "Remote variable refresh floor (ms)"
+        default 1000
+        range 250 60000
+        depends on ECHO_SCREEN_ENABLED
+        help
+            Minimum interval between two batches of `external.*` variable
+            requests. Individual variables carry their own ttl in the bundle;
+            this floor keeps a misconfigured bundle from flooding the server.
+
+    config ECHO_SCREEN_BUNDLE_PATH
+        string "Bundle cache path"
+        default "/storage/ui/bundle.json"
+        depends on ECHO_SCREEN_ENABLED
+        help
+            SPIFFS path of the cached bundle. A second ".prev" copy keeps the
+            previous revision so a failed update never leaves the device
+            without a UI.
+
+endmenu

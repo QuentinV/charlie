@@ -1,0 +1,26 @@
+# Echo-Cook partition table for the ESP32-P4-WIFI6 board (16 MB flash).
+#
+# Layout notes:
+#  * "nvs"    - Wi-Fi credentials, UI settings, server endpoints.
+#  * "factory"- single OTA-less app slot at the stock ESP-IDF app offset 0x10000.
+#              0x8F0000 = 8.94 MB, comfortable for LVGL + TFLite-Micro + esp-sr.
+#              Keep the app FIRST and at 0x10000: the bootloader default, esptool,
+#              ESP-IDF flash_args and PlatformIO's merged firmware.factory.bin all
+#              assume that offset. With the app anywhere else the merged image
+#              silently lands the app at 0x10000, so the factory slot reads 0xFF
+#              and the board boot-loops ("invalid magic byte" /
+#              "Factory app partition is not bootable"). Move to a two-OTA table
+#              before enabling OTA updates.
+#  * "model"  - TFLite wake-word model, memory-mapped read-only by echo_wakeword.
+#              echo_wakeword/engines/tflite_engine.cpp looks this partition up by
+#              name and falls back to an embedded blob only if it is absent, so
+#              its offset is free to move.
+#  * "storage"- SPIFFS: A/B screen bundles, cached images and fonts. Mounted at
+#              /storage by echo_storage_mount() (also looked up by name).
+#
+# Name,     Type, SubType,  Offset,    Size,      Flags
+nvs,        data, nvs,      0x9000,    0x6000,
+phy_init,   data, phy,      0xF000,    0x1000,
+factory,    app,  factory,  0x10000,   0x8F0000,
+model,      data, 0x40,     0x900000,  0x100000,
+storage,    data, spiffs,   0xA00000,  0x600000,

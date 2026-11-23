@@ -1,0 +1,102 @@
+menu "echo_audio"
+
+    config ECHO_AUDIO_ENABLED
+        bool "Bring up the onboard microphone + speaker (ES8311)"
+        default y
+        help
+            Calls echo_audio_init()/start() from app_main(). The board carries an
+            ES8311 mono codec (analog mic on its ADC, speaker on its DAC) and an
+            NS4150B power amplifier. echo_audio owns the I2S bus and reuses the
+            I2C port the JD9365 display driver installs, so it must be initialised
+            after echo_display_init().
+
+    config ECHO_AUDIO_I2S_PORT
+        int "I2S port (0-2 on ESP32-P4)"
+        range 0 2
+        default 0
+        depends on ECHO_AUDIO_ENABLED
+
+    config ECHO_AUDIO_MCLK_GPIO
+        int "ES8311 MCLK GPIO"
+        default 13
+        depends on ECHO_AUDIO_ENABLED
+        help
+            Master clock the ESP32-P4 drives to the codec. GPIO13 on the
+            ESP32-P4-WIFI6 (Waveshare "I2S Audio Demo").
+
+    config ECHO_AUDIO_BCLK_GPIO
+        int "ES8311 SCLK/BCLK GPIO"
+        default 12
+        depends on ECHO_AUDIO_ENABLED
+
+    config ECHO_AUDIO_WS_GPIO
+        int "ES8311 LRCK/WS GPIO"
+        default 10
+        depends on ECHO_AUDIO_ENABLED
+
+    config ECHO_AUDIO_DOUT_GPIO
+        int "ES8311 DSDIN (ESP -> codec) GPIO"
+        default 9
+        depends on ECHO_AUDIO_ENABLED
+        help
+            Playback data: the ESP32-P4 drives this line, the ES8311 DAC reads it.
+
+    config ECHO_AUDIO_DIN_GPIO
+        int "ES8311 ASDOUT (codec -> ESP) GPIO"
+        default 11
+        depends on ECHO_AUDIO_ENABLED
+        help
+            Capture data: the ES8311 ADC (microphone) drives this line.
+
+    config ECHO_AUDIO_PA_GPIO
+        int "PA_CTRL (NS4150B enable) GPIO (-1 = no PA control)"
+        default 53
+        depends on ECHO_AUDIO_ENABLED
+        help
+            The amplifier enable line is active high. echo_audio raises it only
+            while playback is running so an idle board does not hiss; -1 leaves
+            the pin alone (a carrier without PA control).
+
+    config ECHO_AUDIO_I2C_PORT
+        int "I2C port shared with the display driver"
+        range 0 1
+        default 1
+        depends on ECHO_AUDIO_ENABLED
+        help
+            Port 1 is the bus the Waveshare JD9365 driver installs on
+            SDA=GPIO7 / SCL=GPIO8 and never releases. echo_audio reuses it, so it
+            must match CONFIG_ECHO_DISPLAY_* / CONFIG_ECHO_SENSORS_I2C_PORT — 1 on
+            the ESP32-P4-WIFI6.
+
+    config ECHO_AUDIO_I2C_ADDR
+        hex "ES8311 7-bit I2C address"
+        default 0x18
+        range 0x08 0x77
+        depends on ECHO_AUDIO_ENABLED
+
+    config ECHO_AUDIO_SAMPLE_RATE_HZ
+        int "Capture sample rate (Hz)"
+        default 16000
+        depends on ECHO_AUDIO_ENABLED
+        help
+            16 kHz mono matches the wake word pipeline and the Charlie upload, so
+            no resampling is needed. The ES8311 also plays the server's 22050 Hz
+            TTS by reconfiguring the bus around playback.
+
+    config ECHO_AUDIO_MIC_GAIN_DB
+        int "ES8311 mic gain (dB)"
+        range 0 42
+        default 30
+        depends on ECHO_AUDIO_ENABLED
+        help
+            Hardware ADC gain applied to the microphone. Raise it until normal
+            speech peaks around -12 dBFS; 30 dB is a sane starting point for the
+            onboard analog mic.
+
+    config ECHO_AUDIO_SPEAKER_VOLUME
+        int "Speaker volume (0-100)"
+        range 0 100
+        default 70
+        depends on ECHO_AUDIO_ENABLED
+
+endmenu

@@ -1,0 +1,47 @@
+## IDF Component Manager manifest for the PlatformIO app component ("src").
+## Managed components are downloaded into ./managed_components on first build.
+##
+## NOTE: "waveshare/esp_lcd_jd9365_10_1" provides the symbol
+##       esp_lcd_new_panel_jd9365(), which collides with "espressif/esp_lcd_jd9365".
+##       Do NOT add espressif/esp_lcd_jd9365 here.
+dependencies:
+  idf: ">=5.3"
+  waveshare/esp_lcd_jd9365_10_1: "^2.0.0"
+  # espressif/i2c_bus (^1.3.0) and cmake_utilities (0.*) are pulled in
+  # transitively by waveshare/esp_lcd_jd9365_10_1, so they are not listed here.
+
+  # Wake-word engine dependencies. These are the heaviest components in the whole
+  # build (esp-tflite-micro ~195 TUs, esp-dsp ~174 TUs, plus esp-nn ~30 TUs), so
+  # they are declared conditionally: the component manager only pulls them in when
+  # CONFIG_ECHO_WAKEWORD_ENGINE_ENABLED is set. With the engine off they are not
+  # part of the build at all. echo_wakeword adds them to PRIV_REQUIRES in the same
+  # condition, so enabling the engine still links them.
+  espressif/esp-tflite-micro:
+    version: "^1.4.1"   # TFLite-Micro runtime + ESP-NN kernels (P4 support)
+    rules:
+      - if: "$CONFIG{ECHO_WAKEWORD_ENGINE_ENABLED} == True"
+  espressif/esp-dsp:
+    version: "^1.8.2"   # dsps_fft2r_fc32 real FFT for the mel frontend
+    rules:
+      - if: "$CONFIG{ECHO_WAKEWORD_ENGINE_ENABLED} == True"
+
+  # LVGL 9 for the recipe UI. The port lives in components/echo_ui and talks to
+  # echo_display's RGB565 blit API, so no esp_lvgl_port dependency is needed.
+  lvgl/lvgl: "^9.2.0"
+
+  # Hosted Wi-Fi. The ESP32-P4 has no radio: esp_wifi_remote re-implements the
+  # esp_wifi API on top of esp_hosted, which talks to the on-board ESP32-C6 over
+  # SDIO. Versions mirror Waveshare's own ESP32-P4-WIFI6 station example so the
+  # host stack matches the C6 slave firmware the board ships with.
+  espressif/esp_wifi_remote: "==1.2.5"
+  espressif/esp_hosted: "1.4.*"
+
+  # WebSocket client for the Charlie server (components/echo_ha). The server
+  # speaks plain ws:// on port 9303, so no TLS stack is pulled in at runtime.
+  espressif/esp_websocket_client: "^1.8.0"
+
+  # Audio codec device driver (components/echo_audio). Provides the ES8311 codec
+  # (register init, volume, mic gain) and the esp_codec_dev playback/record
+  # facade used by the onboard ES8311 + NS4150B audio path. The I2S data path is
+  # created by echo_audio itself; only the codec abstraction comes from here.
+  espressif/esp_codec_dev: "^1.6.2"

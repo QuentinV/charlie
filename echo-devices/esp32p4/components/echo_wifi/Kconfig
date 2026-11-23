@@ -1,0 +1,75 @@
+menu "echo_wifi"
+
+    config ECHO_WIFI_ENABLED
+        bool "Bring up the hosted Wi-Fi station at boot"
+        default y
+        help
+            Calls echo_wifi_connect() from app_main(). The P4 has no radio: the
+            station runs through esp_wifi_remote -> esp_hosted -> ESP32-C6 over
+            SDIO (see sdkconfig.defaults). Disable for display-only bring-up or
+            when the C6 has no ESP-Hosted slave firmware flashed: without it
+            esp_wifi_init() blocks on RPC and then times out.
+
+    config ECHO_WIFI_SSID
+        string "Wi-Fi SSID"
+        default ""
+        help
+            Empty means "not provisioned": echo_wifi_init() returns
+            ESP_ERR_INVALID_STATE instead of scanning forever. There is no
+            captive portal / SoftAP fallback in this phase.
+
+    config ECHO_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default ""
+        help
+            Empty selects an open network (auth mode OPEN). Anything else is
+            connected with WPA2-PSK as the minimum accepted auth mode.
+
+    config ECHO_WIFI_MAX_RETRY
+        int "Reconnect attempts before giving up (0 = forever)"
+        range 0 100
+        default 0
+        help
+            A failed attempt costs ECHO_WIFI_RETRY_DELAY_MS. The counter is reset
+            on IP_EVENT_STA_GOT_IP. With 0 the station keeps retrying and only
+            logs the disconnect reason, which is what a kitchen appliance wants.
+
+    config ECHO_WIFI_RETRY_DELAY_MS
+        int "Delay between reconnect attempts (ms)"
+        range 500 60000
+        default 3000
+
+    config ECHO_WIFI_HOSTNAME
+        string "DHCP hostname"
+        default "echo-cook"
+        help
+            Sent in the DHCP request so the router's client list shows a name
+            instead of a MAC address.
+
+    config ECHO_WIFI_NTP_ENABLED
+        bool "Start SNTP once an IP address is obtained"
+        default y
+        help
+            Launches an SNTP client after the station gets an IP address so
+            time()/localtime_r() return wall-clock time (used by the boot status
+            screen and the core.time.* bundle variables). Without it the clock
+            stays at the 1970 epoch and those values show as "not synced".
+
+    config ECHO_WIFI_NTP_SERVER
+        string "NTP server"
+        default "pool.ntp.org"
+        depends on ECHO_WIFI_NTP_ENABLED
+        help
+            Hostname or IP of the NTP server. The system timezone is set from
+            ECHO_WIFI_TZ before the first localtime_r() call.
+
+    config ECHO_WIFI_TZ
+        string "POSIX timezone (TZ)"
+        default "CET-1CEST,M3.5.0,M10.5.0/3"
+        depends on ECHO_WIFI_NTP_ENABLED
+        help
+            POSIX TZ string used to render local time, e.g. "UTC0" or
+            "CET-1CEST,M3.5.0,M10.5.0/3" (Central Europe). Applied with
+            setenv("TZ", ...)/tzset() when SNTP starts.
+
+endmenu
